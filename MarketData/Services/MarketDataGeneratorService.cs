@@ -15,6 +15,9 @@ public class MarketDataGeneratorService : BackgroundService
     private readonly IPriceSimulator _priceSimulator;
 
     private readonly Dictionary<string, DateTime> _lastTickTimes = [];
+    private readonly Dictionary<string, DateTime> _lastDatabaseUpdates = [];
+    private readonly Dictionary<string, DateTime> _lastGrpcPublish = [];
+
     private readonly Dictionary<string, decimal> _lastPrices = [];
     private readonly List<Instrument> _instruments = [];
 
@@ -49,20 +52,24 @@ public class MarketDataGeneratorService : BackgroundService
         }
     }
 
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    protected override async Task ExecuteAsync(CancellationToken ct)
     {
         _logger.LogInformation("Market Data Generator Service starting...");
 
-        while (!stoppingToken.IsCancellationRequested)
+        while (!ct.IsCancellationRequested)
         {
             try
             {
-                await GeneratePricesAsync(stoppingToken);
-
                 //!important the CheckIntervalMilliseconds is the minimum refresh
                 // individual instruments can be configured in the database
                 // e.g. TICKER1 every 1000ms, TICKER2 every 500ms
-                await Task.Delay(TimeSpan.FromMilliseconds(_options.CheckIntervalMilliseconds), stoppingToken);
+                // the actual refresh will be the greater of CheckIntervalMilliseconds
+                //  and the value in the database
+                //There is a separate _options.DatabasePersistenceMilliseconds to throttle DB persistence
+                //  and _options.GrpcPublishMilliseconds to throttle gRPC stream
+                //  -- again, the actual persistence/publishing will be the greater of the values
+                await GeneratePricesAsync(ct);
+                await Task.Delay(TimeSpan.FromMilliseconds(_options.CheckIntervalMilliseconds), ct);
             }
             catch (OperationCanceledException)
             {
@@ -79,22 +86,15 @@ public class MarketDataGeneratorService : BackgroundService
         _logger.LogInformation("Market Data Generator Service stopping...");
     }
 
-    private async Task GeneratePricesAsync(CancellationToken cancellationToken)
+    private async Task GeneratePricesAsync(CancellationToken ct)
     {     
         var now = DateTime.UtcNow;
 
         foreach (var instrument in _instruments)
         {
-            if (!_lastTickTimes.TryGetValue(instrument.Name, out var lastTickTime))
+            if (TakeActionNeeded(_lastTickTimes, instrument.Name, now, instrument.TickIntervalMillieconds))
             {
-                lastTickTime = DateTime.MinValue;
-            }
-
-            var timeSinceLastTick = now - lastTickTime;
-
-            if (timeSinceLastTick.TotalMilliseconds >= instrument.TickIntervalMillieconds)
-            {
-                await GeneratePriceForInstrument(instrument.Name, cancellationToken);
+                await GeneratePriceForInstrument(instrument.Name, ct);
                 _lastTickTimes[instrument.Name] = now;
             }
         }
@@ -102,9 +102,11 @@ public class MarketDataGeneratorService : BackgroundService
 
     private async Task GeneratePriceForInstrument(
         string instrumentName, 
-        CancellationToken cancellationToken)
+        CancellationToken ct)
     {
         var currentPrice = _lastPrices[instrumentName];
+        var newPrice = GenerateNewPrice(currentPrice);
+        _lastPrices[instrumentName] = newPrice;
         var newPrice = (decimal)(await _priceSimulator.GenerateNextPrice((double)currentPrice));
 
         var price = new Price
@@ -113,23 +115,61 @@ public class MarketDataGeneratorService : BackgroundService
             Value = newPrice,
             Timestamp = DateTime.UtcNow
         };
-
-        await PersistPriceAsync(price, cancellationToken);
-        _lastPrices[instrumentName] = newPrice;
-
-        // Broadcast price update via gRPC
-        await MarketDataGrpcService.BroadcastPrice(instrumentName, newPrice, price.Timestamp);
-
+#pragma warning disable CA1873 // Avoid potentially expensive logging
         _logger.LogInformation("Generated price for {Instrument}: {Price} (previous: {PreviousPrice})",
             instrumentName, newPrice, currentPrice);
+#pragma warning restore CA1873 // Avoid potentially expensive logging
+
+        await PersistPriceAsync(price, ct);
+        await PublishPriceAsync(price);
     }
 
-    private async Task PersistPriceAsync(Price price, CancellationToken cancellationToken)
+    private async Task PublishPriceAsync(Price price)
     {
+        if (!TakeActionNeeded(_lastGrpcPublish, price.Instrument!, price.Timestamp, _options.GrpcPublishMilliseconds))
+            return;
+           
+        await MarketDataGrpcService.BroadcastPrice(price.Instrument!, price.Value, price.Timestamp);
+        _lastGrpcPublish[price.Instrument!] = price.Timestamp;
+    }
+
+    private async Task PersistPriceAsync(Price price, CancellationToken ct)
+    {
+        if (!TakeActionNeeded(_lastDatabaseUpdates, price.Instrument!, price.Timestamp, _options.DatabasePersistenceMilliseconds))
+            return;
+
+        _lastDatabaseUpdates[price.Instrument!] = price.Timestamp;
+
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
         dbContext.Prices.Add(price);
-        await dbContext.SaveChangesAsync(cancellationToken);
+        await dbContext.SaveChangesAsync(ct);
+    }
+
+    /// <summary>
+    /// determines whether an action is needed to be taken (e.g. publish/persist) for a given instrument
+    ///     given the "lastActions" timestamps, the timestamp now (or for the relevant price/action),
+    ///     and how long we should wait between actions (e.g. only publish every 100ms)
+    /// </summary>
+    /// <param name="lastActions"></param>
+    /// <param name="instrument"></param>
+    /// <param name="now"></param>
+    /// <param name="millisecondsBetweenActions"></param>
+    /// <returns></returns>
+    private static bool TakeActionNeeded(
+        Dictionary<string, DateTime> lastActions,
+        string instrument,
+        DateTime now,
+        int millisecondsBetweenActions)
+    {
+        if (!lastActions.TryGetValue(instrument, out var lastActionTime))
+        {
+            lastActionTime = DateTime.MinValue;
+        }
+
+        var timeSinceLastAction = now - lastActionTime;
+
+        return timeSinceLastAction.TotalMilliseconds >= millisecondsBetweenActions;
     }
 
 
