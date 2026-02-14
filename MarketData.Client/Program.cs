@@ -1,11 +1,22 @@
 using Grpc.Net.Client;
+using MarketData.Client.Shared.Configuration;
 using MarketData.Grpc;
+using Microsoft.Extensions.Configuration;
+
+var configuration = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .Build();
+
+var grpcSettings = configuration.GetSection(GrpcSettings.SectionName).Get<GrpcSettings>() 
+    ?? new GrpcSettings();
 
 Console.WriteLine("Market Data gRPC Client");
 Console.WriteLine("======================\n");
+Console.WriteLine($"Connecting to: {grpcSettings.ServerUrl}\n");
 
 // Configure the gRPC channel
-var channel = GrpcChannel.ForAddress("https://localhost:7264");
+var channel = GrpcChannel.ForAddress(grpcSettings.ServerUrl);
 var client = new MarketDataService.MarketDataServiceClient(channel);
 
 Console.Write("Enter instruments to subscribe (comma-separated, e.g., FTSE,AAPL): ");
@@ -53,5 +64,5 @@ catch (OperationCanceledException)
 catch (Exception ex)
 {
     Console.WriteLine($"\nError: {ex.Message}");
-    Console.WriteLine("Make sure the MarketData API is running on https://localhost:7264");
+    Console.WriteLine($"Make sure the MarketData API is running on {grpcSettings.ServerUrl}");
 }

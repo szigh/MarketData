@@ -14,7 +14,24 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
   </ItemGroup>
 
-  <ItemGroup>    <Protobuf Include="..\MarketData\Protos\marketdata.proto" GrpcServices="Client" />  </ItemGroup></Project>
+  <ItemGroup>
+    <Protobuf Include="..\MarketData\Protos\marketdata.proto" GrpcServices="Client" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MarketData.Client.Shared\MarketData.Client.Shared.csproj" />
+  </ItemGroup>
+
+</Project>
 

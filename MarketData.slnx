@@ -1,4 +1,6 @@
 <Solution>
+  <Project Path="MarketData.Client.Shared/MarketData.Client.Shared.csproj" />
   <Project Path="MarketData.Client/MarketData.Client.csproj" />
+  <Project Path="MarketData.Wpf.Client/MarketData.Wpf.Client.csproj" />
   <Project Path="MarketData/MarketData.csproj" />
 </Solution>
