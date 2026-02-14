@@ -1,4 +1,5 @@
 using System.Windows;
+using FancyCandles;
 using Grpc.Core;
 using MarketData.Grpc;
 
@@ -7,11 +8,13 @@ namespace MarketData.Wpf.Client.ViewModels
     public class MainWindowViewModel : ViewModelBase
     {
         private readonly MarketDataService.MarketDataServiceClient _grpcClient;
+        private readonly TimeFrame _chartTimeFrame;
         private string _title = "Market Data Client";
         private string _price;
         private string _instrument;
         private string _timestamp;
         private CancellationTokenSource? _cancellationTokenSource;
+        private CandlesSource _candles;
 
         public MainWindowViewModel(MarketDataService.MarketDataServiceClient grpcClient)
         {
@@ -19,6 +22,9 @@ namespace MarketData.Wpf.Client.ViewModels
             Price = "0.00";
             Instrument = "Unknown";
             Timestamp = string.Empty;
+
+            _chartTimeFrame = TimeFrame.S2;
+            Candles = new CandlesSource(_chartTimeFrame);
 
             // Start streaming automatically
             _ = StartStreamingAsync();
@@ -48,16 +54,23 @@ namespace MarketData.Wpf.Client.ViewModels
             set => SetProperty(ref _timestamp, value);
         }
 
+        public CandlesSource Candles
+        {
+            get => _candles;
+            set => SetProperty(ref _candles, value);
+        }
+
         private async Task StartStreamingAsync()
         {
             _cancellationTokenSource = new CancellationTokenSource();
+            var candleBuilder = new CandleBuilder<double>(
+                TimeSpan.FromSeconds(_chartTimeFrame.ToSeconds()), true);
 
             try
             {
                 var request = new SubscribeRequest();
-                // Subscribe to all instruments - modify as needed
                 request.Instruments.Add("FTSE");
-                request.Instruments.Add("SNP");
+                //request.Instruments.Add("SNP");
 
                 using var call = _grpcClient.SubscribeToPrices(request, cancellationToken: _cancellationTokenSource.Token);
 
@@ -71,6 +84,26 @@ namespace MarketData.Wpf.Client.ViewModels
                         Timestamp = new DateTime(priceUpdate.Timestamp)
                             .ToString("HH:mm:ss.fff");
                     });
+
+                    var candle = candleBuilder.AddPoint(
+                        new DateTime(priceUpdate.Timestamp), priceUpdate.Value);
+
+                    if (candle is not null)
+                    {
+                        //add candle to UI
+                        await Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            Candles.Add(new Candle
+                            {
+                                t = new DateTime(priceUpdate.Timestamp),
+                                O = double.Round(candle.Value.o, 2),
+                                H = double.Round(candle.Value.h, 2),
+                                L = double.Round(candle.Value.l, 2),
+                                C = double.Round(candle.Value.c, 2),
+                                V = candle.Value.count
+                            });
+                        });
+                    }
                 }
             }
             catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
