@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="MarketData.Client/MarketData.Client.csproj" />
+  <Project Path="MarketData/MarketData.csproj" />
+</Solution>

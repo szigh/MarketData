@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+option csharp_namespace = "MarketData.Grpc";
+
+package marketdata;
+
+service MarketDataService {
+  rpc SubscribeToPrices (SubscribeRequest) returns (stream PriceUpdate);
+}
+
+message SubscribeRequest {
+  repeated string instruments = 1;
+}
+
+message PriceUpdate {
+  string instrument = 1;
+  double value = 2;
+  int64 timestamp = 3;
+}
