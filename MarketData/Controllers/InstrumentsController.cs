@@ -38,7 +38,7 @@ public class InstrumentsController : ControllerBase
         var instrument = new Instrument
         {
             Name = request.Name,
-            TickIntervalSeconds = request.TickIntervalSeconds
+            TickIntervalMillieconds = request.TickIntervalMilliseconds
         };
 
         _context.Instruments.Add(instrument);
@@ -85,11 +85,11 @@ public class InstrumentsController : ControllerBase
             return NotFound($"Instrument '{name}' not found");
         }
 
-        instrument.TickIntervalSeconds = request.TickIntervalSeconds;
+        instrument.TickIntervalMillieconds = request.TickIntervalMilliseconds;
         await _context.SaveChangesAsync();
 
         _logger.LogInformation("Updated instrument '{Name}' tick interval to {Interval} seconds", 
-            name, request.TickIntervalSeconds);
+            name, request.TickIntervalMilliseconds);
 
         return Ok(instrument);
     }
@@ -117,9 +117,9 @@ public class InstrumentsController : ControllerBase
 public record CreateInstrumentRequest(
     string Name,
     decimal InitialPrice,
-    int TickIntervalSeconds = 1
+    int TickIntervalMilliseconds = 1
 );
 
 public record UpdateFrequencyRequest(
-    int TickIntervalSeconds
+    int TickIntervalMilliseconds
 );
