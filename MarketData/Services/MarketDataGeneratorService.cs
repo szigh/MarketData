@@ -105,9 +105,8 @@ public class MarketDataGeneratorService : BackgroundService
         CancellationToken ct)
     {
         var currentPrice = _lastPrices[instrumentName];
-        var newPrice = GenerateNewPrice(currentPrice);
-        _lastPrices[instrumentName] = newPrice;
         var newPrice = (decimal)(await _priceSimulator.GenerateNextPrice((double)currentPrice));
+        _lastPrices[instrumentName] = newPrice;
 
         var price = new Price
         {
