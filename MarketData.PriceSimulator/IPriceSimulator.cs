@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿namespace MarketData.PriceSimulator;
 
-namespace MarketData.PriceSimulator
+public interface IPriceSimulator
 {
-    public interface IPriceSimulator
-    {
-        Task<double> GenerateNextPrice(double price);
-    }
+    Task<double> GenerateNextPrice(double price);
 }
