@@ -1,5 +1,4 @@
 ﻿///Quick console application to quickly see how my models generate prices
-
 using MarketData.PriceSimulator;
 
 // 99% of moves stay within 1% of current price
