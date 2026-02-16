@@ -87,7 +87,7 @@ static void AddPriceSimulator(WebApplicationBuilder builder)
             return new MeanRevertingProcess(
                 //mean: 10_000.0,
                 mean: 1600,
-                kappa: 100 / SECONDS_PER_YEAR,
+                kappa: 200 / SECONDS_PER_YEAR,
                 sigma: 0.5,
                 dt: 0.1  // 0.1 second time step
             );

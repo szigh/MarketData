@@ -23,7 +23,7 @@ namespace MarketData.Wpf.Client.ViewModels
             Instrument = "Unknown";
             Timestamp = string.Empty;
 
-            _chartTimeFrame = TimeFrame.S2;
+            _chartTimeFrame = TimeFrame.S10;
             Candles = new CandlesSource(_chartTimeFrame);
 
             // Start streaming automatically
