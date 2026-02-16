@@ -1,5 +1,6 @@
 using MarketData.Data;
 using MarketData.Models;
+using MarketData.PriceSimulator;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
@@ -11,6 +12,8 @@ public class MarketDataGeneratorService : BackgroundService
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MarketDataGeneratorService> _logger;
 
+    private readonly IPriceSimulator _priceSimulator;
+
     private readonly Dictionary<string, DateTime> _lastTickTimes = [];
     private readonly Dictionary<string, DateTime> _lastDatabaseUpdates = [];
     private readonly Dictionary<string, DateTime> _lastGrpcPublish = [];
@@ -19,10 +22,12 @@ public class MarketDataGeneratorService : BackgroundService
     private readonly List<Instrument> _instruments = [];
 
     public MarketDataGeneratorService(
+        IPriceSimulator priceSimulator,
         IServiceProvider serviceProvider,
         ILogger<MarketDataGeneratorService> logger,
         IOptions<MarketDataGeneratorOptions> options)
     {
+        _priceSimulator = priceSimulator;
         _serviceProvider = serviceProvider;
         _logger = logger;
         _options = options.Value;
@@ -100,7 +105,7 @@ public class MarketDataGeneratorService : BackgroundService
         CancellationToken ct)
     {
         var currentPrice = _lastPrices[instrumentName];
-        var newPrice = GenerateNewPrice(currentPrice);
+        var newPrice = (decimal)(await _priceSimulator.GenerateNextPrice((double)currentPrice));
         _lastPrices[instrumentName] = newPrice;
 
         var price = new Price
@@ -166,28 +171,5 @@ public class MarketDataGeneratorService : BackgroundService
         return timeSinceLastAction.TotalMilliseconds >= millisecondsBetweenActions;
     }
 
-    private static decimal GenerateNewPrice(decimal currentPrice)
-    {
-        // 99% of moves stay within 1% of current price
-        // 99% ≈ ±2.576 standard deviations
-        // Therefore: σ = 0.01 / 2.576 ≈ 0.00388
-        var standardDeviation = 0.00388;
 
-        // Generate relative price change as a percentage
-        var percentageMove = GenerateNormalDistribution(0, standardDeviation);
-        var newPrice = currentPrice * (decimal)(1 + percentageMove);
-
-        return newPrice;
-    }
-
-    private static double GenerateNormalDistribution(double mean, double standardDeviation)
-    {
-        // Box-Muller transform to generate normally distributed random numbers
-        var u1 = Random.Shared.NextDouble();
-        var u2 = Random.Shared.NextDouble();
-
-        var z0 = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);
-
-        return mean + standardDeviation * z0;
-    }
 }
