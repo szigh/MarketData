@@ -2,7 +2,7 @@
 
 public class RandomAdditiveWalk : IPriceSimulator
 {
-    private readonly Random _random = new Random();
+    private readonly Random _random = Random.Shared;
     private readonly RandomWalkSteps _walkSteps;
 
     public RandomAdditiveWalk(RandomWalkSteps walkSteps)
