@@ -5,6 +5,15 @@ namespace MarketData.Wpf.Client
 {
     internal class Candle : ICandle
     {
+        public Candle(DateTime t, (double o, double h, double l, double c, double v) ohlcv, int precision)
+        {
+            this.t = t;
+            O = double.Round(ohlcv.o, precision);
+            H = double.Round(ohlcv.h, precision);
+            L = double.Round(ohlcv.l, precision);
+            C = double.Round(ohlcv.c, precision);
+            V = ohlcv.v;
+        }
         public DateTime t {get;set;}
         public double O {get;set;}
         public double H {get;set;}

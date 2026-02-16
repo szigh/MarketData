@@ -6,6 +6,7 @@ package marketdata;
 
 service MarketDataService {
   rpc SubscribeToPrices (SubscribeRequest) returns (stream PriceUpdate);
+  rpc GetHistoricalData (HistoricalDataRequest) returns (HistoricalDataResponse);
 }
 
 message SubscribeRequest {
@@ -16,4 +17,14 @@ message PriceUpdate {
   string instrument = 1;
   double value = 2;
   int64 timestamp = 3;
+}
+
+message HistoricalDataRequest {
+  string instrument = 1;
+  int64 start_timestamp = 2;
+  int64 end_timestamp = 3;
+}
+
+message HistoricalDataResponse {
+  repeated PriceUpdate prices = 1;
 }

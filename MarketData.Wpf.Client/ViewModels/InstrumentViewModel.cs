@@ -1,6 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using FancyCandles;
 using Grpc.Core;
@@ -12,7 +9,10 @@ namespace MarketData.Wpf.Client.ViewModels;
 public class InstrumentViewModel : ViewModelBase
 {
     private readonly MarketDataService.MarketDataServiceClient _grpcClient;
-    private readonly TimeFrame _chartTimeFrame;
+    private const TimeFrame _chartTimeFrame = TimeFrame.S10;
+    private readonly CandleBuilder<double> _candleBuilder;
+    private const int _candlePrecision = 2;
+
     private string _price;
     private string _instrument;
     private string _timestamp;
@@ -24,10 +24,11 @@ public class InstrumentViewModel : ViewModelBase
     {
         _grpcClient = grpcClient;
         _instrument = instrumentName;
-        Price = "0.00";
+        Price = "#.##";
         Timestamp = string.Empty;
 
-        _chartTimeFrame = TimeFrame.S2;
+        _candleBuilder = new CandleBuilder<double>(
+            TimeSpan.FromSeconds(_chartTimeFrame.ToSeconds()), true);
         Candles = new CandlesSource(_chartTimeFrame);
     }
 
@@ -61,16 +62,32 @@ public class InstrumentViewModel : ViewModelBase
         private set => SetProperty(ref _isStreaming, value);
     }
 
+    private async Task GetHistoricalCandles()
+    {
+        //load last 1d to pre-populate the chart
+        var now = DateTime.UtcNow;
+        var start = now.AddDays(-1);
+        var historicalData = _grpcClient.GetHistoricalData(new HistoricalDataRequest
+        {
+            Instrument = Instrument,
+            StartTimestamp = start.Ticks,
+            EndTimestamp = now.Ticks
+        });
+        foreach (var dataPoint in historicalData.Prices.OrderBy(x => x.Timestamp))
+        {
+            await UpdateCandleChartAsync(dataPoint, false);
+        }
+    }
+
     public async Task StartStreamingAsync()
     {
         if (IsStreaming)
-            return;
+            return; // is this ever hit?
+
+        await GetHistoricalCandles();
 
         _cancellationTokenSource = new CancellationTokenSource();
         IsStreaming = true;
-
-        var candleBuilder = new CandleBuilder<double>(
-            TimeSpan.FromSeconds(_chartTimeFrame.ToSeconds()), true);
 
         try
         {
@@ -89,25 +106,7 @@ public class InstrumentViewModel : ViewModelBase
                         .ToString("HH:mm:ss.fff");
                 });
 
-                var candle = candleBuilder.AddPoint(
-                    new DateTime(priceUpdate.Timestamp), priceUpdate.Value);
-
-                if (candle is not null)
-                {
-                    //add candle to UI
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                    {
-                        Candles.Add(new Candle
-                        {
-                            t = new DateTime(priceUpdate.Timestamp),
-                            O = double.Round(candle.Value.o, 2),
-                            H = double.Round(candle.Value.h, 2),
-                            L = double.Round(candle.Value.l, 2),
-                            C = double.Round(candle.Value.c, 2),
-                            V = candle.Value.count
-                        });
-                    });
-                }
+                await UpdateCandleChartAsync(priceUpdate, true);
             }
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
@@ -126,6 +125,36 @@ public class InstrumentViewModel : ViewModelBase
         {
             IsStreaming = false;
         }
+    }
+
+    private async Task UpdateCandleChartAsync(PriceUpdate priceUpdate, bool updateLastCandle)
+    {
+        var candle = _candleBuilder.AddPoint(
+                            new DateTime(priceUpdate.Timestamp), priceUpdate.Value);
+
+        if (candle is not null)
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                Candles.Add(new Candle(new DateTime(priceUpdate.Timestamp),
+                    candle.Value, _candlePrecision));
+            });
+        }
+        //else if (updateLastCandle)
+        //{
+        //    var lastCandle = Candles.LastOrDefault();
+        //    if (lastCandle is not null) 
+        //    {
+        //        var updateCandle = (Candle)lastCandle;
+        //        updateCandle.C = double.Round(priceUpdate.Value, _candlePrecision);
+        //        updateCandle.t = new DateTime(priceUpdate.Timestamp);
+        //        await Application.Current.Dispatcher.InvokeAsync(() =>
+        //        {
+        //            Candles.RemoveAt(Candles.Count - 1);
+        //            Candles.Add(updateCandle);
+        //        });
+        //    }
+        //}
     }
 
     public async Task StopStreamingAsync()
