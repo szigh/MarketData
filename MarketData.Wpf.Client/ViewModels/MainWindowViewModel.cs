@@ -1,33 +1,27 @@
-using System.Windows;
-using FancyCandles;
-using Grpc.Core;
+using System.Collections.ObjectModel;
+using System.Windows.Input;
 using MarketData.Grpc;
+using MarketData.Wpf.Shared;
 
 namespace MarketData.Wpf.Client.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase
     {
         private readonly MarketDataService.MarketDataServiceClient _grpcClient;
-        private readonly TimeFrame _chartTimeFrame;
         private string _title = "Market Data Client";
-        private string _price;
-        private string _instrument;
-        private string _timestamp;
-        private CancellationTokenSource? _cancellationTokenSource;
-        private CandlesSource _candles;
+        private ObservableCollection<InstrumentTabViewModel> _tabs;
+        private InstrumentTabViewModel? _selectedTab;
 
         public MainWindowViewModel(MarketDataService.MarketDataServiceClient grpcClient)
         {
             _grpcClient = grpcClient;
-            Price = "0.00";
-            Instrument = "Unknown";
-            Timestamp = string.Empty;
+            Tabs = new ObservableCollection<InstrumentTabViewModel>();
 
-            _chartTimeFrame = TimeFrame.S10;
-            Candles = new CandlesSource(_chartTimeFrame);
+            AddTabCommand = new RelayCommand(ExecuteAddTab);
+            CloseTabCommand = new RelayCommand<InstrumentTabViewModel>(ExecuteCloseTab);
 
-            // Start streaming automatically
-            _ = StartStreamingAsync();
+            // Start with a single FTSE tab
+            AddTab("FTSE");
         }
 
         public string Title
@@ -36,98 +30,60 @@ namespace MarketData.Wpf.Client.ViewModels
             set => SetProperty(ref _title, value);
         }
 
-        public string Price
+        public ObservableCollection<InstrumentTabViewModel> Tabs
         {
-            get => _price;
-            set => SetProperty(ref _price, value);
+            get => _tabs;
+            set => SetProperty(ref _tabs, value);
         }
 
-        public string Instrument
+        public InstrumentTabViewModel? SelectedTab
         {
-            get => _instrument;
-            set => SetProperty(ref _instrument, value);
+            get => _selectedTab;
+            set => SetProperty(ref _selectedTab, value);
         }
 
-        public string Timestamp
-        {
-            get => _timestamp;
-            set => SetProperty(ref _timestamp, value);
-        }
+        public ICommand AddTabCommand { get; }
+        public ICommand CloseTabCommand { get; }
 
-        public CandlesSource Candles
+        private void ExecuteAddTab()
         {
-            get => _candles;
-            set => SetProperty(ref _candles, value);
-        }
-
-        private async Task StartStreamingAsync()
-        {
-            _cancellationTokenSource = new CancellationTokenSource();
-            var candleBuilder = new CandleBuilder<double>(
-                TimeSpan.FromSeconds(_chartTimeFrame.ToSeconds()), true);
-
-            try
+            var instrumentSelector = new InstrumentSelectorWindow();
+            if (instrumentSelector.ShowDialog() == true)
             {
-                var request = new SubscribeRequest();
-                request.Instruments.Add("FTSE");
-                //request.Instruments.Add("SNP");
-
-                using var call = _grpcClient.SubscribeToPrices(request, cancellationToken: _cancellationTokenSource.Token);
-
-                await foreach (var priceUpdate in call.ResponseStream.ReadAllAsync(_cancellationTokenSource.Token))
+                var selectedInstrument = instrumentSelector.SelectedInstrument;
+                if (!string.IsNullOrEmpty(selectedInstrument))
                 {
-                    // Update UI on the UI thread
-                    await Application.Current.Dispatcher.InvokeAsync(() =>
-                    {
-                        Instrument = priceUpdate.Instrument;
-                        Price = priceUpdate.Value.ToString("F2");
-                        Timestamp = new DateTime(priceUpdate.Timestamp)
-                            .ToString("HH:mm:ss.fff");
-                    });
-
-                    var candle = candleBuilder.AddPoint(
-                        new DateTime(priceUpdate.Timestamp), priceUpdate.Value);
-
-                    if (candle is not null)
-                    {
-                        //add candle to UI
-                        await Application.Current.Dispatcher.InvokeAsync(() =>
-                        {
-                            Candles.Add(new Candle
-                            {
-                                t = new DateTime(priceUpdate.Timestamp),
-                                O = double.Round(candle.Value.o, 2),
-                                H = double.Round(candle.Value.h, 2),
-                                L = double.Round(candle.Value.l, 2),
-                                C = double.Round(candle.Value.c, 2),
-                                V = candle.Value.count
-                            });
-                        });
-                    }
+                    AddTab(selectedInstrument);
                 }
             }
-            catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
+        }
+
+        private void AddTab(string instrumentName)
+        {
+            var instrumentViewModel = new InstrumentViewModel(_grpcClient, instrumentName);
+            var tabViewModel = new InstrumentTabViewModel(instrumentViewModel);
+            Tabs.Add(tabViewModel);
+            SelectedTab = tabViewModel;
+
+            _ = instrumentViewModel.StartStreamingAsync();
+        }
+
+        private async void ExecuteCloseTab(InstrumentTabViewModel? tab)
+        {
+            if (tab != null && Tabs.Contains(tab))
             {
-                // Stream was cancelled, this is expected on shutdown
-            }
-            catch (Exception ex)
-            {
-                // Handle other errors
-                await Application.Current.Dispatcher.InvokeAsync(() =>
-                {
-                    Price = $"Error: {ex.Message}";
-                });
+                await tab.InstrumentViewModel.StopStreamingAsync();
+                Tabs.Remove(tab);
             }
         }
 
-        public async Task StopStreamingAsync()
+        public async Task CloseAllTabsAsync()
         {
-            if (_cancellationTokenSource != null)
+            foreach (var tab in Tabs)
             {
-                _cancellationTokenSource.Cancel();
-                _cancellationTokenSource.Dispose();
-                _cancellationTokenSource = null;
+                await tab.InstrumentViewModel.StopStreamingAsync();
             }
+            Tabs.Clear();
         }
     }
 }
