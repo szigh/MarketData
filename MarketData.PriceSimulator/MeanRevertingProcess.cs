@@ -23,6 +23,24 @@ public class MeanRevertingProcess : IPriceSimulator
         double sigma,
         double dt)
     {
+        if (kappa <= 0)
+        {
+            throw new ArgumentException("Mean reversion strength must be a positive value.",
+                nameof(kappa));
+        }
+
+        if (sigma < 0)
+        {
+            throw new ArgumentException("Volatility cannot be negative.",
+                nameof(sigma));
+        }
+
+        if (dt <= 0)
+        {
+            throw new ArgumentException("Time step must be a positive value.",
+                nameof(dt));
+        }
+
         _mean = mean;
         _kappa = kappa;
         _sigma = sigma;
