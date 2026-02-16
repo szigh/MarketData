@@ -9,7 +9,7 @@
         d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
         mc:Ignorable="d"
         Title="{Binding Title}" Height="450" Width="800">
-    <Grid Background="DarkGray" Margin="20">
+    <Grid Background="#555555" Margin="0">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
@@ -19,18 +19,19 @@
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Row="0" 
+        <TextBlock Grid.Row="0" Grid.ColumnSpan="2"
                    Text="Live Market Data Stream" 
                    FontSize="24" 
                    FontWeight="Bold"
                    HorizontalAlignment="Center"
-                   Margin="0,0,0,20"
+                   Margin="10"
                    Foreground="White"/>
 
         <Border Grid.Row="1" 
                 Background="White" 
                 CornerRadius="10"
-                Padding="30"
+                Padding="10"
+                Margin="20"
                 HorizontalAlignment="Center"
                 VerticalAlignment="Center">
             <StackPanel>
@@ -65,7 +66,8 @@
 
 
         <fc:CandleChart Grid.Column="1" Grid.Row="1" 
+                        Margin="20"
                         CandlesSource="{Binding Candles}" 
-                        LegendText="FTSE"/>
+                        LegendText="{Binding Instrument}"/>
     </Grid>
 </Window>
