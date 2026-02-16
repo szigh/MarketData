@@ -4,7 +4,7 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MarketData.Wpf.Client"
-        xmlns:fc="clr-namespace:FancyCandles;assembly=FancyCandles"
+        xmlns:views="clr-namespace:MarketData.Wpf.Client.Views"
         xmlns:vm="clr-namespace:MarketData.Wpf.Client.ViewModels"
         d:DataContext="{d:DesignInstance Type=vm:MainWindowViewModel}"
         mc:Ignorable="d"
@@ -14,60 +14,100 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="Auto"/>
-            <ColumnDefinition Width="*"/>
-        </Grid.ColumnDefinitions>
 
-        <TextBlock Grid.Row="0" Grid.ColumnSpan="2"
-                   Text="Live Market Data Stream" 
-                   FontSize="24" 
-                   FontWeight="Bold"
-                   HorizontalAlignment="Center"
-                   Margin="10"
-                   Foreground="White"/>
+        <Grid Grid.Row="0" Background="#444444">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
 
-        <Border Grid.Row="1" 
-                Background="White" 
-                CornerRadius="10"
-                Padding="10"
-                Margin="20"
-                HorizontalAlignment="Center"
-                VerticalAlignment="Center">
-            <StackPanel>
-                <TextBlock Text="Instrument" 
-                           FontSize="14" 
-                           Foreground="Gray"
-                           Margin="0,0,0,5"/>
-                <TextBlock Text="{Binding Instrument}" 
-                           FontSize="32" 
-                           FontWeight="Bold"
-                           Margin="0,0,0,20"/>
+            <TextBlock Grid.Column="0"
+                       Text="Live Market Data Stream" 
+                       FontSize="24" 
+                       FontWeight="Bold"
+                       HorizontalAlignment="Center"
+                       VerticalAlignment="Center"
+                       Margin="10"
+                       Foreground="White"/>
 
-                <TextBlock Text="Price" 
-                           FontSize="14" 
-                           Foreground="Gray"
-                           Margin="0,0,0,5"/>
-                <TextBlock Text="{Binding Price}" 
-                           FontSize="48" 
-                           FontWeight="Bold"
-                           Foreground="Green"
-                           Margin="0,0,0,20"/>
+            <Button Grid.Column="1"
+                    Content="+ New Tab"
+                    Command="{Binding AddTabCommand}"
+                    Background="#007ACC"
+                    Foreground="White"
+                    BorderThickness="0"
+                    FontSize="14"
+                    FontWeight="Bold"
+                    Padding="15,8"
+                    Margin="10"
+                    Cursor="Hand">
+                <Button.Style>
+                    <Style TargetType="Button">
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border Background="{TemplateBinding Background}"
+                                            CornerRadius="1"
+                                            Padding="5">
+                                        <ContentPresenter HorizontalAlignment="Center" 
+                                                          VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#1E8AD6"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </Button.Style>
+            </Button>
+        </Grid>
 
-                <TextBlock Text="Last Update" 
-                           FontSize="14" 
-                           Foreground="Gray"
-                           Margin="0,0,0,5"/>
-                <TextBlock Text="{Binding Timestamp}" 
-                           FontSize="18"
-                           Foreground="DarkGray"/>
-            </StackPanel>
-        </Border>
-
-
-        <fc:CandleChart Grid.Column="1" Grid.Row="1" 
-                        Margin="20"
-                        CandlesSource="{Binding Candles}" 
-                        LegendText="{Binding Instrument}"/>
+        <TabControl Grid.Row="1"
+                    ItemsSource="{Binding Tabs}"
+                    SelectedItem="{Binding SelectedTab}"
+                    Background="#555555"
+                    BorderThickness="0"
+                    Margin="10">
+            <TabControl.ItemTemplate>
+                <DataTemplate>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="{Binding Header}" 
+                                   Margin="0,0,8,0"
+                                   VerticalAlignment="Center"
+                                   FontSize="16"
+                                   FontWeight="Bold"/>
+                        <Button Content="✕" 
+                                Command="{Binding DataContext.CloseTabCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding}"
+                                Width="16"
+                                Height="16"
+                                FontSize="10"
+                                Background="Transparent"
+                                BorderThickness="0"
+                                Foreground="Gray"
+                                Cursor="Hand"
+                                ToolTip="Close tab">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Foreground" Value="Red"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+                </DataTemplate>
+            </TabControl.ItemTemplate>
+            <TabControl.ContentTemplate>
+                <DataTemplate>
+                    <views:InstrumentView DataContext="{Binding InstrumentViewModel}"/>
+                </DataTemplate>
+            </TabControl.ContentTemplate>
+        </TabControl>
     </Grid>
 </Window>

@@ -21,7 +21,7 @@ namespace MarketData.Wpf.Client
 
         private async void OnClosed(object? sender, EventArgs e)
         {
-            await _viewModel.StopStreamingAsync();
+            await _viewModel.CloseAllTabsAsync();
         }
     }
 }
