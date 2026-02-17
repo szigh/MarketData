@@ -15,7 +15,7 @@ namespace MarketData.Wpf.Client.ViewModels
         public MainWindowViewModel(MarketDataService.MarketDataServiceClient grpcClient)
         {
             _grpcClient = grpcClient;
-            Tabs = new ObservableCollection<InstrumentTabViewModel>();
+            _tabs = [];
 
             AddTabCommand = new RelayCommand(ExecuteAddTab);
             CloseTabCommand = new RelayCommand<InstrumentTabViewModel>(ExecuteCloseTab, CanExecuteCloseTab);
