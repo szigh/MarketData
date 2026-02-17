@@ -361,6 +361,12 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# databases
 /MarketData/MarketData.db
 /MarketData/MarketData.db-wal
 /MarketData/MarketData.db-shm
+
+# markdowns, notes, except README
+*.md
+!README.md

@@ -11,8 +11,9 @@ public class MarketDataGeneratorService : BackgroundService
     private readonly MarketDataGeneratorOptions _options;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MarketDataGeneratorService> _logger;
+    private readonly InstrumentModelManager _modelManager;
 
-    private readonly IPriceSimulator _priceSimulator;
+    private readonly Dictionary<string, IPriceSimulator> _priceSimulators = [];
 
     private readonly Dictionary<string, DateTime> _lastTickTimes = [];
     private readonly Dictionary<string, DateTime> _lastDatabaseUpdates = [];
@@ -22,23 +23,35 @@ public class MarketDataGeneratorService : BackgroundService
     private readonly List<Instrument> _instruments = [];
 
     public MarketDataGeneratorService(
-        IPriceSimulator priceSimulator,
         IServiceProvider serviceProvider,
         ILogger<MarketDataGeneratorService> logger,
+        InstrumentModelManager modelManager,
         IOptions<MarketDataGeneratorOptions> options)
     {
-        _priceSimulator = priceSimulator;
         _serviceProvider = serviceProvider;
         _logger = logger;
+        _modelManager = modelManager;
         _options = options.Value;
 
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
-        _instruments = dbContext.Instruments.ToList();
 
-        // Load initial prices for each instrument
+        _instruments = dbContext.Instruments
+            .Include(i => i.RandomMultiplicativeConfig)
+            .Include(i => i.MeanRevertingConfig)
+            .Include(i => i.FlatConfig)
+            .Include(i => i.RandomAdditiveWalkConfig)
+            .ToList();
+
+        // Load initial prices and create simulators for each instrument
         foreach (var instrument in _instruments)
         {
+            // Ensure model type is set
+            _modelManager.EnsureModelTypeAsync(instrument, dbContext).GetAwaiter().GetResult();
+
+            // Ensure configuration exists for the model type
+            _modelManager.EnsureModelConfigurationAsync(instrument, dbContext).GetAwaiter().GetResult();
+
             var latestPrice = dbContext.Prices
                 .AsNoTracking()
                 .Where(p => p.Instrument == instrument.Name)
@@ -49,6 +62,7 @@ public class MarketDataGeneratorService : BackgroundService
                         $"Please seed the database with an initial price.");
 
             _lastPrices[instrument.Name] = latestPrice.Value;
+            _priceSimulators[instrument.Name] = _modelManager.CreatePriceSimulator(instrument);
         }
     }
 
@@ -105,7 +119,8 @@ public class MarketDataGeneratorService : BackgroundService
         CancellationToken ct)
     {
         var currentPrice = _lastPrices[instrumentName];
-        var newPrice = (decimal)(await _priceSimulator.GenerateNextPrice((double)currentPrice));
+        var simulator = _priceSimulators[instrumentName];
+        var newPrice = (decimal)(await simulator.GenerateNextPrice((double)currentPrice));
         _lastPrices[instrumentName] = newPrice;
 
         var price = new Price
@@ -170,6 +185,4 @@ public class MarketDataGeneratorService : BackgroundService
 
         return timeSinceLastAction.TotalMilliseconds >= millisecondsBetweenActions;
     }
-
-
 }
