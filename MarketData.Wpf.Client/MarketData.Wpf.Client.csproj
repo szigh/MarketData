@@ -24,11 +24,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="..\MarketData\Protos\marketdata.proto" GrpcServices="Client">
-      <Link>Protos\marketdata.proto</Link>
-    </Protobuf>
+	<Protobuf Include="..\MarketData\Protos\marketdata.proto" GrpcServices="Client" Link="Protos\marketdata.proto" />
+	<Protobuf Include="..\MarketData\Protos\modelconfiguration.proto" GrpcServices="Client" Link="Protos\modelconfiguration.proto" />
   </ItemGroup>
-
+	
   <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

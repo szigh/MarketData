@@ -1,0 +1,68 @@
+﻿using Grpc.Net.Client;
+using MarketData.Grpc;
+
+namespace MarketData.Wpf.Client.Services;
+
+public class ModelConfigService : IDisposable
+{
+    private readonly GrpcChannel _channel;
+    private readonly ModelConfigurationService.ModelConfigurationServiceClient _client;
+
+    public ModelConfigService(string serverAddress)
+    {
+        _channel = GrpcChannel.ForAddress(serverAddress);
+        _client = new ModelConfigurationService.ModelConfigurationServiceClient(_channel);
+    }
+
+    public async Task<ConfigurationsResponse> GetConfigurationsAsync(string instrumentName)
+    {
+        return await _client.GetConfigurationsAsync(
+            new GetConfigurationsRequest { InstrumentName = instrumentName });
+    }
+
+    public async Task<SwitchModelResponse> SwitchModelAsync(string instrumentName, string modelType)
+    {
+        return await _client.SwitchModelAsync(new SwitchModelRequest
+        {
+            InstrumentName = instrumentName,
+            ModelType = modelType
+        });
+    }
+
+    public async Task UpdateRandomMultiplicativeConfigAsync(
+        string instrumentName,
+        double standardDeviation,
+        double mean)
+    {
+        await _client.UpdateRandomMultiplicativeConfigAsync(
+            new UpdateRandomMultiplicativeRequest
+            {
+                InstrumentName = instrumentName,
+                StandardDeviation = standardDeviation,
+                Mean = mean
+            });
+    }
+
+    public async Task UpdateMeanRevertingConfigAsync(
+        string instrumentName,
+        double mean,
+        double kappa,
+        double sigma,
+        double dt)
+    {
+        await _client.UpdateMeanRevertingConfigAsync(
+            new UpdateMeanRevertingRequest
+            {
+                InstrumentName = instrumentName,
+                Mean = mean,
+                Kappa = kappa,
+                Sigma = sigma,
+                Dt = dt
+            });
+    }
+
+    public void Dispose()
+    {
+        _channel?.Dispose();
+    }
+}

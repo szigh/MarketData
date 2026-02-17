@@ -1,0 +1,33 @@
+﻿<Window x:Class="MarketData.Wpf.Client.Views.ModelConfigWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MarketData.Wpf.Client.Views" 
+        xmlns:viewmodels="clr-namespace:MarketData.Wpf.Client.ViewModels" 
+        d:DataContext="{d:DesignInstance Type=viewmodels:ModelConfigViewModel}"
+        mc:Ignorable="d"
+        Title="Model Configuration" Height="200" Width="400">
+    <Window.Resources>
+        <Style TargetType="TextBlock">
+            <Setter Property="Margin" Value="10"/>
+            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+        </Style>
+    </Window.Resources>
+    <Grid Background="#555555">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Instrument Name -->
+        <TextBlock Grid.Row="0" 
+                   Text="{Binding Instrument}"/>
+
+        <!-- Model Type -->
+        <TextBlock Grid.Row="1" 
+                   Text="{Binding ModelTypeName}"/>
+    </Grid>
+</Window>

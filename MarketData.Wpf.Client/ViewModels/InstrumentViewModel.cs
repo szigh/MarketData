@@ -1,8 +1,11 @@
 using System.Windows;
+using System.Windows.Input;
 using FancyCandles;
 using Grpc.Core;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.FancyCandlesImplementations;
+using MarketData.Wpf.Client.Services;
+using MarketData.Wpf.Client.Views;
 using MarketData.Wpf.Shared;
 
 namespace MarketData.Wpf.Client.ViewModels;
@@ -10,6 +13,7 @@ namespace MarketData.Wpf.Client.ViewModels;
 public class InstrumentViewModel : ViewModelBase
 {
     private readonly MarketDataService.MarketDataServiceClient _grpcClient;
+    private readonly ModelConfigService _modelConfigService;
     private const TimeFrame _chartTimeFrame = TimeFrame.S10;
     private readonly CandleBuilder<double> _candleBuilder;
     private const int _candlePrecision = 2;
@@ -28,10 +32,33 @@ public class InstrumentViewModel : ViewModelBase
         Price = "#.##";
         Timestamp = string.Empty;
 
+        //TODO use config for server address
+        _modelConfigService = new ModelConfigService("https://localhost:7264");
+
+        ModelConfigCommand = new AsyncRelayCommand(OpenModelConfigAsync);
+
         _candleBuilder = new CandleBuilder<double>(
             TimeSpan.FromSeconds(_chartTimeFrame.ToSeconds()), true);
         Candles = new CandlesSource(_chartTimeFrame);
     }
+
+    private async Task OpenModelConfigAsync()
+    {
+        try
+        {
+            var config = await _modelConfigService.GetConfigurationsAsync(_instrument);
+            var vm = new ModelConfigViewModel(_instrument, _modelConfigService, config);
+            var view = new ModelConfigWindow(vm);
+            view.Show();
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to load configuration: {ex.Message}", "Error", 
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    public ICommand ModelConfigCommand { get; }
 
     public string Price
     {

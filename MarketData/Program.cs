@@ -35,7 +35,8 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Map gRPC service
+// Map gRPC services
 app.MapGrpcService<MarketDataGrpcService>();
+app.MapGrpcService<ModelConfigurationGrpcService>();
 
-app.Run();
+app.Run();app.Run();
