@@ -7,6 +7,16 @@ using System.Text.Json;
 namespace MarketData.Services;
 
 /// <summary>
+/// Event args for configuration changes
+/// </summary>
+public class ModelConfigurationChangedEventArgs : EventArgs
+{
+    public string InstrumentName { get; init; } = string.Empty;
+    public string? ModelType { get; init; }
+    public DateTime Timestamp { get; init; }
+}
+
+/// <summary>
 /// Manages price simulator models for instruments, including configuration validation,
 /// default model assignment, simulator instantiation, and configuration CRUD operations.
 /// This service handles all business logic for instrument models and can be used by
@@ -18,12 +28,31 @@ public class InstrumentModelManager : IInstrumentModelManager
     private readonly ILogger<InstrumentModelManager> _logger;
     private const string DefaultModelType = "Flat";
 
+    /// <summary>
+    /// Event raised when a model configuration is changed.
+    /// Subscribers can use this to hot-reload simulators.
+    /// </summary>
+    public event EventHandler<ModelConfigurationChangedEventArgs>? ConfigurationChanged;
+
     public InstrumentModelManager(
         IServiceProvider serviceProvider,
         ILogger<InstrumentModelManager> logger)
     {
         _serviceProvider = serviceProvider;
         _logger = logger;
+    }
+
+    /// <summary>
+    /// Raises the ConfigurationChanged event
+    /// </summary>
+    protected virtual void OnConfigurationChanged(string instrumentName, string? modelType = null)
+    {
+        ConfigurationChanged?.Invoke(this, new ModelConfigurationChangedEventArgs
+        {
+            InstrumentName = instrumentName,
+            ModelType = modelType,
+            Timestamp = DateTime.UtcNow
+        });
     }
 
     /// <summary>
@@ -302,9 +331,14 @@ public class InstrumentModelManager : IInstrumentModelManager
         // Ensure configuration exists for the new model type
         await EnsureModelConfigurationAsync(instrument, context);
 
+        await context.SaveChangesAsync();
+
         _logger.LogInformation(
             "Model switched for instrument '{InstrumentName}' from '{PreviousModel}' to '{NewModel}'",
             instrumentName, previousModel, newModelType);
+
+        // Notify subscribers of configuration change
+        OnConfigurationChanged(instrumentName, newModelType);
 
         return previousModel;
     }
@@ -357,6 +391,9 @@ public class InstrumentModelManager : IInstrumentModelManager
         _logger.LogInformation(
             "RandomMultiplicative config updated for '{InstrumentName}': StdDev={StdDev}, Mean={Mean}",
             instrumentName, standardDeviation, mean);
+
+        // Notify subscribers of configuration change
+        OnConfigurationChanged(instrumentName);
 
         return instrument.RandomMultiplicativeConfig;
     }
@@ -424,6 +461,9 @@ public class InstrumentModelManager : IInstrumentModelManager
             "MeanReverting config updated for '{InstrumentName}': Mean={Mean}, Kappa={Kappa}, Sigma={Sigma}, Dt={Dt}",
             instrumentName, mean, kappa, sigma, dt);
 
+        // Notify subscribers of configuration change
+        OnConfigurationChanged(instrumentName);
+
         return instrument.MeanRevertingConfig;
     }
 
@@ -479,6 +519,9 @@ public class InstrumentModelManager : IInstrumentModelManager
         _logger.LogInformation(
             "RandomAdditiveWalk config updated for '{InstrumentName}'",
             instrumentName);
+
+        // Notify subscribers of configuration change
+        OnConfigurationChanged(instrumentName);
 
         return instrument.RandomAdditiveWalkConfig;
     }

@@ -4,6 +4,8 @@ option csharp_namespace = "MarketData.Grpc";
 
 // Service for managing instrument model configurations
 service ModelConfigurationService {
+    rpc GetSupportedModels(GetSupportedModelsRequest) returns (SupportedModelsResponse);
+
     // Get all configurations for an instrument
     rpc GetConfigurations(GetConfigurationsRequest) returns (ConfigurationsResponse);
 
@@ -21,6 +23,8 @@ service ModelConfigurationService {
 }
 
 // Request messages
+message GetSupportedModelsRequest{}
+
 message GetConfigurationsRequest {
     string instrument_name = 1;
 }
@@ -50,6 +54,10 @@ message UpdateRandomAdditiveWalkRequest {
 }
 
 // Response messages
+message SupportedModelsResponse {
+    repeated string supported_models = 1;
+}
+
 message ConfigurationsResponse {
     string instrument_name = 1;
     string active_model = 2;

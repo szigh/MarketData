@@ -10,6 +10,12 @@ namespace MarketData.Services;
 public interface IInstrumentModelManager
 {
     /// <summary>
+    /// Event raised when a model configuration is changed.
+    /// Subscribers can use this to hot-reload simulators.
+    /// </summary>
+    event EventHandler<ModelConfigurationChangedEventArgs>? ConfigurationChanged;
+
+    /// <summary>
     /// Gets an instrument with all its model configurations loaded
     /// </summary>
     Task<Instrument?> GetInstrumentWithConfigurationsAsync(string instrumentName);

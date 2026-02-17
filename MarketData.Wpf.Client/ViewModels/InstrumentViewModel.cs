@@ -47,7 +47,8 @@ public class InstrumentViewModel : ViewModelBase
         try
         {
             var config = await _modelConfigService.GetConfigurationsAsync(_instrument);
-            var vm = new ModelConfigViewModel(_instrument, _modelConfigService, config);
+            var supportedModels = await _modelConfigService.GetSupportedModelsAsync();
+            var vm = new ModelConfigViewModel(_instrument, _modelConfigService, config, supportedModels);
             var view = new ModelConfigWindow(vm);
             view.Show();
         }

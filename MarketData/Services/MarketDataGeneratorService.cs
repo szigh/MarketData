@@ -33,6 +33,9 @@ public class MarketDataGeneratorService : BackgroundService
         _modelManager = modelManager;
         _options = options.Value;
 
+        // Subscribe to configuration changes for hot reload
+        _modelManager.ConfigurationChanged += OnConfigurationChanged;
+
         // Load and initialize all instruments efficiently in a single batch
         var instrumentDict = _modelManager.LoadAndInitializeAllInstrumentsAsync()
             .GetAwaiter().GetResult();
@@ -56,6 +59,63 @@ public class MarketDataGeneratorService : BackgroundService
 
             _lastPrices[instrument.Name] = latestPrice.Value;
             _priceSimulators[instrument.Name] = _modelManager.CreatePriceSimulator(instrument);
+        }
+    }
+
+    /// <summary>
+    /// Event handler for configuration changes - triggers hot reload
+    /// </summary>
+    private void OnConfigurationChanged(object? sender, ModelConfigurationChangedEventArgs e)
+    {
+        _logger.LogInformation(
+            "Configuration changed for instrument '{InstrumentName}' (Model: {ModelType}). Triggering hot reload...",
+            e.InstrumentName, e.ModelType ?? "config update");
+
+        // Fire and forget - don't block the caller
+        _ = HotReloadInstrumentAsync(e.InstrumentName);
+    }
+
+    /// <summary>
+    /// Hot reloads a single instrument's simulator with new configuration
+    /// </summary>
+    private async Task HotReloadInstrumentAsync(string instrumentName)
+    {
+        try
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+
+            // Reload instrument with updated configuration
+            var instrument = await context.Instruments
+                .Include(i => i.RandomMultiplicativeConfig)
+                .Include(i => i.MeanRevertingConfig)
+                .Include(i => i.FlatConfig)
+                .Include(i => i.RandomAdditiveWalkConfig)
+                .FirstOrDefaultAsync(i => i.Name == instrumentName);
+
+            if (instrument == null)
+            {
+                _logger.LogWarning(
+                    "Instrument '{InstrumentName}' not found during hot reload attempt",
+                    instrumentName);
+                return;
+            }
+
+            // Create new price simulator with updated configuration
+            var newSimulator = _modelManager.CreatePriceSimulator(instrument);
+
+            // Atomically replace the simulator (thread-safe since Dictionary operations are atomic for value types)
+            _priceSimulators[instrumentName] = newSimulator;
+
+            _logger.LogInformation(
+                "Successfully hot reloaded instrument '{InstrumentName}' with model '{ModelType}'",
+                instrumentName, instrument.ModelType);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex,
+                "Error during hot reload for instrument '{InstrumentName}'",
+                instrumentName);
         }
     }
 
@@ -177,5 +237,13 @@ public class MarketDataGeneratorService : BackgroundService
         var timeSinceLastAction = now - lastActionTime;
 
         return timeSinceLastAction.TotalMilliseconds >= millisecondsBetweenActions;
+    }
+
+    public override void Dispose()
+    {
+        // Unsubscribe from configuration changes
+        _modelManager.ConfigurationChanged -= OnConfigurationChanged;
+
+        base.Dispose();
     }
 }

@@ -14,6 +14,12 @@ public class ModelConfigService : IDisposable
         _client = new ModelConfigurationService.ModelConfigurationServiceClient(_channel);
     }
 
+    public async Task<SupportedModelsResponse> GetSupportedModelsAsync()
+    {
+        return await _client.GetSupportedModelsAsync(
+            new GetSupportedModelsRequest());
+    }
+
     public async Task<ConfigurationsResponse> GetConfigurationsAsync(string instrumentName)
     {
         return await _client.GetConfigurationsAsync(

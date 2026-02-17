@@ -20,6 +20,26 @@ public class ModelConfigurationGrpcService : ModelConfigurationService.ModelConf
         _logger = logger;
     }
 
+    public override async Task<SupportedModelsResponse> GetSupportedModels(
+        GetSupportedModelsRequest request,
+        ServerCallContext context)
+    {
+        try
+        {
+            _logger.LogInformation("gRPC: GetSupportedModels request");
+            var supportedModels = InstrumentModelManager.GetSupportedModelTypes();
+            return new SupportedModelsResponse
+            {
+                SupportedModels = { supportedModels }
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting supported models");
+            throw new RpcException(new Status(StatusCode.Internal, "Internal server error"));
+        }
+    }
+
     /// <summary>
     /// Get the current active model and all available configurations for an instrument
     /// </summary>

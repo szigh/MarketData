@@ -3,31 +3,139 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:MarketData.Wpf.Client.Views" 
         xmlns:viewmodels="clr-namespace:MarketData.Wpf.Client.ViewModels" 
         d:DataContext="{d:DesignInstance Type=viewmodels:ModelConfigViewModel}"
         mc:Ignorable="d"
-        Title="Model Configuration" Height="200" Width="400">
+        Title="Model Configuration" Height="450" Width="500">
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
         <Style TargetType="TextBlock">
-            <Setter Property="Margin" Value="10"/>
-            <Setter Property="FontSize" Value="18"/>
+            <Setter Property="Margin" Value="5"/>
+        </Style>
+        <Style x:Key="HeaderStyle" TargetType="TextBlock">
             <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="Margin" Value="10,10,10,5"/>
+        </Style>
+        <Style x:Key="SectionStyle" TargetType="TextBlock">
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Margin" Value="10,15,10,5"/>
         </Style>
     </Window.Resources>
+    
     <Grid Background="#555555">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+        <ScrollViewer VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="10">
+                <!-- Header -->
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding Instrument}" 
+                           Style="{StaticResource HeaderStyle}"
+                           Foreground="White"/>
 
-        <!-- Instrument Name -->
-        <TextBlock Grid.Row="0" 
-                   Text="{Binding Instrument}"/>
+                    <!--<TextBlock Text="{Binding ActiveModel, StringFormat='Active Model: {0}'}" 
+                           FontSize="14"
+                           Foreground="Yellow"
+                           Margin="10,0,10,10"/>-->
 
-        <!-- Model Type -->
-        <TextBlock Grid.Row="1" 
-                   Text="{Binding ModelTypeName}"/>
+                    <ComboBox ItemsSource="{Binding SupportedModels}" 
+                          SelectedItem="{Binding ActiveModel}"
+                          Margin="10"
+                          HorizontalAlignment="Left"
+                          Width="150"/>
+
+                </StackPanel>
+
+                <Separator Background="#777777" Margin="0,10"/>
+                
+                <!-- RandomMultiplicative Config -->
+                <StackPanel Visibility="{Binding HasRandomMultiplicative, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Random Multiplicative Configuration" 
+                               Style="{StaticResource SectionStyle}"
+                               Foreground="LightBlue"/>
+                    
+                    <Grid Margin="20,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Standard Deviation:" Foreground="White"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" 
+                                   Text="{Binding RandomMultiplicativeStdDev, StringFormat='{}{0:F6}'}" 
+                                   Foreground="White"/>
+                        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Mean:" Foreground="White"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" 
+                                   Text="{Binding RandomMultiplicativeMean, StringFormat='{}{0:F6}'}" 
+                                   Foreground="White"/>
+                    </Grid>
+                </StackPanel>
+                
+                <!-- MeanReverting Config -->
+                <StackPanel Visibility="{Binding HasMeanReverting, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Mean Reverting Configuration" 
+                               Style="{StaticResource SectionStyle}"
+                               Foreground="LightGreen"/>
+                    
+                    <Grid Margin="20,5">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+                        
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Mean:" Foreground="White"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" 
+                                   Text="{Binding MeanRevertingMean, StringFormat='{}{0:F2}'}" 
+                                   Foreground="White"/>
+                        
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Kappa (Reversion):" Foreground="White"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" 
+                                   Text="{Binding MeanRevertingKappa, StringFormat='{}{0:F6}'}" 
+                                   Foreground="White"/>
+                        
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Sigma (Volatility):" Foreground="White"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" 
+                                   Text="{Binding MeanRevertingSigma, StringFormat='{}{0:F2}'}" 
+                                   Foreground="White"/>
+                        
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="Dt (Time Step):" Foreground="White"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" 
+                                   Text="{Binding MeanRevertingDt, StringFormat='{}{0:F2}'}" 
+                                   Foreground="White"/>
+                    </Grid>
+                </StackPanel>
+                
+                <!-- Flat Config -->
+                <StackPanel Visibility="{Binding IsFlatConfigured, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Flat Configuration" 
+                               Style="{StaticResource SectionStyle}"
+                               Foreground="Gray"/>
+                    <TextBlock Text="(No parameters - price stays constant)" 
+                               Foreground="LightGray"
+                               Margin="20,5"/>
+                </StackPanel>
+                
+                <!-- RandomAdditiveWalk Config -->
+                <StackPanel Visibility="{Binding HasRandomAdditiveWalk, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="Random Additive Walk Configuration" 
+                               Style="{StaticResource SectionStyle}"
+                               Foreground="Orange"/>
+                    <TextBlock Text="{Binding WalkStepCount, StringFormat='Walk Steps: {0}'}" 
+                               Foreground="White"
+                               Margin="20,5"/>
+                </StackPanel>
+            </StackPanel>
+        </ScrollViewer>
     </Grid>
 </Window>
