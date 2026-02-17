@@ -1,7 +1,7 @@
 ﻿using FancyCandles;
 using System.Collections.ObjectModel;
 
-namespace MarketData.Wpf.Client
+namespace MarketData.Wpf.Client.FancyCandlesImplementations
 {
     internal class Candle : ICandle
     {

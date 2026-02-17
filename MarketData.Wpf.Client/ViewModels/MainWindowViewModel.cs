@@ -18,7 +18,7 @@ namespace MarketData.Wpf.Client.ViewModels
             Tabs = new ObservableCollection<InstrumentTabViewModel>();
 
             AddTabCommand = new RelayCommand(ExecuteAddTab);
-            CloseTabCommand = new RelayCommand<InstrumentTabViewModel>(ExecuteCloseTab);
+            CloseTabCommand = new RelayCommand<InstrumentTabViewModel>(ExecuteCloseTab, CanExecuteCloseTab);
 
             // Start with a single FTSE tab
             AddTab("FTSE");
@@ -68,12 +68,33 @@ namespace MarketData.Wpf.Client.ViewModels
             _ = instrumentViewModel.StartStreamingAsync();
         }
 
+        private bool CanExecuteCloseTab(InstrumentTabViewModel? tab)
+        {
+            // Prevent closing the last tab
+            return Tabs.Count > 1;
+        }
+
         private async void ExecuteCloseTab(InstrumentTabViewModel? tab)
         {
-            if (tab != null && Tabs.Contains(tab))
+            if (tab != null && Tabs.Contains(tab) && Tabs.Count > 1)
             {
                 await tab.InstrumentViewModel.StopStreamingAsync();
-                Tabs.Remove(tab);
+
+                // Re-check after await - tab might have been removed by another concurrent call
+                if (Tabs.Contains(tab) && Tabs.Count > 1)
+                {
+                    // If closing the selected tab, switch selection first to avoid UI binding issues
+                    if (SelectedTab == tab)
+                    {
+                        var currentIndex = Tabs.IndexOf(tab);
+                        // Select next tab, or previous if this is the last one
+                        SelectedTab = currentIndex < Tabs.Count - 1 
+                            ? Tabs[currentIndex + 1] 
+                            : Tabs[currentIndex - 1];
+                    }
+                    
+                    Tabs.Remove(tab);
+                }
             }
         }
 

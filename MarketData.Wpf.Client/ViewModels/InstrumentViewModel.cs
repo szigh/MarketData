@@ -2,6 +2,7 @@ using System.Windows;
 using FancyCandles;
 using Grpc.Core;
 using MarketData.Grpc;
+using MarketData.Wpf.Client.FancyCandlesImplementations;
 using MarketData.Wpf.Shared;
 
 namespace MarketData.Wpf.Client.ViewModels;
@@ -140,21 +141,6 @@ public class InstrumentViewModel : ViewModelBase
                     candle.Value, _candlePrecision));
             });
         }
-        //else if (updateLastCandle)
-        //{
-        //    var lastCandle = Candles.LastOrDefault();
-        //    if (lastCandle is not null) 
-        //    {
-        //        var updateCandle = (Candle)lastCandle;
-        //        updateCandle.C = double.Round(priceUpdate.Value, _candlePrecision);
-        //        updateCandle.t = new DateTime(priceUpdate.Timestamp);
-        //        await Application.Current.Dispatcher.InvokeAsync(() =>
-        //        {
-        //            Candles.RemoveAt(Candles.Count - 1);
-        //            Candles.Add(updateCandle);
-        //        });
-        //    }
-        //}
     }
 
     public async Task StopStreamingAsync()
