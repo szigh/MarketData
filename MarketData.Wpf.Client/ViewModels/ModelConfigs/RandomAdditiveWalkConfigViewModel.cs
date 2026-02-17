@@ -18,6 +18,11 @@ public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
 
     public ObservableCollection<WalkStepViewModel> WalkSteps { get; }
     public int StepCount => WalkSteps.Count;
+
+    protected override Task<bool> TryExecutePublishConfigChangesAsync()
+    {
+        throw new NotImplementedException();
+    }
 }
 
 public class WalkStepViewModel

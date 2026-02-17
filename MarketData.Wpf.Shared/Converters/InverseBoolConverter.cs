@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Windows.Data;
 
-namespace MarketData.Wpf.Shared;
+namespace MarketData.Wpf.Shared.Converters;
 
 /// <summary>
 /// Inverts a boolean value

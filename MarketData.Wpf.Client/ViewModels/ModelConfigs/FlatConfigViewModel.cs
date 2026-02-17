@@ -6,4 +6,9 @@ public class FlatConfigViewModel : ModelConfigViewModelBase
         : base(instrumentName)
     {
     }
+
+    protected override Task<bool> TryExecutePublishConfigChangesAsync()
+    {
+        return Task.FromResult(true);
+    }
 }

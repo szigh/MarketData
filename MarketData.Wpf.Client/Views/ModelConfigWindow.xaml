@@ -6,13 +6,14 @@
         xmlns:viewmodels="clr-namespace:MarketData.Wpf.Client.ViewModels" 
         xmlns:modelVms="clr-namespace:MarketData.Wpf.Client.ViewModels.ModelConfigs"
         xmlns:modelViews="clr-namespace:MarketData.Wpf.Client.Views.ModelConfigs"
-        xmlns:shared="clr-namespace:MarketData.Wpf.Shared;assembly=MarketData.Wpf.Shared"
+        xmlns:shared="clr-namespace:MarketData.Wpf.Shared.Converters;assembly=MarketData.Wpf.Shared"
         d:DataContext="{d:DesignInstance Type=viewmodels:ModelConfigViewModel}"
         mc:Ignorable="d"
         Title="Model Configuration" Height="450" Width="500">
     <Window.Resources>
         <!-- Converters -->
         <shared:InverseBoolConverter x:Key="InverseBoolConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
 
         <!-- DataTemplate for RandomMultiplicative -->
         <DataTemplate DataType="{x:Type modelVms:RandomMultiplicativeConfigViewModel}">
@@ -58,6 +59,15 @@
 
                 <!-- Model-specific configuration - DataTemplate automatically selected -->
                 <ContentControl Content="{Binding ActiveConfigViewModel}"/>
+
+                <Button Content="Publish Changes"
+                        Command="{Binding PublishConfigChanges}"
+                        Margin="10"
+                        HorizontalAlignment="Right"
+                        Width="150"
+                        Visibility="{Binding ActiveConfigViewModel.IsModified, 
+                    Converter={StaticResource BoolToVisibilityConverter}}"
+                        />
 
             </StackPanel>
         </ScrollViewer>

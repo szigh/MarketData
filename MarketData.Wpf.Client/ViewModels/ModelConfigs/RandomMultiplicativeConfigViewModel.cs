@@ -14,4 +14,9 @@ public class RandomMultiplicativeConfigViewModel : ModelConfigViewModelBase
 
     public double StandardDeviation => _config.StandardDeviation;
     public double Mean => _config.Mean;
+
+    protected override Task<bool> TryExecutePublishConfigChangesAsync()
+    {
+        throw new NotImplementedException();
+    }
 }

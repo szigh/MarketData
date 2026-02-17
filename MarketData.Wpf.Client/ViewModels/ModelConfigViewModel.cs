@@ -3,6 +3,7 @@ using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using MarketData.Wpf.Shared;
 using System.Windows;
+using System.Windows.Input;
 
 namespace MarketData.Wpf.Client.ViewModels;
 
@@ -31,7 +32,17 @@ public class ModelConfigViewModel : ViewModelBase
 
         // Create the appropriate child ViewModel based on active model
         UpdateActiveConfigViewModel();
+
+        PublishConfigChanges = new AsyncRelayCommand(async () =>
+        {
+            if (_activeConfigViewModel != null)
+            {
+                await _activeConfigViewModel.ExecutePublishConfigChangesSafe();
+            }
+        });
     }
+
+    public ICommand PublishConfigChanges { get; }
 
     public string Instrument => _instrument;
 

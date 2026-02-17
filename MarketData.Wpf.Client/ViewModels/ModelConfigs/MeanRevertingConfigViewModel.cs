@@ -16,4 +16,9 @@ public class MeanRevertingConfigViewModel : ModelConfigViewModelBase
     public double Kappa => _config.Kappa;
     public double Sigma => _config.Sigma;
     public double Dt => _config.Dt;
+
+    protected override Task<bool> TryExecutePublishConfigChangesAsync()
+    {
+        throw new NotImplementedException();
+    }
 }
