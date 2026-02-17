@@ -11,7 +11,7 @@ builder.Services.AddDbContext<MarketDataContext>(options =>
 builder.Services.Configure<MarketDataGeneratorOptions>(
     builder.Configuration.GetSection(MarketDataGeneratorOptions.SectionName));
 
-builder.Services.AddSingleton<InstrumentModelManager>();
+builder.Services.AddSingleton<IInstrumentModelManager, InstrumentModelManager>();
 
 builder.Services.AddHostedService<MarketDataGeneratorService>();
 

@@ -11,9 +11,9 @@ namespace MarketData.Controllers;
 [Route("api/[controller]")]
 public class ModelConfigurationsController : ControllerBase
 {
-    private readonly InstrumentModelManager _modelManager;
+    private readonly IInstrumentModelManager _modelManager;
 
-    public ModelConfigurationsController(InstrumentModelManager modelManager)
+    public ModelConfigurationsController(IInstrumentModelManager modelManager)
     {
         _modelManager = modelManager;
     }

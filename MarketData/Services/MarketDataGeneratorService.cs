@@ -11,7 +11,7 @@ public class MarketDataGeneratorService : BackgroundService
     private readonly MarketDataGeneratorOptions _options;
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<MarketDataGeneratorService> _logger;
-    private readonly InstrumentModelManager _modelManager;
+    private readonly IInstrumentModelManager _modelManager;
 
     private readonly Dictionary<string, IPriceSimulator> _priceSimulators = [];
 
@@ -23,9 +23,9 @@ public class MarketDataGeneratorService : BackgroundService
     private readonly List<Instrument> _instruments = [];
 
     public MarketDataGeneratorService(
+        IInstrumentModelManager modelManager,
         IServiceProvider serviceProvider,
         ILogger<MarketDataGeneratorService> logger,
-        InstrumentModelManager modelManager,
         IOptions<MarketDataGeneratorOptions> options)
     {
         _serviceProvider = serviceProvider;
@@ -33,25 +33,18 @@ public class MarketDataGeneratorService : BackgroundService
         _modelManager = modelManager;
         _options = options.Value;
 
+        // Load and initialize all instruments efficiently in a single batch
+        var instrumentDict = _modelManager.LoadAndInitializeAllInstrumentsAsync()
+            .GetAwaiter().GetResult();
+
+        _instruments = instrumentDict.Values.ToList();
+
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
-
-        _instruments = dbContext.Instruments
-            .Include(i => i.RandomMultiplicativeConfig)
-            .Include(i => i.MeanRevertingConfig)
-            .Include(i => i.FlatConfig)
-            .Include(i => i.RandomAdditiveWalkConfig)
-            .ToList();
 
         // Load initial prices and create simulators for each instrument
         foreach (var instrument in _instruments)
         {
-            // Ensure model type is set
-            _modelManager.EnsureModelTypeAsync(instrument, dbContext).GetAwaiter().GetResult();
-
-            // Ensure configuration exists for the model type
-            _modelManager.EnsureModelConfigurationAsync(instrument, dbContext).GetAwaiter().GetResult();
-
             var latestPrice = dbContext.Prices
                 .AsNoTracking()
                 .Where(p => p.Instrument == instrument.Name)

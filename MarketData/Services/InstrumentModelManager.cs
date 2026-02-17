@@ -12,7 +12,7 @@ namespace MarketData.Services;
 /// This service handles all business logic for instrument models and can be used by
 /// both HTTP controllers and gRPC services.
 /// </summary>
-public class InstrumentModelManager
+public class InstrumentModelManager : IInstrumentModelManager
 {
     private readonly IServiceProvider _serviceProvider;
     private readonly ILogger<InstrumentModelManager> _logger;
@@ -224,6 +224,32 @@ public class InstrumentModelManager
         ["RandomMultiplicative", "MeanReverting", "Flat", "RandomAdditiveWalk"];
 
     #region Configuration Management Methods
+
+    /// <summary>
+    /// Loads all instruments with configurations and ensures they are properly initialized.
+    /// This is an efficient batch operation that uses a single DbContext.
+    /// </summary>
+    public async Task<Dictionary<string, Instrument>> LoadAndInitializeAllInstrumentsAsync()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+
+        var instruments = await context.Instruments
+            .Include(i => i.RandomMultiplicativeConfig)
+            .Include(i => i.MeanRevertingConfig)
+            .Include(i => i.FlatConfig)
+            .Include(i => i.RandomAdditiveWalkConfig)
+            .ToListAsync();
+
+        // Ensure all instruments are properly configured using the same context
+        foreach (var instrument in instruments)
+        {
+            await EnsureModelTypeAsync(instrument, context);
+            await EnsureModelConfigurationAsync(instrument, context);
+        }
+
+        return instruments.ToDictionary(i => i.Name, i => i);
+    }
 
     /// <summary>
     /// Gets an instrument with all its model configurations loaded
