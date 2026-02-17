@@ -1,5 +1,6 @@
-﻿using MarketData.Grpc;
+using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
+using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using MarketData.Wpf.Shared;
 using System.Windows;
 
@@ -14,6 +15,7 @@ public class ModelConfigViewModel : ViewModelBase
     private ConfigurationsResponse _config;
     private string _activeModel;
     private bool _isSwitchingModel;
+    private ModelConfigViewModelBase? _activeConfigViewModel;
 
     public ModelConfigViewModel(
         string instrument,
@@ -26,6 +28,9 @@ public class ModelConfigViewModel : ViewModelBase
         _config = config;
         _activeModel = config.ActiveModel;
         _modelConfigService = modelConfigService;
+
+        // Create the appropriate child ViewModel based on active model
+        UpdateActiveConfigViewModel();
     }
 
     public string Instrument => _instrument;
@@ -52,12 +57,25 @@ public class ModelConfigViewModel : ViewModelBase
 
     public string[] SupportedModels => _supportedModels;
 
+    /// <summary>
+    /// The ViewModel for the currently active model's configuration
+    /// </summary>
+    public ModelConfigViewModelBase? ActiveConfigViewModel
+    {
+        get => _activeConfigViewModel;
+        private set => SetProperty(ref _activeConfigViewModel, value);
+    }
+
     private async Task SwitchModelAsync(string newModel, string oldModel)
     {
         IsSwitchingModel = true;
         try
         {
-            var response = await _modelConfigService.SwitchModelAsync(_instrument, newModel);
+            await _modelConfigService.SwitchModelAsync(_instrument, newModel);
+            
+            // Reload configuration to get the new model's config
+            _config = await _modelConfigService.GetConfigurationsAsync(_instrument);
+            UpdateActiveConfigViewModel();
         }
         catch (Exception ex)
         {
@@ -77,19 +95,23 @@ public class ModelConfigViewModel : ViewModelBase
         }
     }
 
-    // Expose configuration details
-    public bool HasRandomMultiplicative => _config.RandomMultiplicative != null;
-    public double? RandomMultiplicativeStdDev => _config.RandomMultiplicative?.StandardDeviation;
-    public double? RandomMultiplicativeMean => _config.RandomMultiplicative?.Mean;
-
-    public bool HasMeanReverting => _config.MeanReverting != null;
-    public double? MeanRevertingMean => _config.MeanReverting?.Mean;
-    public double? MeanRevertingKappa => _config.MeanReverting?.Kappa;
-    public double? MeanRevertingSigma => _config.MeanReverting?.Sigma;
-    public double? MeanRevertingDt => _config.MeanReverting?.Dt;
-
-    public bool IsFlatConfigured => _config.FlatConfigured;
-
-    public bool HasRandomAdditiveWalk => _config.RandomAdditiveWalk != null;
-    public int? WalkStepCount => _config.RandomAdditiveWalk?.WalkSteps.Count;
+    private void UpdateActiveConfigViewModel()
+    {
+        ActiveConfigViewModel = _activeModel switch
+        {
+            "RandomMultiplicative" when _config.RandomMultiplicative != null =>
+                new RandomMultiplicativeConfigViewModel(_instrument, _config.RandomMultiplicative),
+            
+            "MeanReverting" when _config.MeanReverting != null =>
+                new MeanRevertingConfigViewModel(_instrument, _config.MeanReverting),
+            
+            "Flat" =>
+                new FlatConfigViewModel(_instrument),
+            
+            "RandomAdditiveWalk" when _config.RandomAdditiveWalk != null =>
+                new RandomAdditiveWalkConfigViewModel(_instrument, _config.RandomAdditiveWalk),
+            
+            _ => null
+        };
+    }
 }

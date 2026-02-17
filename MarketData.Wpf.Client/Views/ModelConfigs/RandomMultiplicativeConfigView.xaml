@@ -1,0 +1,45 @@
+<UserControl x:Class="MarketData.Wpf.Client.Views.ModelConfigs.RandomMultiplicativeConfigView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:viewmodels="clr-namespace:MarketData.Wpf.Client.ViewModels.ModelConfigs"
+             d:DataContext="{d:DesignInstance Type=viewmodels:RandomMultiplicativeConfigViewModel}"
+             mc:Ignorable="d">
+    <StackPanel>
+        <TextBlock Text="Random Multiplicative Configuration" 
+                   FontWeight="SemiBold"
+                   FontSize="14"
+                   Foreground="LightBlue"
+                   Margin="10,15,10,5"/>
+        
+        <Grid Margin="20,5">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="150"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            
+            <TextBlock Grid.Row="0" Grid.Column="0" 
+                       Text="Standard Deviation:" 
+                       Foreground="White"
+                       Margin="5"/>
+            <TextBlock Grid.Row="0" Grid.Column="1" 
+                       Text="{Binding StandardDeviation, StringFormat='{}{0:F6}'}" 
+                       Foreground="White"
+                       Margin="5"/>
+            
+            <TextBlock Grid.Row="1" Grid.Column="0" 
+                       Text="Mean:" 
+                       Foreground="White"
+                       Margin="5"/>
+            <TextBlock Grid.Row="1" Grid.Column="1" 
+                       Text="{Binding Mean, StringFormat='{}{0:F6}'}" 
+                       Foreground="White"
+                       Margin="5"/>
+        </Grid>
+    </StackPanel>
+</UserControl>
