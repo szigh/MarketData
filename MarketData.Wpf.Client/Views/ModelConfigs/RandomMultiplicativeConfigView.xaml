@@ -27,7 +27,7 @@
                        Text="Standard Deviation:" 
                        Foreground="White"
                        Margin="5"/>
-            <TextBlock Grid.Row="0" Grid.Column="1" 
+            <TextBox   Grid.Row="0" Grid.Column="1" 
                        Text="{Binding StandardDeviation, StringFormat='{}{0:F6}'}" 
                        Foreground="White"
                        Margin="5"/>
@@ -36,7 +36,7 @@
                        Text="Mean:" 
                        Foreground="White"
                        Margin="5"/>
-            <TextBlock Grid.Row="1" Grid.Column="1" 
+            <TextBox   Grid.Row="1" Grid.Column="1" 
                        Text="{Binding Mean, StringFormat='{}{0:F6}'}" 
                        Foreground="White"
                        Margin="5"/>
