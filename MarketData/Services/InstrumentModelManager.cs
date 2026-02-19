@@ -486,7 +486,7 @@ public class InstrumentModelManager : IInstrumentModelManager
     {
         if (tickIntervalMs <= 0)
         {
-            throw new ArgumentException("Tick interval must be positive", nameof(tickIntervalMs));
+            throw new ArgumentException("Tick interval must be a positive integer", nameof(tickIntervalMs));
         }
 
         using var scope = _serviceProvider.CreateScope();
