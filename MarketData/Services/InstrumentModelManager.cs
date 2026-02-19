@@ -409,7 +409,7 @@ public class InstrumentModelManager : IInstrumentModelManager
         string instrumentName,
         string walkStepsJson)
     {
-        // Validate JSON can be deserialized
+        // Validate JSON can be deserialized and probability constraints are met
         try
         {
             var steps = JsonSerializer.Deserialize<List<RandomWalkStep>>(walkStepsJson);
@@ -417,10 +417,19 @@ public class InstrumentModelManager : IInstrumentModelManager
             {
                 throw new ArgumentException("Walk steps cannot be empty", nameof(walkStepsJson));
             }
+
+            // Validate probability constraints by constructing RandomWalkSteps
+            // This ensures invalid configs are rejected at write-time rather than when the simulator is constructed
+            _ = new RandomWalkSteps(steps);
         }
         catch (JsonException ex)
         {
             throw new ArgumentException("Invalid walk steps JSON", nameof(walkStepsJson), ex);
+        }
+        catch (ArgumentException ex) when (ex.ParamName != nameof(walkStepsJson))
+        {
+            // Re-throw validation errors from RandomWalkSteps with the correct parameter name
+            throw new ArgumentException(ex.Message, nameof(walkStepsJson), ex);
         }
 
         using var scope = _serviceProvider.CreateScope();
