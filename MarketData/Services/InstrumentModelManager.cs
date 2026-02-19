@@ -469,6 +469,11 @@ public class InstrumentModelManager : IInstrumentModelManager
 
     public async Task<int> UpdateTickIntervalAsync(string instrumentName, int tickIntervalMs)
     {
+        if (tickIntervalMs <= 0)
+        {
+            throw new ArgumentException("Tick interval must be positive", nameof(tickIntervalMs));
+        }
+
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
 
