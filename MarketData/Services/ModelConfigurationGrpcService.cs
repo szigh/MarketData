@@ -1,6 +1,5 @@
 using Grpc.Core;
 using MarketData.Grpc;
-using MarketData.Services;
 
 namespace MarketData.Services;
 

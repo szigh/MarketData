@@ -206,10 +206,9 @@ public class MarketDataGeneratorService : BackgroundService
             Value = newPrice,
             Timestamp = DateTime.UtcNow
         };
-#pragma warning disable CA1873 // Avoid potentially expensive logging
+
         _logger.LogInformation("Generated price for {Instrument}: {Price} (previous: {PreviousPrice})",
             instrumentName, newPrice, currentPrice);
-#pragma warning restore CA1873 // Avoid potentially expensive logging
 
         await PersistPriceAsync(price, ct);
         await PublishPriceAsync(price);

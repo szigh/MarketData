@@ -25,6 +25,7 @@ public class ModelConfigurationChangedEventArgs : EventArgs
 public class InstrumentModelManager : IInstrumentModelManager
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly IPriceSimulatorFactory _simulatorFactory;
     private readonly ILogger<InstrumentModelManager> _logger;
     private const string DefaultModelType = "Flat";
 
@@ -36,9 +37,11 @@ public class InstrumentModelManager : IInstrumentModelManager
 
     public InstrumentModelManager(
         IServiceProvider serviceProvider,
+        IPriceSimulatorFactory simulatorFactory,
         ILogger<InstrumentModelManager> logger)
     {
         _serviceProvider = serviceProvider;
+        _simulatorFactory = simulatorFactory;
         _logger = logger;
     }
 
@@ -169,75 +172,7 @@ public class InstrumentModelManager : IInstrumentModelManager
     /// </summary>
     public IPriceSimulator CreatePriceSimulator(Instrument instrument)
     {
-        if (string.IsNullOrWhiteSpace(instrument.ModelType))
-        {
-            throw new InvalidOperationException(
-                $"Instrument '{instrument.Name}' has no model type set. " +
-                $"Call EnsureModelTypeAsync first.");
-        }
-
-        return instrument.ModelType switch
-        {
-            "RandomMultiplicative" => CreateRandomMultiplicativeSimulator(instrument),
-            "MeanReverting" => CreateMeanRevertingSimulator(instrument),
-            "Flat" => CreateFlatSimulator(instrument),
-            "RandomAdditiveWalk" => CreateRandomAdditiveWalkSimulator(instrument),
-            _ => throw new InvalidOperationException(
-                $"Unknown model type '{instrument.ModelType}' for instrument '{instrument.Name}'. " +
-                $"Valid types are: RandomMultiplicative, MeanReverting, Flat, RandomAdditiveWalk")
-        };
-    }
-
-    private IPriceSimulator CreateRandomMultiplicativeSimulator(Instrument instrument)
-    {
-        var config = instrument.RandomMultiplicativeConfig
-            ?? throw new InvalidOperationException(
-                $"No RandomMultiplicativeConfig found for instrument '{instrument.Name}'. " +
-                $"Call EnsureModelConfigurationAsync first.");
-
-        _logger.LogDebug(
-            "Creating RandomMultiplicativeProcess for '{InstrumentName}' with StdDev={StdDev}, Mean={Mean}",
-            instrument.Name, config.StandardDeviation, config.Mean);
-
-        return new RandomMultiplicativeProcess(config.StandardDeviation, config.Mean);
-    }
-
-    private IPriceSimulator CreateMeanRevertingSimulator(Instrument instrument)
-    {
-        var config = instrument.MeanRevertingConfig
-            ?? throw new InvalidOperationException(
-                $"No MeanRevertingConfig found for instrument '{instrument.Name}'. " +
-                $"Call EnsureModelConfigurationAsync first.");
-
-        _logger.LogDebug(
-            "Creating MeanRevertingProcess for '{InstrumentName}' with Mean={Mean}, Kappa={Kappa}, Sigma={Sigma}, Dt={Dt}",
-            instrument.Name, config.Mean, config.Kappa, config.Sigma, config.Dt);
-
-        return new MeanRevertingProcess(config.Mean, config.Kappa, config.Sigma, config.Dt);
-    }
-
-    private IPriceSimulator CreateFlatSimulator(Instrument instrument)
-    {
-        _logger.LogDebug("Creating Flat simulator for '{InstrumentName}'", instrument.Name);
-        return new Flat();
-    }
-
-    private IPriceSimulator CreateRandomAdditiveWalkSimulator(Instrument instrument)
-    {
-        var config = instrument.RandomAdditiveWalkConfig
-            ?? throw new InvalidOperationException(
-                $"No RandomAdditiveWalkConfig found for instrument '{instrument.Name}'. " +
-                $"Call EnsureModelConfigurationAsync first.");
-
-        var walkSteps = JsonSerializer.Deserialize<List<RandomWalkStep>>(config.WalkStepsJson)
-            ?? throw new InvalidOperationException(
-                $"Failed to deserialize WalkStepsJson for instrument '{instrument.Name}'.");
-
-        _logger.LogDebug(
-            "Creating RandomAdditiveWalk for '{InstrumentName}' with {StepCount} steps",
-            instrument.Name, walkSteps.Count);
-
-        return new RandomAdditiveWalk(new RandomWalkSteps(walkSteps));
+        return _simulatorFactory.CreateSimulator(instrument);
     }
 
     /// <summary>
