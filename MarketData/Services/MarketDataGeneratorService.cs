@@ -35,12 +35,18 @@ public class MarketDataGeneratorService : BackgroundService
 
         // Subscribe to configuration changes for hot reload
         _modelManager.ConfigurationChanged += OnConfigurationChanged;
+    }
+
+    /// <summary>
+    /// Initializes instruments and price simulators from database
+    /// </summary>
+    private async Task InitializeAsync(CancellationToken ct)
+    {
+        _logger.LogInformation("Initializing instruments and price simulators...");
 
         // Load and initialize all instruments efficiently in a single batch
-        var instrumentDict = _modelManager.LoadAndInitializeAllInstrumentsAsync()
-            .GetAwaiter().GetResult();
-
-        _instruments = instrumentDict.Values.ToList();
+        var instrumentDict = await _modelManager.LoadAndInitializeAllInstrumentsAsync();
+        _instruments.AddRange(instrumentDict.Values);
 
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
@@ -48,11 +54,11 @@ public class MarketDataGeneratorService : BackgroundService
         // Load initial prices and create simulators for each instrument
         foreach (var instrument in _instruments)
         {
-            var latestPrice = dbContext.Prices
+            var latestPrice = await dbContext.Prices
                 .AsNoTracking()
                 .Where(p => p.Instrument == instrument.Name)
                 .OrderByDescending(p => p.Timestamp)
-                .FirstOrDefault()
+                .FirstOrDefaultAsync(ct)
                     ?? throw new InvalidOperationException(
                         $"No initial price found for instrument '{instrument.Name}'. " +
                         $"Please seed the database with an initial price.");
@@ -60,6 +66,8 @@ public class MarketDataGeneratorService : BackgroundService
             _lastPrices[instrument.Name] = latestPrice.Value;
             _priceSimulators[instrument.Name] = _modelManager.CreatePriceSimulator(instrument);
         }
+
+        _logger.LogInformation("Initialized {Count} instruments", _instruments.Count);
     }
 
     /// <summary>
@@ -129,6 +137,16 @@ public class MarketDataGeneratorService : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken ct)
     {
         _logger.LogInformation("Market Data Generator Service starting...");
+
+        try
+        {
+            await InitializeAsync(ct);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to initialize Market Data Generator Service");
+            throw;
+        }
 
         while (!ct.IsCancellationRequested)
         {
