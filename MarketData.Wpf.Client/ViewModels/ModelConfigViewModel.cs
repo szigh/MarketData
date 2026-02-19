@@ -11,6 +11,7 @@ namespace MarketData.Wpf.Client.ViewModels;
 public class ModelConfigViewModel : ViewModelBase
 {
     private readonly ModelConfigService _modelConfigService;
+    private readonly ModelConfigViewModelFactory _viewModelFactory;
     private readonly string _instrument;
     private readonly string[] _supportedModels;
 
@@ -34,6 +35,7 @@ public class ModelConfigViewModel : ViewModelBase
         _activeModel = config.ActiveModel;
         _tickIntervalMs = config.TickIntervalMs;
         _modelConfigService = modelConfigService;
+        _viewModelFactory = new ModelConfigViewModelFactory(instrument, modelConfigService);
 
         // Create the appropriate child ViewModel based on active model
         UpdateActiveConfigViewModel();
@@ -195,21 +197,6 @@ public class ModelConfigViewModel : ViewModelBase
 
     private void UpdateActiveConfigViewModel()
     {
-        ActiveConfigViewModel = _activeModel switch
-        {
-            "RandomMultiplicative" when _config.RandomMultiplicative != null =>
-                new RandomMultiplicativeConfigViewModel(_instrument, _config.RandomMultiplicative, _modelConfigService),
-
-            "MeanReverting" when _config.MeanReverting != null =>
-                new MeanRevertingConfigViewModel(_instrument, _config.MeanReverting, _modelConfigService),
-
-            "Flat" =>
-                new FlatConfigViewModel(_instrument),
-
-            "RandomAdditiveWalk" when _config.RandomAdditiveWalk != null =>
-                new RandomAdditiveWalkConfigViewModel(_instrument, _config.RandomAdditiveWalk, _modelConfigService),
-
-            _ => null
-        };
+        ActiveConfigViewModel = _viewModelFactory.Create(_activeModel, _config);
     }
 }
