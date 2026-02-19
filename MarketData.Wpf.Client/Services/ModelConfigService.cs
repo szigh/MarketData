@@ -5,10 +5,11 @@ using Microsoft.Extensions.Options;
 
 namespace MarketData.Wpf.Client.Services;
 
-public class ModelConfigService : IModelConfigService
+public class ModelConfigService : IModelConfigService, IDisposable
 {
     private readonly GrpcChannel _channel;
     private readonly ModelConfigurationService.ModelConfigurationServiceClient _client;
+    private bool _disposed;
 
     public ModelConfigService(IOptions<GrpcSettings> grpcSettings)
     {
@@ -101,6 +102,19 @@ public class ModelConfigService : IModelConfigService
 
     public void Dispose()
     {
-        _channel?.Dispose();
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _channel?.Dispose();
+            }
+            _disposed = true;
+        }
     }
 }
