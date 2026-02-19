@@ -1,6 +1,7 @@
 ﻿using System.Windows;
 using MarketData.Client.Shared.Configuration;
 using MarketData.Grpc;
+using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.ViewModels;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -40,6 +41,9 @@ namespace MarketData.Wpf.Client
                 var grpcSettings = serviceProvider.GetRequiredService<IOptions<GrpcSettings>>().Value;
                 options.Address = new Uri(grpcSettings.ServerUrl);
             });
+
+            services.AddSingleton<IModelConfigService, ModelConfigService>();
+            services.AddTransient<InstrumentViewModelFactory>();
 
             services.AddSingleton<MainWindowViewModel>();
             services.AddSingleton<MainWindow>();

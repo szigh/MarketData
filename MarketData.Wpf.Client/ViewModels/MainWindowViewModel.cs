@@ -1,20 +1,19 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
-using MarketData.Grpc;
 using MarketData.Wpf.Shared;
 
 namespace MarketData.Wpf.Client.ViewModels
 {
     public class MainWindowViewModel : ViewModelBase
     {
-        private readonly MarketDataService.MarketDataServiceClient _grpcClient;
+        private readonly InstrumentViewModelFactory _instrumentViewModelFactory;
         private string _title = "Market Data Client";
         private ObservableCollection<InstrumentTabViewModel> _tabs;
         private InstrumentTabViewModel? _selectedTab;
 
-        public MainWindowViewModel(MarketDataService.MarketDataServiceClient grpcClient)
+        public MainWindowViewModel(InstrumentViewModelFactory instrumentViewModelFactory)
         {
-            _grpcClient = grpcClient;
+            _instrumentViewModelFactory = instrumentViewModelFactory;
             _tabs = [];
 
             AddTabCommand = new RelayCommand(ExecuteAddTab);
@@ -60,7 +59,7 @@ namespace MarketData.Wpf.Client.ViewModels
 
         private void AddTab(string instrumentName)
         {
-            var instrumentViewModel = new InstrumentViewModel(_grpcClient, instrumentName);
+            var instrumentViewModel = _instrumentViewModelFactory.Create(instrumentName);
             var tabViewModel = new InstrumentTabViewModel(instrumentViewModel);
             Tabs.Add(tabViewModel);
             SelectedTab = tabViewModel;

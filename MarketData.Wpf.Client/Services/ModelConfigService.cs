@@ -1,5 +1,7 @@
 ﻿using Grpc.Net.Client;
+using MarketData.Client.Shared.Configuration;
 using MarketData.Grpc;
+using Microsoft.Extensions.Options;
 
 namespace MarketData.Wpf.Client.Services;
 
@@ -8,9 +10,9 @@ public class ModelConfigService : IModelConfigService
     private readonly GrpcChannel _channel;
     private readonly ModelConfigurationService.ModelConfigurationServiceClient _client;
 
-    public ModelConfigService(string serverAddress)
+    public ModelConfigService(IOptions<GrpcSettings> grpcSettings)
     {
-        _channel = GrpcChannel.ForAddress(serverAddress);
+        _channel = GrpcChannel.ForAddress(grpcSettings.Value.ServerUrl);
         _client = new ModelConfigurationService.ModelConfigurationServiceClient(_channel);
     }
 

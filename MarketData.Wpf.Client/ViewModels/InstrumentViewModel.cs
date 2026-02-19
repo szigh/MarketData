@@ -25,15 +25,17 @@ public class InstrumentViewModel : ViewModelBase
     private CandlesSource _candles;
     private bool _isStreaming;
 
-    public InstrumentViewModel(MarketDataService.MarketDataServiceClient grpcClient, string instrumentName)
+    public InstrumentViewModel(
+        MarketDataService.MarketDataServiceClient grpcClient, 
+        IModelConfigService modelConfigService,
+        string instrumentName)
     {
         _grpcClient = grpcClient;
+        _modelConfigService = modelConfigService;
+
         _instrument = instrumentName;
         Price = "#.##";
         Timestamp = string.Empty;
-
-        //TODO use config for server address
-        _modelConfigService = new ModelConfigService("https://localhost:7264");
 
         ModelConfigCommand = new AsyncRelayCommand(OpenModelConfigAsync);
 
