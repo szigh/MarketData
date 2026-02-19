@@ -13,7 +13,7 @@ namespace MarketData.Wpf.Client.ViewModels;
 public class InstrumentViewModel : ViewModelBase
 {
     private readonly MarketDataService.MarketDataServiceClient _grpcClient;
-    private readonly ModelConfigService _modelConfigService;
+    private readonly IModelConfigService _modelConfigService;
     private const TimeFrame _chartTimeFrame = TimeFrame.S10;
     private readonly CandleBuilder<double> _candleBuilder;
     private const int _candlePrecision = 2;

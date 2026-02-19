@@ -3,7 +3,7 @@ using MarketData.Grpc;
 
 namespace MarketData.Wpf.Client.Services;
 
-public class ModelConfigService : IDisposable
+public class ModelConfigService : IModelConfigService
 {
     private readonly GrpcChannel _channel;
     private readonly ModelConfigurationService.ModelConfigurationServiceClient _client;

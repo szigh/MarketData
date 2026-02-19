@@ -9,9 +9,9 @@ namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 public class ModelConfigViewModelFactory
 {
     private readonly string _instrumentName;
-    private readonly ModelConfigService _modelConfigService;
+    private readonly IModelConfigService _modelConfigService;
 
-    public ModelConfigViewModelFactory(string instrumentName, ModelConfigService modelConfigService)
+    public ModelConfigViewModelFactory(string instrumentName, IModelConfigService modelConfigService)
     {
         _instrumentName = instrumentName;
         _modelConfigService = modelConfigService;

@@ -10,7 +10,7 @@ namespace MarketData.Wpf.Client.ViewModels;
 
 public class ModelConfigViewModel : ViewModelBase
 {
-    private readonly ModelConfigService _modelConfigService;
+    private readonly IModelConfigService _modelConfigService;
     private readonly ModelConfigViewModelFactory _viewModelFactory;
     private readonly string _instrument;
     private readonly string[] _supportedModels;
@@ -25,7 +25,7 @@ public class ModelConfigViewModel : ViewModelBase
 
     public ModelConfigViewModel(
         string instrument,
-        ModelConfigService modelConfigService,
+        IModelConfigService modelConfigService,
         ConfigurationsResponse config,
         SupportedModelsResponse supportedModels)
     {

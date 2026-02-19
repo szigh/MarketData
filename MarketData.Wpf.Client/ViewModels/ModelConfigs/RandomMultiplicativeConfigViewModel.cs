@@ -5,12 +5,12 @@ namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 
 public class RandomMultiplicativeConfigViewModel : ModelConfigViewModelBase
 {
-    private readonly ModelConfigService _modelConfigService;
+    private readonly IModelConfigService _modelConfigService;
     private double _standardDeviation;
     private double _mean;
 
     public RandomMultiplicativeConfigViewModel(string instrumentName, RandomMultiplicativeConfigData config,
-        ModelConfigService modelConfigService)
+        IModelConfigService modelConfigService)
         : base(instrumentName)
     {
         _mean = config.Mean;

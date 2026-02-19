@@ -8,11 +8,11 @@ namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 
 public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
 {
-    private readonly ModelConfigService _modelConfigService;
+    private readonly IModelConfigService _modelConfigService;
     private string _validationMessage = string.Empty;
 
     public RandomAdditiveWalkConfigViewModel(string instrumentName, RandomAdditiveWalkConfigData config,
-        ModelConfigService modelConfigService)
+        IModelConfigService modelConfigService)
         : base(instrumentName)
     {
         _modelConfigService = modelConfigService;

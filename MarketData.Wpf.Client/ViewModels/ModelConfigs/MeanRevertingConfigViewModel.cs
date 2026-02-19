@@ -5,7 +5,7 @@ namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 
 public class MeanRevertingConfigViewModel : ModelConfigViewModelBase
 {
-    private readonly ModelConfigService _modelConfigService;
+    private readonly IModelConfigService _modelConfigService;
 
     private double _mean;
     private double _kappa;
@@ -13,7 +13,7 @@ public class MeanRevertingConfigViewModel : ModelConfigViewModelBase
     private double _dt;
 
     public MeanRevertingConfigViewModel(string instrumentName, MeanRevertingConfigData config, 
-        ModelConfigService modelConfigService)
+        IModelConfigService modelConfigService)
         : base(instrumentName)
     {
         _mean = config.Mean;
