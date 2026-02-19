@@ -111,17 +111,17 @@ public class ModelConfigViewModel : ViewModelBase
         ActiveConfigViewModel = _activeModel switch
         {
             "RandomMultiplicative" when _config.RandomMultiplicative != null =>
-                new RandomMultiplicativeConfigViewModel(_instrument, _config.RandomMultiplicative),
-            
+                new RandomMultiplicativeConfigViewModel(_instrument, _config.RandomMultiplicative, _modelConfigService),
+
             "MeanReverting" when _config.MeanReverting != null =>
-                new MeanRevertingConfigViewModel(_instrument, _config.MeanReverting),
-            
+                new MeanRevertingConfigViewModel(_instrument, _config.MeanReverting, _modelConfigService),
+
             "Flat" =>
                 new FlatConfigViewModel(_instrument),
-            
+
             "RandomAdditiveWalk" when _config.RandomAdditiveWalk != null =>
-                new RandomAdditiveWalkConfigViewModel(_instrument, _config.RandomAdditiveWalk),
-            
+                new RandomAdditiveWalkConfigViewModel(_instrument, _config.RandomAdditiveWalk, _modelConfigService),
+
             _ => null
         };
     }

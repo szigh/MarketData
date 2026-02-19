@@ -67,6 +67,27 @@ public class ModelConfigService : IDisposable
             });
     }
 
+    public async Task UpdateRandomAdditiveWalkConfigAsync(
+        string instrumentName,
+        IEnumerable<(double probability, double stepValue)> walkSteps)
+    {
+        var request = new UpdateRandomAdditiveWalkRequest
+        {
+            InstrumentName = instrumentName
+        };
+
+        foreach (var (probability, stepValue) in walkSteps)
+        {
+            request.WalkSteps.Add(new WalkStep
+            {
+                Probability = probability,
+                StepValue = stepValue
+            });
+        }
+
+        await _client.UpdateRandomAdditiveWalkConfigAsync(request);
+    }
+
     public void Dispose()
     {
         _channel?.Dispose();

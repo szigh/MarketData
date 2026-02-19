@@ -9,7 +9,7 @@ namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 public abstract class ModelConfigViewModelBase : ViewModelBase
 {
     protected string _instrumentName;
-    protected bool _isModified = true;
+    protected bool _isModified = false;
 
     protected ModelConfigViewModelBase(string instrumentName)
     {
@@ -22,7 +22,7 @@ public abstract class ModelConfigViewModelBase : ViewModelBase
         {
             var success = await TryExecutePublishConfigChangesAsync();
             if (success)
-                _isModified = false;
+                IsModified = false;
             else
             {
                 MessageBox.Show($"Failed to publish config changes. " +

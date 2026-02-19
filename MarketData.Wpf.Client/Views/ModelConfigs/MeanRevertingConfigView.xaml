@@ -29,36 +29,32 @@
                        Text="Mean:" 
                        Foreground="White"
                        Margin="5"/>
-            <TextBlock Grid.Row="0" Grid.Column="1" 
-                       Text="{Binding Mean, StringFormat='{}{0:F2}'}" 
-                       Foreground="White"
+            <TextBox Grid.Row="0" Grid.Column="1" 
+                       Text="{Binding Mean, StringFormat='{}{0:F2}'}"
                        Margin="5"/>
             
             <TextBlock Grid.Row="1" Grid.Column="0" 
                        Text="Kappa (Reversion):" 
                        Foreground="White"
                        Margin="5"/>
-            <TextBlock Grid.Row="1" Grid.Column="1" 
+            <TextBox Grid.Row="1" Grid.Column="1" 
                        Text="{Binding Kappa, StringFormat='{}{0:F6}'}" 
-                       Foreground="White"
                        Margin="5"/>
             
             <TextBlock Grid.Row="2" Grid.Column="0" 
                        Text="Sigma (Volatility):" 
                        Foreground="White"
                        Margin="5"/>
-            <TextBlock Grid.Row="2" Grid.Column="1" 
+            <TextBox Grid.Row="2" Grid.Column="1" 
                        Text="{Binding Sigma, StringFormat='{}{0:F2}'}" 
-                       Foreground="White"
                        Margin="5"/>
             
             <TextBlock Grid.Row="3" Grid.Column="0" 
                        Text="Dt (Time Step):" 
                        Foreground="White"
                        Margin="5"/>
-            <TextBlock Grid.Row="3" Grid.Column="1" 
+            <TextBox Grid.Row="3" Grid.Column="1" 
                        Text="{Binding Dt, StringFormat='{}{0:F2}'}" 
-                       Foreground="White"
                        Margin="5"/>
         </Grid>
     </StackPanel>

@@ -4,40 +4,113 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:viewmodels="clr-namespace:MarketData.Wpf.Client.ViewModels.ModelConfigs"
+             xmlns:converters="clr-namespace:MarketData.Wpf.Shared.Converters;assembly=MarketData.Wpf.Shared"
              d:DataContext="{d:DesignInstance Type=viewmodels:RandomAdditiveWalkConfigViewModel}"
              mc:Ignorable="d">
+    <UserControl.Resources>
+        <converters:BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <converters:BooleanToVisibilityConverter x:Key="InvertedBoolToVis" Inverted="True"/>
+        <converters:InverseBoolConverter x:Key="InverseBool"/>
+    </UserControl.Resources>
+
     <StackPanel>
         <TextBlock Text="Random Additive Walk Configuration" 
                    FontWeight="SemiBold"
                    FontSize="14"
                    Foreground="Orange"
                    Margin="10,15,10,5"/>
-        
+
         <TextBlock Text="{Binding StepCount, StringFormat='Walk Steps: {0}'}" 
                    Foreground="White"
-                   Margin="20,5,10,10"/>
-        
-        <ItemsControl ItemsSource="{Binding WalkSteps}" Margin="20,0">
+                   Margin="20,5,10,5"/>
+
+        <!-- Validation Message -->
+        <TextBlock Text="{Binding ValidationMessage}"
+                   Foreground="Red"
+                   FontWeight="SemiBold"
+                   Margin="20,0,10,5"
+                   Visibility="{Binding IsValid, Converter={StaticResource InvertedBoolToVis}}"
+                   TextWrapping="Wrap"/>
+
+        <!-- Walk Steps List -->
+        <ItemsControl ItemsSource="{Binding WalkSteps}" Margin="20,5">
             <ItemsControl.ItemTemplate>
                 <DataTemplate>
-                    <Grid Margin="0,5">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="100"/>
-                            <ColumnDefinition Width="100"/>
-                        </Grid.ColumnDefinitions>
-                        
-                        <StackPanel Grid.Column="0" Orientation="Horizontal">
-                            <TextBlock Text="Probability: " Foreground="LightGray"/>
-                            <TextBlock Text="{Binding ProbabilityPercentage}" Foreground="White"/>
-                        </StackPanel>
-                        
-                        <StackPanel Grid.Column="1" Orientation="Horizontal">
-                            <TextBlock Text="Step: " Foreground="LightGray"/>
-                            <TextBlock Text="{Binding StepValue, StringFormat='{}{0:F4}'}" Foreground="White"/>
-                        </StackPanel>
-                    </Grid>
+                    <Border BorderBrush="DarkGray" 
+                            BorderThickness="1" 
+                            Padding="10" 
+                            Margin="0,5"
+                            Background="#2A2A2A">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Probability -->
+                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,5">
+                                <TextBlock Text="Probability (0-1):" Foreground="LightGray" Margin="0,0,0,3"/>
+                                <TextBox Text="{Binding Probability}"
+                                         Width="150"
+                                         HorizontalAlignment="Left"/>
+                            </StackPanel>
+
+                            <!-- Step Value -->
+                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,5">
+                                <TextBlock Text="Step Value:" Foreground="LightGray" Margin="0,0,0,3"/>
+                                <TextBox Text="{Binding StepValue}"
+                                         Width="150"
+                                         HorizontalAlignment="Left"/>
+                            </StackPanel>
+
+                            <!-- Display Percentage -->
+                            <TextBlock Grid.Row="2" Grid.Column="0"
+                                       Text="{Binding ProbabilityPercentage, StringFormat='({0})'}" 
+                                       Foreground="Gray"
+                                       FontStyle="Italic"/>
+
+                            <!-- Remove Button -->
+                            <Button Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
+                                    Content="Remove"
+                                    Command="{Binding DataContext.RemoveStepCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    Width="70"
+                                    Height="30"
+                                    VerticalAlignment="Center"
+                                    Background="#D32F2F"
+                                    Foreground="White"
+                                    BorderThickness="0"
+                                    Cursor="Hand"/>
+                        </Grid>
+                    </Border>
                 </DataTemplate>
             </ItemsControl.ItemTemplate>
         </ItemsControl>
+
+        <!-- Add Step Button -->
+        <Button Content="Add Step"
+                Command="{Binding AddStepCommand}"
+                Width="100"
+                Height="30"
+                Margin="20,10,0,10"
+                HorizontalAlignment="Left"
+                Background="#4CAF50"
+                Foreground="White"
+                BorderThickness="0"
+                Cursor="Hand"
+                />
+
+        <!-- Helper Text -->
+        <TextBlock Text="Note: All probabilities must be between 0 and 1, and must sum to exactly 1.0"
+                   Foreground="Gray"
+                   FontSize="11"
+                   FontStyle="Italic"
+                   Margin="20,0,10,10"
+                   TextWrapping="Wrap"/>
     </StackPanel>
 </UserControl>
