@@ -32,37 +32,9 @@
 
             <Button Grid.Column="1"
                     Content="+ New Tab"
+                    Style="{StaticResource PrimaryButton}"
                     Command="{Binding AddTabCommand}"
-                    Background="#007ACC"
-                    Foreground="White"
-                    BorderThickness="0"
-                    FontSize="14"
-                    FontWeight="Bold"
-                    Padding="15,8"
-                    Margin="10"
-                    Cursor="Hand">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border Background="{TemplateBinding Background}"
-                                            CornerRadius="1"
-                                            Padding="5">
-                                        <ContentPresenter HorizontalAlignment="Center" 
-                                                          VerticalAlignment="Center"/>
-                                    </Border>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                        <Style.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter Property="Background" Value="#1E8AD6"/>
-                            </Trigger>
-                        </Style.Triggers>
-                    </Style>
-                </Button.Style>
-            </Button>
+                    Margin="10"/>
         </Grid>
 
         <TabControl Grid.Row="1"
@@ -80,26 +52,10 @@
                                    FontSize="16"
                                    FontWeight="Bold"/>
                         <Button Content="✕" 
+                                Style="{StaticResource CloseButton}"
                                 Command="{Binding DataContext.CloseTabCommand, RelativeSource={RelativeSource AncestorType=Window}}"
                                 CommandParameter="{Binding}"
-                                Width="16"
-                                Height="16"
-                                FontSize="10"
-                                Background="Transparent"
-                                BorderThickness="0"
-                                Foreground="Gray"
-                                Cursor="Hand"
-                                ToolTip="Close tab">
-                            <Button.Style>
-                                <Style TargetType="Button">
-                                    <Style.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Foreground" Value="Red"/>
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Button.Style>
-                        </Button>
+                                ToolTip="Close tab"/>
                     </StackPanel>
                 </DataTemplate>
             </TabControl.ItemTemplate>

@@ -23,6 +23,7 @@
 
   <ItemGroup>
     <Protobuf Include="Protos\marketdata.proto" GrpcServices="Server" />
+    <Protobuf Include="Protos\modelconfiguration.proto" GrpcServices="Server" />
   </ItemGroup>
 
 </Project>
