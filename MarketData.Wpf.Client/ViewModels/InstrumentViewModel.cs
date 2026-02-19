@@ -106,7 +106,7 @@ public class InstrumentViewModel : ViewModelBase
         });
         foreach (var dataPoint in historicalData.Prices.OrderBy(x => x.Timestamp))
         {
-            await UpdateCandleChartAsync(dataPoint, false);
+            await UpdateCandleChartAsync(dataPoint);
         }
     }
 
@@ -137,7 +137,7 @@ public class InstrumentViewModel : ViewModelBase
                         .ToString("HH:mm:ss.fff");
                 });
 
-                await UpdateCandleChartAsync(priceUpdate, true);
+                await UpdateCandleChartAsync(priceUpdate);
             }
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
@@ -158,7 +158,7 @@ public class InstrumentViewModel : ViewModelBase
         }
     }
 
-    private async Task UpdateCandleChartAsync(PriceUpdate priceUpdate, bool updateLastCandle)
+    private async Task UpdateCandleChartAsync(PriceUpdate priceUpdate)
     {
         var candle = _candleBuilder.AddPoint(
                             new DateTime(priceUpdate.Timestamp), priceUpdate.Value);
