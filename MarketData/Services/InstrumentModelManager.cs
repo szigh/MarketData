@@ -416,17 +416,32 @@ public class InstrumentModelManager : IInstrumentModelManager
         string walkStepsJson)
     {
         // Validate JSON can be deserialized
+        List<RandomWalkStep> steps;
         try
         {
-            var steps = JsonSerializer.Deserialize<List<RandomWalkStep>>(walkStepsJson);
-            if (steps == null || steps.Count == 0)
-            {
-                throw new ArgumentException("Walk steps cannot be empty", nameof(walkStepsJson));
-            }
+            steps = JsonSerializer.Deserialize<List<RandomWalkStep>>(walkStepsJson)
+                ?? throw new ArgumentException("Walk steps JSON must represent a valid array", nameof(walkStepsJson));
         }
         catch (JsonException ex)
         {
             throw new ArgumentException("Invalid walk steps JSON", nameof(walkStepsJson), ex);
+        }
+
+        if (steps.Count == 0)
+        {
+            throw new ArgumentException("Walk steps cannot be empty", nameof(walkStepsJson));
+        }
+
+        // Validate probability constraints by constructing RandomWalkSteps
+        // This ensures invalid configs are rejected at write-time rather than when the simulator is constructed
+        try
+        {
+            _ = new RandomWalkSteps(steps);
+        }
+        catch (ArgumentException ex)
+        {
+            // Re-throw validation errors from RandomWalkSteps with the correct parameter name
+            throw new ArgumentException(ex.Message, nameof(walkStepsJson), ex);
         }
 
         using var scope = _serviceProvider.CreateScope();
