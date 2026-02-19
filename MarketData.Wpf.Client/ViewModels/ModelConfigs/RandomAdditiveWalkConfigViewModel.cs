@@ -86,6 +86,7 @@ public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
             if (step.Probability < 0 || step.Probability > 1)
             {
                 ValidationMessage = $"All probabilities must be between 0 and 1.";
+                OnPropertyChanged(nameof(IsValid));
                 return;
             }
         }
@@ -97,6 +98,7 @@ public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
         if (Math.Abs(sum - 1.0) > tolerance)
         {
             ValidationMessage = $"Probabilities must sum to 1.0 (current sum: {sum:F4}).";
+            OnPropertyChanged(nameof(IsValid));
             return;
         }
 
