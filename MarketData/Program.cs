@@ -39,4 +39,4 @@ app.MapControllers();
 app.MapGrpcService<MarketDataGrpcService>();
 app.MapGrpcService<ModelConfigurationGrpcService>();
 
-app.Run();app.Run();
+app.Run();
