@@ -135,8 +135,8 @@ public class ModelConfigViewModel : ViewModelBase
         {
             try
             {
-                var success = await SwitchModelAsync(_activeModel, _activeModel); // Switch to the same model to trigger reload
-                if (success)
+                var result = await _modelConfigService.SwitchModelAsync(_instrument, _activeModel);
+                if (result.NewModel == _activeModel)
                     _activeModelChanged = false;
             }
             catch (Exception ex)
@@ -160,38 +160,6 @@ public class ModelConfigViewModel : ViewModelBase
                     "Error updating tick interval",
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
-        }
-    }
-
-    private async Task<bool> SwitchModelAsync(string newModel, string oldModel)
-    {
-        IsSwitchingModel = true;
-        try
-        {
-            await _modelConfigService.SwitchModelAsync(_instrument, newModel);
-            
-            // Reload configuration to get the new model's config
-            _config = await _modelConfigService.GetConfigurationsAsync(_instrument);
-            UpdateActiveConfigViewModel();
-            return true;
-        }
-        catch (Exception ex)
-        {
-            // Revert to old model on failure
-            _activeModel = oldModel;
-            OnPropertyChanged(nameof(ActiveModel));
-
-            MessageBox.Show(
-                $"Failed to switch model: {ex.Message}", 
-                "Error",
-                MessageBoxButton.OK, 
-                MessageBoxImage.Error);
-
-            return false;
-        }
-        finally
-        {
-            IsSwitchingModel = false;
         }
     }
 
