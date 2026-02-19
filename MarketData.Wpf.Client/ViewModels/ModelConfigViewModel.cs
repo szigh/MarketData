@@ -135,12 +135,21 @@ public class ModelConfigViewModel : ViewModelBase
         {
             try
             {
+                IsSwitchingModel = true;
                 var result = await _modelConfigService.SwitchModelAsync(_instrument, _activeModel);
                 if (result.NewModel == _activeModel)
+                {
+                    var configs = await _modelConfigService.GetConfigurationsAsync(_instrument);
+                    _config = configs;
+                    UpdateActiveConfigViewModel();
                     _activeModelChanged = false;
+                }
+
+                IsSwitchingModel = false;
             }
             catch (Exception ex)
             {
+                IsSwitchingModel = false;
                 MessageBox.Show($"Failed to switch model: {ex.Message}",
                     "Error switching model",
                     MessageBoxButton.OK, MessageBoxImage.Error);
@@ -161,6 +170,8 @@ public class ModelConfigViewModel : ViewModelBase
                     MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
+
+        OnPropertyChanged(nameof(HasModifications));
     }
 
     private void UpdateActiveConfigViewModel()
