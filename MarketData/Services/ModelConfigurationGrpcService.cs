@@ -187,7 +187,7 @@ public class ModelConfigurationGrpcService : ModelConfigurationService.ModelConf
 
             return new SwitchModelResponse
             {
-                Message = "Model switched successfully. Restart the service for changes to take effect.",
+                Message = "Model switched successfully. Changes are applied immediately.",
                 PreviousModel = previousModel ?? "None",
                 NewModel = request.ModelType
             };
