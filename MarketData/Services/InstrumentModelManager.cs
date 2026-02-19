@@ -91,7 +91,7 @@ public class InstrumentModelManager : IInstrumentModelManager
         {
             "RandomMultiplicative" => instrument.RandomMultiplicativeConfig != null,
             "MeanReverting" => instrument.MeanRevertingConfig != null,
-            "Flat" => true, // Flat doesn't require specific configuration
+            "Flat" => instrument.FlatConfig != null,
             "RandomAdditiveWalk" => instrument.RandomAdditiveWalkConfig != null,
             _ => false
         };
@@ -109,7 +109,7 @@ public class InstrumentModelManager : IInstrumentModelManager
     /// <summary>
     /// Creates a default configuration for the instrument's current model type
     /// </summary>
-    private async Task CreateDefaultConfigurationAsync(Instrument instrument, MarketDataContext context)
+    private static async Task CreateDefaultConfigurationAsync(Instrument instrument, MarketDataContext context)
     {
         switch (instrument.ModelType)
         {
@@ -124,10 +124,16 @@ public class InstrumentModelManager : IInstrumentModelManager
 
             case "MeanReverting":
                 const double SECONDS_PER_YEAR = 252 * 6.5 * 3600;
+                var lastPrice = await context.Prices
+                    .Where(p => p.Instrument == instrument.Name)
+                    .OrderByDescending(p => p.Timestamp)
+                    .Select(p => p.Value)
+                    .FirstOrDefaultAsync();
+                var mean = lastPrice == default ? 100m: lastPrice; // Use last price as mean if available
                 context.MeanRevertingConfigs.Add(new MeanRevertingConfig
                 {
                     InstrumentId = instrument.Id,
-                    Mean = 100.0,
+                    Mean = decimal.ToDouble(mean),
                     Kappa = 200 / SECONDS_PER_YEAR,
                     Sigma = 0.5,
                     Dt = 0.1
