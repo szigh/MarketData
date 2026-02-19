@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using MarketData.Data;
 using MarketData.Models;
 using MarketData.PriceSimulator;
@@ -13,14 +14,14 @@ public class MarketDataGeneratorService : BackgroundService
     private readonly ILogger<MarketDataGeneratorService> _logger;
     private readonly IInstrumentModelManager _modelManager;
 
-    private readonly Dictionary<string, IPriceSimulator> _priceSimulators = [];
+    private readonly ConcurrentDictionary<string, IPriceSimulator> _priceSimulators = new();
 
-    private readonly Dictionary<string, DateTime> _lastTickTimes = [];
-    private readonly Dictionary<string, DateTime> _lastDatabaseUpdates = [];
-    private readonly Dictionary<string, DateTime> _lastGrpcPublish = [];
+    private readonly ConcurrentDictionary<string, DateTime> _lastTickTimes = new();
+    private readonly ConcurrentDictionary<string, DateTime> _lastDatabaseUpdates = new();
+    private readonly ConcurrentDictionary<string, DateTime> _lastGrpcPublish = new();
 
-    private readonly Dictionary<string, decimal> _lastPrices = [];
-    private readonly List<Instrument> _instruments = [];
+    private readonly ConcurrentDictionary<string, decimal> _lastPrices = new();
+    private readonly ConcurrentDictionary<string, Instrument> _instruments = new();
 
     public MarketDataGeneratorService(
         IInstrumentModelManager modelManager,
@@ -46,13 +47,17 @@ public class MarketDataGeneratorService : BackgroundService
 
         // Load and initialize all instruments efficiently in a single batch
         var instrumentDict = await _modelManager.LoadAndInitializeAllInstrumentsAsync();
-        _instruments.AddRange(instrumentDict.Values);
+
+        foreach (var kvp in instrumentDict)
+        {
+            _instruments[kvp.Key] = kvp.Value;
+        }
 
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
 
         // Load initial prices and create simulators for each instrument
-        foreach (var instrument in _instruments)
+        foreach (var instrument in _instruments.Values)
         {
             var latestPrice = await dbContext.Prices
                 .AsNoTracking()
@@ -112,14 +117,8 @@ public class MarketDataGeneratorService : BackgroundService
             // Create new price simulator with updated configuration
             var newSimulator = _modelManager.CreatePriceSimulator(instrument);
 
-            //replace instrument in _instruments field
-            if (_instruments.Any(instrument => instrument.Name == instrumentName))
-            { 
-                _instruments.RemoveAll(instrument => instrument.Name == instrumentName);
-            }
-            _instruments.Add(instrument);
-
-            // Atomically replace the simulator (thread-safe since Dictionary operations are atomic for value types)
+            // Thread-safe updates using ConcurrentDictionary
+            _instruments[instrumentName] = instrument;
             _priceSimulators[instrumentName] = newSimulator;
 
             _logger.LogInformation(
@@ -182,7 +181,7 @@ public class MarketDataGeneratorService : BackgroundService
     {     
         var now = DateTime.UtcNow;
 
-        foreach (var instrument in _instruments)
+        foreach (var instrument in _instruments.Values)
         {
             if (TakeActionNeeded(_lastTickTimes, instrument.Name, now, instrument.TickIntervalMillieconds))
             {
@@ -249,7 +248,7 @@ public class MarketDataGeneratorService : BackgroundService
     /// <param name="millisecondsBetweenActions"></param>
     /// <returns></returns>
     private static bool TakeActionNeeded(
-        Dictionary<string, DateTime> lastActions,
+        ConcurrentDictionary<string, DateTime> lastActions,
         string instrument,
         DateTime now,
         int millisecondsBetweenActions)
