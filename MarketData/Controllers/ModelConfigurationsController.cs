@@ -59,7 +59,7 @@ public class ModelConfigurationsController : ControllerBase
 
             return Ok(new
             {
-                Message = "Model switched successfully. Restart the service for changes to take effect.",
+                Message = "Model switched successfully. Changes are applied immediately.",
                 PreviousModel = previousModel,
                 NewModel = request.ModelType
             });
@@ -91,7 +91,7 @@ public class ModelConfigurationsController : ControllerBase
 
             return Ok(new
             {
-                Message = "Configuration updated successfully. Restart the service for changes to take effect.",
+                Message = "Configuration updated successfully. Changes are applied immediately.",
                 Configuration = config
             });
         }
@@ -124,7 +124,7 @@ public class ModelConfigurationsController : ControllerBase
 
             return Ok(new
             {
-                Message = "Configuration updated successfully. Restart the service for changes to take effect.",
+                Message = "Configuration updated successfully. Changes are applied immediately.",
                 Configuration = config
             });
         }
