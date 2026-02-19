@@ -26,6 +26,8 @@ public interface IInstrumentModelManager
     /// </summary>
     Task<Dictionary<string, Instrument>> LoadAndInitializeAllInstrumentsAsync();
 
+    Task<int> UpdateTickIntervalAsync(string instrumentName, int tickIntervalMs); 
+
     /// <summary>
     /// Switches the active model for an instrument.
     /// Automatically creates default configuration if it doesn't exist.

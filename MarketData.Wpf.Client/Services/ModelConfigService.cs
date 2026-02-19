@@ -35,6 +35,15 @@ public class ModelConfigService : IDisposable
         });
     }
 
+    public async Task<UpdateConfigResponse> UpdateTickIntervalAsync(string instrumentName, int tickIntervalMs)
+    {
+        return await _client.UpdateTickIntervalAsync(new UpdateTickIntervalRequest
+        {
+            InstrumentName = instrumentName,
+            TickIntervalMs = tickIntervalMs
+        });
+    }
+
     public async Task UpdateRandomMultiplicativeConfigAsync(
         string instrumentName,
         double standardDeviation,

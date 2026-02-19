@@ -104,6 +104,13 @@ public class MarketDataGeneratorService : BackgroundService
             // Create new price simulator with updated configuration
             var newSimulator = _modelManager.CreatePriceSimulator(instrument);
 
+            //replace instrument in _instruments field
+            if (_instruments.Any(instrument => instrument.Name == instrumentName))
+            { 
+                _instruments.RemoveAll(instrument => instrument.Name == instrumentName);
+            }
+            _instruments.Add(instrument);
+
             // Atomically replace the simulator (thread-safe since Dictionary operations are atomic for value types)
             _priceSimulators[instrumentName] = newSimulator;
 

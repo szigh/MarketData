@@ -526,6 +526,27 @@ public class InstrumentModelManager : IInstrumentModelManager
         return instrument.RandomAdditiveWalkConfig;
     }
 
+    public async Task<int> UpdateTickIntervalAsync(string instrumentName, int tickIntervalMs)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+
+        var instrument = await context.Instruments
+            .FirstOrDefaultAsync(i => i.Name == instrumentName);
+
+        if (instrument == null)
+        {
+            throw new InvalidOperationException($"Instrument '{instrumentName}' not found");
+        }
+
+        instrument.TickIntervalMillieconds = tickIntervalMs;
+
+        await context.SaveChangesAsync();
+        OnConfigurationChanged(instrumentName);
+
+        return instrument.TickIntervalMillieconds;
+    }
+
     #endregion
 }
 

@@ -115,6 +115,8 @@ public class ModelConfigurationGrpcService : ModelConfigurationService.ModelConf
                 response.RandomAdditiveWalk = walkStepsData;
             }
 
+            response.TickIntervalMs = instrument.TickIntervalMillieconds;
+
             _logger.LogDebug("Returning configurations for '{InstrumentName}' with active model '{ModelType}'",
                 instrument.Name, instrument.ModelType);
 
@@ -127,6 +129,43 @@ public class ModelConfigurationGrpcService : ModelConfigurationService.ModelConf
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting configurations for '{InstrumentName}'", request.InstrumentName);
+            throw new RpcException(new Status(StatusCode.Internal, "Internal server error"));
+        }
+    }
+
+    public override async Task<UpdateConfigResponse> UpdateTickInterval(UpdateTickIntervalRequest request, ServerCallContext context)
+    {
+        try
+        {
+            _logger.LogInformation("gRPC: UpdateTickInterval request for '{InstrumentName}' to '{TickIntervalMs}' ms",
+                request.InstrumentName, request.TickIntervalMs);
+            if (request.TickIntervalMs <= 0)
+            {
+                throw new ArgumentException("Tick interval must be a positive integer");
+            }
+
+            var updatedValue = await _modelManager.UpdateTickIntervalAsync(request.InstrumentName, request.TickIntervalMs);
+
+            if (updatedValue == request.TickIntervalMs)
+            {
+                return new UpdateConfigResponse
+                {
+                    Message = "Tick interval updated successfully",
+                    Success = true
+                };
+            }
+            else
+            {
+                return new UpdateConfigResponse
+                {
+                    Message = $"Tick interval update failed. Current value is {updatedValue} ms",
+                    Success = false
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating tick interval for '{InstrumentName}'", request.InstrumentName);
             throw new RpcException(new Status(StatusCode.Internal, "Internal server error"));
         }
     }

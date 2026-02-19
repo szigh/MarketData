@@ -9,6 +9,8 @@ service ModelConfigurationService {
     // Get all configurations for an instrument
     rpc GetConfigurations(GetConfigurationsRequest) returns (ConfigurationsResponse);
 
+    rpc UpdateTickInterval(UpdateTickIntervalRequest) returns (UpdateConfigResponse);
+
     // Switch the active model for an instrument
     rpc SwitchModel(SwitchModelRequest) returns (SwitchModelResponse);
 
@@ -32,6 +34,11 @@ message GetConfigurationsRequest {
 message SwitchModelRequest {
     string instrument_name = 1;
     string model_type = 2;
+}
+
+message UpdateTickIntervalRequest{
+    string instrument_name = 1;
+    int32 tick_interval_ms = 2;
 }
 
 message UpdateRandomMultiplicativeRequest {
@@ -65,6 +72,7 @@ message ConfigurationsResponse {
     MeanRevertingConfigData mean_reverting = 4;
     bool flat_configured = 5;
     RandomAdditiveWalkConfigData random_additive_walk = 6;
+    int32 tick_interval_ms = 7;
 }
 
 message RandomMultiplicativeConfigData {
