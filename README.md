@@ -297,6 +297,18 @@ service MarketDataService {
 #### ModelConfigurationService
 **Proto:** `modelconfiguration.proto`
 
+```protobuf
+service ModelConfigurationService {
+    rpc GetSupportedModels(GetSupportedModelsRequest) returns (SupportedModelsResponse);
+    rpc GetConfigurations(GetConfigurationsRequest) returns (ConfigurationsResponse);
+    rpc UpdateTickInterval(UpdateTickIntervalRequest) returns (UpdateConfigResponse);
+    rpc SwitchModel(SwitchModelRequest) returns (SwitchModelResponse);
+    rpc UpdateRandomMultiplicativeConfig(UpdateRandomMultiplicativeRequest) returns (UpdateConfigResponse);
+    rpc UpdateMeanRevertingConfig(UpdateMeanRevertingRequest) returns (UpdateConfigResponse);
+    rpc UpdateRandomAdditiveWalkConfig(UpdateRandomAdditiveWalkRequest) returns (UpdateConfigResponse);
+}
+```
+
 **Purpose:** Remote configuration management for price simulation models
 
 **Features:**
