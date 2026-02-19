@@ -61,13 +61,12 @@
                 <ContentControl Content="{Binding ActiveConfigViewModel}"/>
 
                 <Button Content="Publish Changes"
+                        Style="{StaticResource SuccessButton}"
                         Command="{Binding PublishConfigChanges}"
                         Margin="10"
                         HorizontalAlignment="Right"
-                        Width="150"
                         Visibility="{Binding ActiveConfigViewModel.IsModified, 
-                    Converter={StaticResource BoolToVisibilityConverter}}"
-                        />
+                    Converter={StaticResource BoolToVisibilityConverter}}"/>
 
             </StackPanel>
         </ScrollViewer>

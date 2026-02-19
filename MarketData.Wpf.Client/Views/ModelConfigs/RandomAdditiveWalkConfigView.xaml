@@ -77,15 +77,11 @@
                             <!-- Remove Button -->
                             <Button Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
                                     Content="Remove"
+                                    Style="{StaticResource DangerButton}"
                                     Command="{Binding DataContext.RemoveStepCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"
-                                    Width="70"
-                                    Height="30"
-                                    VerticalAlignment="Center"
-                                    Background="#D32F2F"
-                                    Foreground="White"
-                                    BorderThickness="0"
-                                    Cursor="Hand"/>
+                                    Width="80"
+                                    VerticalAlignment="Center"/>
                         </Grid>
                     </Border>
                 </DataTemplate>
@@ -94,16 +90,10 @@
 
         <!-- Add Step Button -->
         <Button Content="Add Step"
+                Style="{StaticResource SuccessButton}"
                 Command="{Binding AddStepCommand}"
-                Width="100"
-                Height="30"
                 Margin="20,10,0,10"
-                HorizontalAlignment="Left"
-                Background="#4CAF50"
-                Foreground="White"
-                BorderThickness="0"
-                Cursor="Hand"
-                />
+                HorizontalAlignment="Left"/>
 
         <!-- Helper Text -->
         <TextBlock Text="Note: All probabilities must be between 0 and 1, and must sum to exactly 1.0"
