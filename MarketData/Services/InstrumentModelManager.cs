@@ -414,7 +414,7 @@ public class InstrumentModelManager : IInstrumentModelManager
         try
         {
             steps = JsonSerializer.Deserialize<List<RandomWalkStep>>(walkStepsJson)
-                ?? throw new ArgumentException("Walk steps cannot be null", nameof(walkStepsJson));
+                ?? throw new ArgumentException("Walk steps JSON must represent a valid array", nameof(walkStepsJson));
         }
         catch (JsonException ex)
         {
