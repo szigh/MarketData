@@ -133,7 +133,11 @@ public class WalkStepViewModel : ViewModelBase
     public double Probability
     {
         get => _probability;
-        set => SetProperty(ref _probability, value);
+        set
+        {
+            SetProperty(ref _probability, value);
+            OnPropertyChanged(nameof(ProbabilityPercentage));
+        }
     }
 
     public double StepValue
