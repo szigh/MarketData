@@ -8,7 +8,24 @@ I first wanted to create a small application that could stream market data, and 
 
 This is still work in progress, but see below where I have got to so far! Key features like the trading screen, security, containerisation and a more scalable RDBMS (currently I use SQLite) are yet to be implemented.
 
-# MarketData Solution Architecture
+
+---
+
+## Technology Stack
+
+| Component | Technology |
+|-----------|-----------|
+| Backend Framework | ASP.NET Core 10.0 |
+| Client Framework | WPF (.NET 10 Windows) |
+| RPC Framework | gRPC |
+| Database | SQLite with Entity Framework Core |
+| ORM | Entity Framework Core 10.0 |
+| Charting | [FancyCandles 2.7.1](https://github.com/gellerda/FancyCandles) |
+| API Documentation | OpenAPI with Scalar |
+| Background Processing | IHostedService |
+| Dependency Injection | Microsoft.Extensions.DependencyInjection |
+
+---
 
 ## System Architecture
 
@@ -37,6 +54,24 @@ This is still work in progress, but see below where I have got to so far! Key fe
    │   DB    │   │ Manager │  │ Simulator   │
    └─────────┘   └─────────┘  └─────────────┘
 ```
+
+---
+
+## Selected Screenshots
+
+![WPF Client Main Window](images/WpfClient.png)
+
+![Model Configuration UI](images/ModelConfiguration.png)
+
+![MarketData Service logs](images/MarketData-service.png)
+
+![Database Schema](images/DatabaseSchema.png)
+
+![Sample Data](images/SampleData.png)
+
+---
+
+# MarketData Solution Architecture
 
 ## Projects
 
@@ -300,22 +335,6 @@ service MarketDataService {
 ### Client Configuration
 **File:** `MarketData.Wpf.Client/appsettings.json` / `MarketData.Client/appsettings.json`
 - `GrpcSettings.ServerUrl` - Server endpoint (default: `https://localhost:7264`)
-
----
-
-## Technology Stack
-
-| Component | Technology |
-|-----------|-----------|
-| Backend Framework | ASP.NET Core 10.0 |
-| Client Framework | WPF (.NET 10 Windows) |
-| RPC Framework | gRPC |
-| Database | SQLite with Entity Framework Core |
-| ORM | Entity Framework Core 10.0 |
-| Charting | FancyCandles 2.7.1 |
-| API Documentation | OpenAPI with Scalar |
-| Background Processing | IHostedService |
-| Dependency Injection | Microsoft.Extensions.DependencyInjection |
 
 ---
 
