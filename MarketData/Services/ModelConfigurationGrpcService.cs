@@ -162,6 +162,16 @@ public class ModelConfigurationGrpcService : ModelConfigurationService.ModelConf
                 };
             }
         }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, "Invalid argument for UpdateTickInterval");
+            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, "Instrument not found for UpdateTickInterval");
+            throw new RpcException(new Status(StatusCode.NotFound, ex.Message));
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating tick interval for '{InstrumentName}'", request.InstrumentName);
