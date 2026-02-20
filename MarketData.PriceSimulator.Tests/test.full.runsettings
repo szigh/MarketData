@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RunSettings>
+  <RunConfiguration>
+    <TargetPlatform>x64</TargetPlatform>
+    <EnvironmentVariables>
+      <!-- Enable statistical tests -->
+      <RUN_STATISTICAL_TESTS>true</RUN_STATISTICAL_TESTS>
+    </EnvironmentVariables>
+  </RunConfiguration>
+</RunSettings>
