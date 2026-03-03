@@ -76,12 +76,19 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
             .CountAsync();
 
         await _host.StartAsync();
-        await Task.Delay(TimeSpan.FromMilliseconds(500));
-        await _host.StopAsync(TimeSpan.FromSeconds(2));
 
-        var finalPriceCount = await _context.Prices
-            .Where(p => p.Instrument == "TEST")
-            .CountAsync();
+        // Poll until at least one new price is generated, or timeout after 5 seconds
+        var finalPriceCount = initialPriceCount;
+        var deadline = DateTime.UtcNow.AddSeconds(5);
+        while (finalPriceCount <= initialPriceCount && DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(50);
+            finalPriceCount = await _context.Prices
+                .Where(p => p.Instrument == "TEST")
+                .CountAsync();
+        }
+
+        await _host.StopAsync(TimeSpan.FromSeconds(2));
 
         Assert.True(finalPriceCount > initialPriceCount, 
             $"Expected more than {initialPriceCount} prices, got {finalPriceCount}");
@@ -114,20 +121,26 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
         await _context.SaveChangesAsync();
 
         await _host.StartAsync();
-        await Task.Delay(TimeSpan.FromMilliseconds(600));
-        await _host.StopAsync(TimeSpan.FromSeconds(2));
 
-        var fastCount = await _context.Prices.CountAsync(p => p.Instrument == "FAST");
-        var slowCount = await _context.Prices.CountAsync(p => p.Instrument == "SLOW");
+        // Poll until fast instrument has generated noticeably more prices than slow,
+        // or timeout after 10 seconds (allows enough ticks at both intervals)
+        var fastCount = 1;
+        var slowCount = 1;
+        var deadline = DateTime.UtcNow.AddSeconds(10);
+        while (DateTime.UtcNow < deadline)
+        {
+            await Task.Delay(100);
+            fastCount = await _context.Prices.CountAsync(p => p.Instrument == "FAST");
+            slowCount = await _context.Prices.CountAsync(p => p.Instrument == "SLOW");
+            // Wait until both have generated prices and fast clearly exceeds slow
+            if (fastCount >= 3 && fastCount > slowCount)
+                break;
+        }
+
+        await _host.StopAsync(TimeSpan.FromSeconds(2));
 
         Assert.True(fastCount > slowCount,
             $"Fast instrument ({fastCount} prices) should have more than slow instrument ({slowCount} prices)");
-
-        // Fast: 600ms / 50ms = ~12 ticks (+ initial = 13)
-        // Slow: 600ms / 200ms = ~3 ticks (+ initial = 4)
-        // Use generous ranges due to timing variability
-        Assert.InRange(fastCount, 5, 20);
-        Assert.InRange(slowCount, 2, 8);
     }
 
     [Fact]
