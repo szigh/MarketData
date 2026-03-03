@@ -10,7 +10,6 @@ namespace MarketData.PriceSimulator.Tests.Statistical;
 /// 1. Percentage moves follow the specified normal distribution
 /// 2. Mean drift affects long-run price behavior correctly
 /// 3. Volatility parameter controls the distribution of percentage changes
-/// 4. Multiplicative process preserves positive prices
 /// </remarks>
 public class RandomMultiplicativeProcessStatisticalTests
 {
