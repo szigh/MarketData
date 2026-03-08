@@ -10,8 +10,8 @@ public class MarketDataGrpcService : MarketDataService.MarketDataServiceBase
 {
     private readonly ILogger<MarketDataGrpcService> _logger;
     private readonly IServiceScopeFactory _scopeFactory;
-    private static readonly Channel<PriceUpdate> _priceChannel = 
-        Channel.CreateUnbounded<PriceUpdate>();
+    private static readonly List<Channel<PriceUpdate>> _subscriberChannels = new();
+    private static readonly Lock _subscribersLock = new();
 
     public MarketDataGrpcService(
         ILogger<MarketDataGrpcService> logger,
@@ -29,18 +29,24 @@ public class MarketDataGrpcService : MarketDataService.MarketDataServiceBase
         _logger.LogInformation("Client subscribed to: {Instruments}", 
             string.Join(", ", request.Instruments));
 
-        var reader = _priceChannel.Reader;
+        var subscriberChannel = Channel.CreateUnbounded<PriceUpdate>();
+
+        lock (_subscribersLock)
+        {
+            _subscriberChannels.Add(subscriberChannel);
+        }
 
         try
         {
-            while (await reader.WaitToReadAsync(context.CancellationToken))
+            await foreach (var priceUpdate in subscriberChannel.Reader.ReadAllAsync(context.CancellationToken))
             {
-                while (reader.TryRead(out var priceUpdate))
+                if (request.Instruments.Contains(priceUpdate.Instrument))
                 {
-                    if (request.Instruments.Contains(priceUpdate.Instrument))
-                    {
-                        await responseStream.WriteAsync(priceUpdate, context.CancellationToken);
-                    }
+                    _logger.LogTrace("Sending update for {Instrument}: {Value} at {Timestamp}",
+                        priceUpdate.Instrument,
+                        priceUpdate.Value,
+                        new DateTime(priceUpdate.Timestamp));
+                    await responseStream.WriteAsync(priceUpdate, context.CancellationToken);
                 }
             }
         }
@@ -48,8 +54,14 @@ public class MarketDataGrpcService : MarketDataService.MarketDataServiceBase
         {
             _logger.LogInformation("Client disconnected");
         }
-
-        return;
+        finally
+        {
+            lock (_subscribersLock)
+            {
+                subscriberChannel.Writer.TryComplete();
+                _subscriberChannels.Remove(subscriberChannel);
+            }
+        }
     }
 
     public override async Task<HistoricalDataResponse> GetHistoricalData(
@@ -97,6 +109,15 @@ public class MarketDataGrpcService : MarketDataService.MarketDataServiceBase
             Timestamp = timestamp.Ticks
         };
 
-        await _priceChannel.Writer.WriteAsync(update);
+        List<Channel<PriceUpdate>> channelsCopy;
+        lock (_subscribersLock)
+        {
+            channelsCopy = new List<Channel<PriceUpdate>>(_subscriberChannels);
+        }
+
+        foreach (var channel in channelsCopy)
+        {
+            await channel.Writer.WriteAsync(update);
+        }
     }
 }
