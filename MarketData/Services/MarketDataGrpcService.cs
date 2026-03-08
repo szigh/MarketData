@@ -58,6 +58,7 @@ public class MarketDataGrpcService : MarketDataService.MarketDataServiceBase
         {
             lock (_subscribersLock)
             {
+                subscriberChannel.Writer.TryComplete();
                 _subscriberChannels.Remove(subscriberChannel);
             }
         }
