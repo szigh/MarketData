@@ -30,13 +30,13 @@ This is still work in progress, but see below where I have got to so far! Key fe
 ## System Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Client Applications                      │
-├─────────────────────┬───────────────────┬───────────────────────┤
-│  MarketData.Wpf     │  MarketData       │    FastSimulate       │
-│     .Client         │    .Client        │                       │
-│  (WPF GUI Client)   │ (Console Client)  │  (Quick Test App)     │
-└──────────┬──────────┴──────────┬────────┴───────────────────────┘
+┌─────────────────────────────────────────┐
+│            Client Applications          │
+├─────────────────────┬───────────────────┤
+│  MarketData.Wpf     │  MarketData       │
+│     .Client         │    .Client        │
+│  (WPF GUI Client)   │ (Console Client)  │
+└──────────┬──────────┴──────────┬────────┘
            │                     │
            │   gRPC Streaming    │
            └──────────┬──────────┘
@@ -90,7 +90,7 @@ The core backend service that generates and streams real-time market data to cli
   - `ModelConfigurationGrpcService` - Manages price simulation model configurations
 - **REST API:** Controllers for instruments and prices (via OpenAPI/Scalar)
 - **Database:** SQLite for persisting instruments, prices, and model configurations
-- **Model Management:** `IInstrumentModelManager` for hot-reloadable configuration
+- **Model Management:** `IInstrumentModelManager` for configuration management via EF Core, including model parameters and instrument data (tick interval, active model) and adding new instruments
 
 **Key Features:**
 - Real-time price generation using multiple simulation models
@@ -299,6 +299,8 @@ service MarketDataService {
 
 ```protobuf
 service ModelConfigurationService {
+    rpc GetAllInstruments(GetAllInstrumentsRequest) returns (GetAllInstrumentsResponse);
+    rpc TryAddInstrument(TryAddInstrumentRequest) returns (TryAddInstrumentResponse);
     rpc GetSupportedModels(GetSupportedModelsRequest) returns (SupportedModelsResponse);
     rpc GetConfigurations(GetConfigurationsRequest) returns (ConfigurationsResponse);
     rpc UpdateTickInterval(UpdateTickIntervalRequest) returns (UpdateConfigResponse);
@@ -315,6 +317,7 @@ service ModelConfigurationService {
 - Switch active model per instrument
 - Update model-specific parameters
 - Update tick intervals
+- Get existing instruments and add new instruments (including seeding database with initial price)
 - Hot reload without reconnection
 
 ---
@@ -386,6 +389,8 @@ dotnet ef migrations add <MigrationName>
 dotnet ef database update
 ```
 
+Note: Migrations are automatically applied in development environment. In production this should be done in deployment.
+
 ---
 
 ## Extension Points
@@ -399,10 +404,21 @@ dotnet ef database update
 6. Create WPF view for configuration in `MarketData.Wpf.Client/Views/ModelConfigs/`
 
 ### Adding New Instruments
+
+#### gRPC API
+
+1. Call `TryAddInstrument` with new instrument name, tick interval, initial price, initial price, and optionally initial model type
+2. Server creates new instrument, seeds initial price.
+3. If no configuration provided, defaults to `Flat` (`const` hardcoded in `InstrumentModelManager`); otherwise, uses default parameters for the specified model type.
+4. Event is raised, background service hot reloads, new price stream starts immediately.
+
+#### Manual 
+
 1. Insert into `Instruments` table
 2. Create initial price record
 3. Set desired `ModelType` and create corresponding configuration
-4. Restart server or use hot reload API
+4. Set tick interval
+5. Restart server
 
 ---
 
@@ -453,7 +469,7 @@ dotnet test --settings test.runsettings
 dotnet test MarketData.PriceSimulator.Tests
 ```
 
-#### **MarketData.Tests** (82 tests) ✅
+#### **MarketData.Tests** (98 tests)
 **Frameworks:** xUnit 2.9.3, Moq 4.20.72, EF Core InMemory 10.0.3, ASP.NET Testing 10.0.3
 
 **Coverage:**
@@ -461,12 +477,12 @@ dotnet test MarketData.PriceSimulator.Tests
   - `InstrumentsController` - CRUD operations
   - `PricesController` - Price queries  
   - `ModelConfigurationsController` - Configuration management
-- **17 gRPC Contract Tests** - Proto message structure stability
+- **19 gRPC Contract Tests** - Proto message structure stability
   - Compile-time breaking change detection
   - Message field validation
   - Backward compatibility protection
-- **32 Service Unit Tests** - Business logic
-  - `InstrumentModelManager` - Configuration CRUD, model switching
+- **46 Service Unit Tests** - Business logic
+  - `InstrumentModelManager` - Configuration CRUD, model switching, instrument management
   - Parameter validation
   - Event notifications
 - **3 Integration Tests** - Background service lifecycle
@@ -498,15 +514,15 @@ dotnet test MarketData.Tests
 |---------|-------|----------------|--------|-------|
 | **MarketData.PriceSimulator** | 138 | 🟢 High | ✅ Complete | All models + statistical validation |
 | **MarketData** (Controllers) | 30 | 🟢 High | ✅ Complete | All REST endpoints |
-| **MarketData** (gRPC) | 17 | 🟢 Contract | ✅ Complete | Message structure stability |
-| **MarketData** (Services) | 32 | 🟢 High | ✅ Complete | Core business logic |
+| **MarketData** (gRPC) | 19 | 🟢 Contract | ✅ Complete | Message structure stability |
+| **MarketData** (Services) | 46 | 🟢 High | ✅ Complete | Core business logic |
 | **MarketData** (Integration) | 3 | 🟡 Basic | ✅ Reference | Background service lifecycle |
 | **MarketData.Wpf.Client** | 0 | ⚪ N/A | ⚠️ Not Tested | Manual UI testing |
 | **MarketData.Client** | 0 | ⚪ N/A | ⚠️ Not Tested | Simple console app |
 | **MarketData.Wpf.Shared** | 0 | ⚪ N/A | ⚠️ Not Tested | Utilities |
 | **MarketData.Client.Shared** | 0 | ⚪ N/A | ⚠️ Not Tested | Configuration classes only |
 | **FastSimulate** | 0 | ⚪ N/A | ⚠️ Not Tested | Benchmarking tool |
-| **TOTAL** | **220** |  |  | Critical paths covered |
+| **TOTAL** | **236** |  |  | Critical paths covered |
 
 ---
 
@@ -516,13 +532,13 @@ dotnet test MarketData.Tests
 ```bash
 dotnet test
 ```
-**Expected:** 220 passed, ~35-40 seconds
+**Expected:** 236 passed, ~35-40 seconds
 
 #### **Fast Tests Only (CI Pipeline):**
 ```bash
 dotnet test --settings test.runsettings
 ```
-**Expected:** 138 passed, ~5 seconds (excludes slow statistical tests)
+(excludes slow statistical tests)
 
 #### **By Project:**
 ```bash
@@ -534,27 +550,27 @@ dotnet test MarketData.Tests                  # 82 tests
 
 ### **Testing Approaches by Component**
 
-#### **✅ Unit Tests** (Business Logic)
+#### ** Unit Tests** (Business Logic)
 - Price models, service layer, configuration management
 - Fast, isolated tests with mocked dependencies
 - **Tools:** xUnit, Moq, InMemory database
 
-#### **✅ Statistical Tests** (Mathematical Correctness)
+#### ** Statistical Tests** (Mathematical Correctness)
 - Distribution properties, mean/variance, convergence
 - Generate 10,000+ samples, apply Chi-squared tests
 - **Tools:** Custom `[StatisticalFact]` attribute, xUnit
 
-#### **✅ Contract Tests** (API Stability)
+#### ** Contract Tests** (API Stability)
 - gRPC message structure, field presence
 - Compile-time validation, structural assertions
 - **Tools:** xUnit, Proto-generated classes
 
-#### **✅ Integration Tests** (Lifecycle & Timing)
+#### ** Integration Tests** (Lifecycle & Timing)
 - Background service, real-time behavior
 - Real service host with InMemory database
 - **Tools:** xUnit, Microsoft.Extensions.Hosting
 
-#### **⚠️ Manual Testing** (UI & End-to-End)
+#### ** Manual Testing** (UI & End-to-End)
 - WPF client, console client, user workflows
 - Manual verification during development
 - **Tools:** Visual Studio debugging, production WPF app

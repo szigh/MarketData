@@ -635,6 +635,329 @@ public class InstrumentModelManagerTests : IDisposable
         Assert.Contains("Tick interval must be a positive integer", ex.Message);
     }
 
+    [Fact]
+    public async Task EnsureModelConfigurationAsync_WithRandomMultiplicativeModel_CreatesDefaultConfig()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var scopedContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+
+        var instrument = new Instrument
+        {
+            Name = "AAPL",
+            ModelType = "RandomMultiplicative",
+            TickIntervalMillieconds = 1000
+        };
+        scopedContext.Instruments.Add(instrument);
+        await scopedContext.SaveChangesAsync();
+
+        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext);
+
+        await scopedContext.Entry(instrument).ReloadAsync();
+        await scopedContext.Entry(instrument)
+            .Reference(i => i.RandomMultiplicativeConfig)
+            .LoadAsync();
+
+        Assert.NotNull(instrument.RandomMultiplicativeConfig);
+        Assert.Equal(instrument.Id, instrument.RandomMultiplicativeConfig.InstrumentId);
+        Assert.True(instrument.RandomMultiplicativeConfig.StandardDeviation > 0);
+    }
+
+    [Fact]
+    public async Task EnsureModelConfigurationAsync_WithMeanRevertingModel_CreatesDefaultConfig()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var scopedContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+
+        var instrument = new Instrument
+        {
+            Name = "AAPL",
+            ModelType = "MeanReverting",
+            TickIntervalMillieconds = 1000
+        };
+        scopedContext.Instruments.Add(instrument);
+        await scopedContext.SaveChangesAsync();
+
+        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext);
+
+        await scopedContext.Entry(instrument).ReloadAsync();
+        await scopedContext.Entry(instrument)
+            .Reference(i => i.MeanRevertingConfig)
+            .LoadAsync();
+
+        Assert.NotNull(instrument.MeanRevertingConfig);
+        Assert.Equal(instrument.Id, instrument.MeanRevertingConfig.InstrumentId);
+        Assert.True(instrument.MeanRevertingConfig.Kappa > 0);
+        Assert.True(instrument.MeanRevertingConfig.Mean > 0);
+    }
+
+    [Fact]
+    public async Task EnsureModelConfigurationAsync_WithFlatModel_CreatesDefaultConfig()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var scopedContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+
+        var instrument = new Instrument
+        {
+            Name = "AAPL",
+            ModelType = "Flat",
+            TickIntervalMillieconds = 1000
+        };
+        scopedContext.Instruments.Add(instrument);
+        await scopedContext.SaveChangesAsync();
+
+        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext);
+
+        await scopedContext.Entry(instrument).ReloadAsync();
+        await scopedContext.Entry(instrument)
+            .Reference(i => i.FlatConfig)
+            .LoadAsync();
+
+        Assert.NotNull(instrument.FlatConfig);
+        Assert.Equal(instrument.Id, instrument.FlatConfig.InstrumentId);
+    }
+
+    [Fact]
+    public async Task EnsureModelConfigurationAsync_WithRandomAdditiveWalkModel_CreatesDefaultConfig()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var scopedContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+
+        var instrument = new Instrument
+        {
+            Name = "AAPL",
+            ModelType = "RandomAdditiveWalk",
+            TickIntervalMillieconds = 1000
+        };
+        scopedContext.Instruments.Add(instrument);
+        await scopedContext.SaveChangesAsync();
+
+        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext);
+
+        await scopedContext.Entry(instrument).ReloadAsync();
+        await scopedContext.Entry(instrument)
+            .Reference(i => i.RandomAdditiveWalkConfig)
+            .LoadAsync();
+
+        Assert.NotNull(instrument.RandomAdditiveWalkConfig);
+        Assert.Equal(instrument.Id, instrument.RandomAdditiveWalkConfig.InstrumentId);
+        Assert.NotNull(instrument.RandomAdditiveWalkConfig.WalkStepsJson);
+    }
+
+    [Fact]
+    public async Task EnsureModelConfigurationAsync_WithExistingConfig_DoesNotCreateNew()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var scopedContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+
+        var config = new RandomMultiplicativeConfig
+        {
+            StandardDeviation = 0.05,
+            Mean = 0.001
+        };
+
+        var instrument = new Instrument
+        {
+            Name = "AAPL",
+            ModelType = "RandomMultiplicative",
+            TickIntervalMillieconds = 1000,
+            RandomMultiplicativeConfig = config
+        };
+        scopedContext.Instruments.Add(instrument);
+        await scopedContext.SaveChangesAsync();
+
+        var originalConfigId = config.Id;
+
+        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext);
+
+        await scopedContext.Entry(instrument)
+            .Reference(i => i.RandomMultiplicativeConfig)
+            .LoadAsync();
+
+        Assert.NotNull(instrument.RandomMultiplicativeConfig);
+        Assert.Equal(originalConfigId, instrument.RandomMultiplicativeConfig.Id);
+        Assert.Equal(0.05, instrument.RandomMultiplicativeConfig.StandardDeviation);
+        Assert.Equal(0.001, instrument.RandomMultiplicativeConfig.Mean);
+    }
+
+    [Fact]
+    public async Task EnsureModelConfigurationAsync_WithMeanRevertingAndExistingPrice_UsesLastPriceAsMean()
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var scopedContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+
+        var instrument = new Instrument
+        {
+            Name = "AAPL",
+            ModelType = "MeanReverting",
+            TickIntervalMillieconds = 1000
+        };
+        scopedContext.Instruments.Add(instrument);
+        await scopedContext.SaveChangesAsync();
+
+        scopedContext.Prices.Add(new Price
+        {
+            Instrument = "AAPL",
+            Value = 175.50m,
+            Timestamp = DateTime.UtcNow
+        });
+        await scopedContext.SaveChangesAsync();
+
+        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext);
+
+        await scopedContext.Entry(instrument)
+            .Reference(i => i.MeanRevertingConfig)
+            .LoadAsync();
+
+        Assert.NotNull(instrument.MeanRevertingConfig);
+        Assert.Equal(175.50, instrument.MeanRevertingConfig.Mean);
+    }
+
+    [Fact]
+    public async Task GetOrCreateInstrumentAsync_WithNewInstrument_CreatesInstrument()
+    {
+        var (instrument, created) = await _manager.GetOrCreateInstrumentAsync("TSLA", 1000, 250.0m, DateTime.UtcNow);
+
+        Assert.True(created);
+        Assert.NotNull(instrument);
+        Assert.Equal("TSLA", instrument.Name);
+        Assert.Equal(1000, instrument.TickIntervalMillieconds);
+        Assert.Equal("Flat", instrument.ModelType);
+    }
+
+    [Fact]
+    public async Task GetOrCreateInstrumentAsync_WithNewInstrument_CreatesDefaultConfiguration()
+    {
+        var result = await _manager.GetOrCreateInstrumentAsync("TSLA", 1000, 250.0m, DateTime.UtcNow);
+
+        using var scope = _serviceProvider.CreateScope();
+        var scopedContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+
+        var instrument = await scopedContext.Instruments
+            .Include(i => i.FlatConfig)
+            .FirstOrDefaultAsync(i => i.Name == "TSLA");
+
+        Assert.NotNull(instrument);
+        Assert.NotNull(instrument.FlatConfig);
+    }
+
+    [Fact]
+    public async Task GetOrCreateInstrumentAsync_WithExistingInstrument_ReturnsExisting()
+    {
+        _context.Instruments.Add(new Instrument
+        {
+            Name = "AAPL",
+            ModelType = "RandomMultiplicative",
+            TickIntervalMillieconds = 1500
+        });
+        await _context.SaveChangesAsync();
+
+        var (instrument, created) = await _manager.GetOrCreateInstrumentAsync("AAPL", 1000, 150.0m, DateTime.UtcNow);
+
+        Assert.False(created);
+        Assert.NotNull(instrument);
+        Assert.Equal("AAPL", instrument.Name);
+        Assert.Equal(1500, instrument.TickIntervalMillieconds);
+        Assert.Equal("RandomMultiplicative", instrument.ModelType);
+    }
+
+    [Fact]
+    public async Task GetOrCreateInstrumentAsync_WithNewInstrument_RaisesConfigurationChangedEvent()
+    {
+        ModelConfigurationChangedEventArgs? eventArgs = null;
+        _manager.ConfigurationChanged += (_, args) => eventArgs = args;
+
+        await _manager.GetOrCreateInstrumentAsync("NVDA", 1000, 500.0m, DateTime.UtcNow);
+
+        Assert.NotNull(eventArgs);
+        Assert.Equal("NVDA", eventArgs.InstrumentName);
+        Assert.Equal("Flat", eventArgs.ModelType);
+    }
+
+    [Fact]
+    public async Task GetOrCreateInstrumentAsync_WithExistingInstrument_DoesNotRaiseEvent()
+    {
+        _context.Instruments.Add(new Instrument
+        {
+            Name = "AAPL",
+            ModelType = "Flat",
+            TickIntervalMillieconds = 1000
+        });
+        await _context.SaveChangesAsync();
+
+        ModelConfigurationChangedEventArgs? eventArgs = null;
+        _manager.ConfigurationChanged += (_, args) => eventArgs = args;
+
+        var (instrument, _) = await _manager.GetOrCreateInstrumentAsync("AAPL", 1000, 150.0m, DateTime.UtcNow);
+
+        Assert.Null(eventArgs);
+        Assert.Equal("AAPL", instrument.Name);
+    }
+
+    [Fact]
+    public async Task GetOrCreateInstrumentAsync_WithCustomModelType_CreatesWithSpecifiedModel()
+    {
+        var (instrument, created) = await _manager.GetOrCreateInstrumentAsync("AMZN", 2000, 180.0m, DateTime.UtcNow, "RandomMultiplicative");
+
+        Assert.True(created);
+        Assert.NotNull(instrument);
+        Assert.Equal("AMZN", instrument.Name);
+        Assert.Equal("RandomMultiplicative", instrument.ModelType);
+    }
+
+    [Fact]
+    public async Task GetOrCreateInstrumentAsync_LoadsConfigurations()
+    {
+        var result1 = await _manager.GetOrCreateInstrumentAsync("META", 1000, 350.0m, DateTime.UtcNow);
+        var result2 = await _manager.GetOrCreateInstrumentAsync("AMZN", 1000, 350.0m, DateTime.UtcNow, "RandomMultiplicative");
+
+        Assert.True(result1.created);
+        Assert.NotNull(result1.instrument);
+        Assert.True(result2.created);
+        Assert.NotNull(result2.instrument);
+
+        using var scope = _serviceProvider.CreateScope();
+        var scopedContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+
+        var meta = await scopedContext.Instruments
+            .Include(i => i.RandomMultiplicativeConfig)
+            .Include(i => i.MeanRevertingConfig)
+            .Include(i => i.FlatConfig)
+            .Include(i => i.RandomAdditiveWalkConfig)
+            .FirstOrDefaultAsync(i => i.Name == "META");
+        var amzn = await scopedContext.Instruments
+            .Include(i => i.RandomMultiplicativeConfig)
+            .Include(i => i.MeanRevertingConfig)
+            .Include(i => i.FlatConfig)
+            .Include(i => i.RandomAdditiveWalkConfig)
+            .FirstOrDefaultAsync(i => i.Name == "AMZN");
+
+        Assert.NotNull(meta);
+        Assert.NotNull(meta.FlatConfig);
+        Assert.Null(meta.RandomMultiplicativeConfig);
+        Assert.Null(meta.MeanRevertingConfig);
+        Assert.Null(meta.RandomAdditiveWalkConfig);
+
+        Assert.NotNull(amzn);
+        Assert.NotNull(amzn.RandomMultiplicativeConfig);
+        Assert.Null(amzn.MeanRevertingConfig);
+        Assert.Null(amzn.FlatConfig);
+        Assert.Null(amzn.RandomAdditiveWalkConfig);
+    }
+
+    [Fact]
+    public async Task GetOrCreateInstrumentAsync_WithInvalidModelType_DefaultsToFlat()
+    {
+        var (instrument, created) = await _manager.GetOrCreateInstrumentAsync("NFLX", 1000, 300.0m, DateTime.UtcNow, "InvalidModel");
+        Assert.True(created);
+        Assert.NotNull(instrument);
+        Assert.Equal("NFLX", instrument.Name);
+        Assert.Equal("Flat", instrument.ModelType);
+        Assert.NotNull(instrument.FlatConfig);
+        Assert.Null(instrument.RandomMultiplicativeConfig);
+        Assert.Null(instrument.MeanRevertingConfig);
+        Assert.Null(instrument.RandomAdditiveWalkConfig);
+    }
+
     public void Dispose()
     {
         _context.Dispose();

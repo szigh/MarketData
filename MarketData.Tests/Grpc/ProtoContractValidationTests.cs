@@ -272,4 +272,26 @@ public class ProtoContractValidationTests
         Assert.Equal(4, response.SupportedModels.Count);
         Assert.Contains("Flat", response.SupportedModels);
     }
+
+    [Fact]
+    public void GetInstrumentsRequestTest()
+    {
+        var request = new TryAddInstrumentRequest();
+        request.InstrumentName = "TEST";
+        request.TickIntervalMs = 1000;
+        Assert.NotNull(request);
+        Assert.Equal("TEST", request.InstrumentName);
+        Assert.Equal(1000, request.TickIntervalMs);
+    }
+
+    [Fact]
+    public void GetInstrumentsResponseTest() 
+    {
+        var response = new TryAddInstrumentResponse();
+        response.Message = "Instrument added successfully";
+        response.Added = true;
+        Assert.NotNull(response);
+        Assert.Equal("Instrument added successfully", response.Message);
+        Assert.True(response.Added);
+    }
 }

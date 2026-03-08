@@ -11,5 +11,18 @@
         "Action": "Start"
       }
     ]
+  },
+  {
+    "Name": "Console + Server",
+    "Projects": [
+      {
+        "Path": "MarketData.Client\\MarketData.Client.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "MarketData\\MarketData.csproj",
+        "Action": "Start"
+      }
+    ]
   }
 ]
