@@ -53,26 +53,30 @@ public class MarketDataGeneratorService : BackgroundService
             _instruments[kvp.Key] = kvp.Value;
         }
 
-        using var scope = _serviceProvider.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
-
         // Load initial prices and create simulators for each instrument
         foreach (var instrument in _instruments.Values)
         {
-            var latestPrice = await dbContext.Prices
-                .AsNoTracking()
-                .Where(p => p.Instrument == instrument.Name)
-                .OrderByDescending(p => p.Timestamp)
-                .FirstOrDefaultAsync(ct)
-                    ?? throw new InvalidOperationException(
-                        $"No initial price found for instrument '{instrument.Name}'. " +
-                        $"Please seed the database with an initial price.");
+            var latestPrice = await GetLatestPrice(instrument.Name, ct);
 
             _lastPrices[instrument.Name] = latestPrice.Value;
             _priceSimulators[instrument.Name] = _modelManager.CreatePriceSimulator(instrument);
         }
 
         _logger.LogInformation("Initialized {Count} instruments", _instruments.Count);
+    }
+
+    private async Task<Price> GetLatestPrice(string instrumentName, CancellationToken ct)
+    {
+        using var scope = _serviceProvider.CreateScope();
+        var dbContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+        return await dbContext.Prices
+            .AsNoTracking()
+            .Where(p => p.Instrument == instrumentName)
+            .OrderByDescending(p => p.Timestamp)
+            .FirstOrDefaultAsync(ct)
+                ?? throw new InvalidOperationException(
+                    $"No initial price found for instrument '{instrumentName}'. " +
+                    $"Please seed the database with an initial price.");
     }
 
     /// <summary>
@@ -117,9 +121,19 @@ public class MarketDataGeneratorService : BackgroundService
             // Create new price simulator with updated configuration
             var newSimulator = _modelManager.CreatePriceSimulator(instrument);
 
-            // Thread-safe updates using ConcurrentDictionary
-            _instruments[instrumentName] = instrument;
             _priceSimulators[instrumentName] = newSimulator;
+
+            // This is the case where a new instrument is added
+            if (!_lastPrices.ContainsKey(instrumentName))
+            {
+                _lastPrices[instrumentName] = 
+                    (await GetLatestPrice(instrument.Name, CancellationToken.None)).Value;
+            }
+
+            // This step must be done after simulator is created + price is set,
+            // to avoid issue when instrument is added:
+            //      price is generated before simulator and last price are set
+            _instruments[instrumentName] = instrument;
 
             _logger.LogInformation(
                 "Successfully hot reloaded instrument '{InstrumentName}' with model '{ModelType}'",
@@ -207,7 +221,7 @@ public class MarketDataGeneratorService : BackgroundService
             Timestamp = DateTime.UtcNow
         };
 
-        _logger.LogInformation("Generated price for {Instrument}: {Price} (previous: {PreviousPrice})",
+        _logger.LogTrace("Generated price for {Instrument}: {Price} (previous: {PreviousPrice})",
             instrumentName, newPrice, currentPrice);
 
         await PersistPriceAsync(price, ct);
@@ -219,6 +233,9 @@ public class MarketDataGeneratorService : BackgroundService
         if (!TakeActionNeeded(_lastGrpcPublish, price.Instrument!, price.Timestamp, _options.GrpcPublishMilliseconds))
             return;
            
+        _logger.LogInformation("[{Timestamp}] Publishing price for {Instrument}: {Price}", 
+            price.Timestamp, price.Instrument, price.Value);
+        
         await MarketDataGrpcService.BroadcastPrice(price.Instrument!, price.Value, price.Timestamp);
         _lastGrpcPublish[price.Instrument!] = price.Timestamp;
     }
@@ -228,12 +245,15 @@ public class MarketDataGeneratorService : BackgroundService
         if (!TakeActionNeeded(_lastDatabaseUpdates, price.Instrument!, price.Timestamp, _options.DatabasePersistenceMilliseconds))
             return;
 
-        _lastDatabaseUpdates[price.Instrument!] = price.Timestamp;
+        _logger.LogInformation("[{Timestamp}] Persisting price for {Instrument}: {Price}", 
+            price.Timestamp, price.Instrument, price.Value);
 
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
         dbContext.Prices.Add(price);
         await dbContext.SaveChangesAsync(ct);
+
+        _lastDatabaseUpdates[price.Instrument!] = price.Timestamp;
     }
 
     /// <summary>
