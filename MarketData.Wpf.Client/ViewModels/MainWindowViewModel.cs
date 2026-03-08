@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.Windows.Input;
+using MarketData.Grpc;
 using MarketData.Wpf.Shared;
 
 namespace MarketData.Wpf.Client.ViewModels;
@@ -7,16 +8,20 @@ namespace MarketData.Wpf.Client.ViewModels;
 public class MainWindowViewModel : ViewModelBase
 {
     private readonly InstrumentViewModelFactory _instrumentViewModelFactory;
+    private readonly ModelConfigurationService.ModelConfigurationServiceClient _modelConfigurationServiceClient;
     private string _title = "Market Data Client";
     private ObservableCollection<InstrumentTabViewModel> _tabs;
     private InstrumentTabViewModel? _selectedTab;
 
-    public MainWindowViewModel(InstrumentViewModelFactory instrumentViewModelFactory)
+    public MainWindowViewModel(
+        InstrumentViewModelFactory instrumentViewModelFactory,
+        ModelConfigurationService.ModelConfigurationServiceClient modelConfigurationServiceClient)
     {
         _instrumentViewModelFactory = instrumentViewModelFactory;
+        _modelConfigurationServiceClient = modelConfigurationServiceClient;
         _tabs = [];
 
-        AddTabCommand = new RelayCommand(ExecuteAddTab);
+        AddTabCommand = new AsyncRelayCommand(ExecuteAddTab);
         CloseTabCommand = new RelayCommand<InstrumentTabViewModel>(ExecuteCloseTab, CanExecuteCloseTab);
 
         // Start with a single FTSE tab
@@ -44,9 +49,14 @@ public class MainWindowViewModel : ViewModelBase
     public ICommand AddTabCommand { get; }
     public ICommand CloseTabCommand { get; }
 
-    private void ExecuteAddTab()
+    private async Task ExecuteAddTab()
     {
-        var instrumentSelector = new InstrumentSelectorWindow();
+        var response = await _modelConfigurationServiceClient
+            .GetAllInstrumentsAsync(new GetAllInstrumentsRequest());
+
+        var instrumentSelector = new InstrumentSelectorWindow(
+            response.Configurations.Select(r => r.InstrumentName));
+
         if (instrumentSelector.ShowDialog() == true)
         {
             var selectedInstrument = instrumentSelector.SelectedInstrument;

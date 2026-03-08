@@ -7,9 +7,15 @@ public partial class InstrumentSelectorWindow : Window
 {
     public string? SelectedInstrument { get; private set; }
 
-    public InstrumentSelectorWindow()
+    public InstrumentSelectorWindow(IEnumerable<string> availableInstruments)
     {
         InitializeComponent();
+        InstrumentComboBox.Items.Add("FTSE"); // default option
+        foreach (var instrument in availableInstruments.Distinct())
+        {
+            if (instrument != "FTSE") // avoid adding duplicate
+                InstrumentComboBox.Items.Add(new ComboBoxItem { Content = instrument });
+        }
     }
 
     private void OkButton_Click(object sender, RoutedEventArgs e)
