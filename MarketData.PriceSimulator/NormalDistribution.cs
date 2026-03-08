@@ -10,6 +10,11 @@ internal static class NormalDistribution
     /// <returns>A random value from the normal distribution N(μ, σ²).</returns>
     public static double Generate(double mean, double standardDeviation)
     {
+        if (standardDeviation < 0)
+        {
+            throw new ArgumentException("Standard deviation must be non-negative", nameof(standardDeviation));
+        }
+
         // Box-Muller transform to generate normally distributed random numbers
         var u1 = Random.Shared.NextDouble();
         var u2 = Random.Shared.NextDouble();

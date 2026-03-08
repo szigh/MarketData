@@ -427,12 +427,156 @@ dotnet ef database update
 
 ## Testing Strategy
 
-To be implemented in future iterations, but potential approaches include:
+### **Test Projects Overview**
 
-- **Unit Tests:** Test individual simulators in isolation
-- **Integration Tests:** Test gRPC services with real database
-- **Manual Testing:** Use console client and `FastSimulate` for quick verification
-- **UI Testing:** WPF client for visual validation of behavior
+The solution has **comprehensive test coverage** with **220 automated tests** across critical components.
+
+#### **MarketData.PriceSimulator.Tests** (138 tests) ✅
+**Frameworks:** xUnit 2.9.3, Custom `[StatisticalFact]` attribute
+
+**Coverage:**
+- **56 Unit Tests** - Fast, deterministic model behavior verification
+  - Parameter validation
+  - Edge case handling
+  - Model correctness
+- **82 Statistical Tests** - Stochastic validation (slower)
+  - Chi-squared distribution tests
+  - Mean/variance convergence
+  - Long-term statistical properties
+
+**Execution:**
+```bash
+# Fast tests only
+dotnet test --settings test.runsettings
+
+# All tests including statistical
+dotnet test MarketData.PriceSimulator.Tests
+```
+
+#### **MarketData.Tests** (82 tests) ✅
+**Frameworks:** xUnit 2.9.3, Moq 4.20.72, EF Core InMemory 10.0.3, ASP.NET Testing 10.0.3
+
+**Coverage:**
+- **30 Controller Tests** - REST API endpoints
+  - `InstrumentsController` - CRUD operations
+  - `PricesController` - Price queries  
+  - `ModelConfigurationsController` - Configuration management
+- **17 gRPC Contract Tests** - Proto message structure stability
+  - Compile-time breaking change detection
+  - Message field validation
+  - Backward compatibility protection
+- **32 Service Unit Tests** - Business logic
+  - `InstrumentModelManager` - Configuration CRUD, model switching
+  - Parameter validation
+  - Event notifications
+- **3 Integration Tests** - Background service lifecycle
+  - Service startup/shutdown
+  - Real-time tick interval verification
+
+**Execution:**
+```bash
+dotnet test MarketData.Tests
+```
+
+---
+
+### **Testing Libraries**
+
+| Library | Version | Purpose | Used In |
+|---------|---------|---------|---------|
+| **xUnit** | 2.9.3 | Test framework | All test projects |
+| **Moq** | 4.20.72 | Mocking framework | MarketData.Tests |
+| **EF Core InMemory** | 10.0.3 | Database testing | MarketData.Tests |
+| **ASP.NET Testing** | 10.0.3 | Integration/API tests | MarketData.Tests |
+| **coverlet.collector** | 6.0.4 | Code coverage | All test projects |
+
+---
+
+### **Coverage Summary**
+
+| Project | Tests | Coverage Level | Status | Notes |
+|---------|-------|----------------|--------|-------|
+| **MarketData.PriceSimulator** | 138 | 🟢 High | ✅ Complete | All models + statistical validation |
+| **MarketData** (Controllers) | 30 | 🟢 High | ✅ Complete | All REST endpoints |
+| **MarketData** (gRPC) | 17 | 🟢 Contract | ✅ Complete | Message structure stability |
+| **MarketData** (Services) | 32 | 🟢 High | ✅ Complete | Core business logic |
+| **MarketData** (Integration) | 3 | 🟡 Basic | ✅ Reference | Background service lifecycle |
+| **MarketData.Wpf.Client** | 0 | ⚪ N/A | ⚠️ Not Tested | Manual UI testing |
+| **MarketData.Client** | 0 | ⚪ N/A | ⚠️ Not Tested | Simple console app |
+| **MarketData.Wpf.Shared** | 0 | ⚪ N/A | ⚠️ Not Tested | Utilities |
+| **MarketData.Client.Shared** | 0 | ⚪ N/A | ⚠️ Not Tested | Configuration classes only |
+| **FastSimulate** | 0 | ⚪ N/A | ⚠️ Not Tested | Benchmarking tool |
+| **TOTAL** | **220** |  |  | Critical paths covered |
+
+---
+
+### **Test Execution**
+
+#### **Run All Tests:**
+```bash
+dotnet test
+```
+**Expected:** 220 passed, ~35-40 seconds
+
+#### **Fast Tests Only (CI Pipeline):**
+```bash
+dotnet test --settings test.runsettings
+```
+**Expected:** 138 passed, ~5 seconds (excludes slow statistical tests)
+
+#### **By Project:**
+```bash
+dotnet test MarketData.PriceSimulator.Tests  # 138 tests
+dotnet test MarketData.Tests                  # 82 tests
+```
+
+---
+
+### **Testing Approaches by Component**
+
+#### **✅ Unit Tests** (Business Logic)
+- Price models, service layer, configuration management
+- Fast, isolated tests with mocked dependencies
+- **Tools:** xUnit, Moq, InMemory database
+
+#### **✅ Statistical Tests** (Mathematical Correctness)
+- Distribution properties, mean/variance, convergence
+- Generate 10,000+ samples, apply Chi-squared tests
+- **Tools:** Custom `[StatisticalFact]` attribute, xUnit
+
+#### **✅ Contract Tests** (API Stability)
+- gRPC message structure, field presence
+- Compile-time validation, structural assertions
+- **Tools:** xUnit, Proto-generated classes
+
+#### **✅ Integration Tests** (Lifecycle & Timing)
+- Background service, real-time behavior
+- Real service host with InMemory database
+- **Tools:** xUnit, Microsoft.Extensions.Hosting
+
+#### **⚠️ Manual Testing** (UI & End-to-End)
+- WPF client, console client, user workflows
+- Manual verification during development
+- **Tools:** Visual Studio debugging, production WPF app
+
+---
+
+### **Untested Projects (By Design)**
+
+#### **MarketData.Wpf.Client**
+- Low ROI compared to manual testing
+- Backend APIs already comprehensively tested
+- Manual UI testing during development
+- ViewModels could be unit tested (future enhancement)
+
+#### **MarketData.Client**, **FastSimulate**
+- Simple console application with no business logic
+
+#### **MarketData.Wpf.Shared**
+- Simple utility classes
+
+#### **MarketData.Client.Shared**
+- Contains only configuration POCOs (`GrpcSettings`)
 
 ---
 
@@ -475,4 +619,20 @@ MarketData.Client.Shared
 
 MarketData.PriceSimulator
     └── (No dependencies)
+
+# Test Projects
+MarketData.Tests
+    ├── MarketData (project reference)
+    ├── MarketData.PriceSimulator (project reference)
+    └── Testing Libraries (xUnit, Moq, EF InMemory, ASP.NET Testing)
+
+MarketData.PriceSimulator.Tests
+    ├── MarketData.PriceSimulator (project reference)
+    └── Testing Libraries (xUnit)
 ```
+
+---
+
+**Created:** 2026  
+**License:** MIT  
+**Type:** Hobby Project / Portfolio Demonstration
