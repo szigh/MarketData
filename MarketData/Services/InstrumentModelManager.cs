@@ -19,11 +19,11 @@ public class InstrumentModelManager : IInstrumentModelManager
     private readonly ILogger<InstrumentModelManager> _logger;
     private const string DefaultModelType = "Flat";
 
-    /// <summary>
-    /// Event raised when a model configuration is changed.
-    /// Subscribers can use this to hot-reload simulators.
-    /// </summary>
     public event EventHandler<ModelConfigurationChangedEventArgs>? ConfigurationChanged;
+    public event EventHandler<ModelConfigurationChangedEventArgs>? ModelSwitched;
+    public event EventHandler<ModelConfigurationChangedEventArgs>? TickIntervalChanged;
+    public event EventHandler<ModelConfigurationChangedEventArgs>? InstrumentAdded;
+    public event EventHandler<ModelConfigurationChangedEventArgs>? InstrumentRemoved;
 
     public InstrumentModelManager(
         IServiceProvider serviceProvider,
@@ -35,18 +35,37 @@ public class InstrumentModelManager : IInstrumentModelManager
         _logger = logger;
     }
 
-    /// <summary>
-    /// Raises the ConfigurationChanged event
-    /// </summary>
-    protected virtual void OnConfigurationChanged(string instrumentName, string? modelType = null)
-    {
+    protected virtual void OnConfigurationChanged(string instrumentName) => 
         ConfigurationChanged?.Invoke(this, new ModelConfigurationChangedEventArgs
-        {
-            InstrumentName = instrumentName,
-            ModelType = modelType,
-            Timestamp = DateTime.UtcNow
-        });
-    }
+    {
+        InstrumentName = instrumentName
+    });
+
+    protected void OnModelSwitched(string instrumentName, string newModelType) => 
+        ModelSwitched?.Invoke(this, new ModelConfigurationChangedEventArgs
+    {
+        InstrumentName = instrumentName,
+        NewModelType = newModelType
+    });
+
+    protected void OnTickIntervalChanged(string instrumentName, int newTickIntervalMs) => 
+        TickIntervalChanged?.Invoke(this, new ModelConfigurationChangedEventArgs
+    {
+        InstrumentName = instrumentName,
+        NewTickIntervalMs = newTickIntervalMs
+    });
+
+    protected void OnInstrumentAdded(string instrumentName) => 
+        InstrumentAdded?.Invoke(this, new ModelConfigurationChangedEventArgs
+    {
+        InstrumentName = instrumentName
+    });
+
+    protected void OnInstrumentRemoved(string instrumentName) => 
+        InstrumentRemoved?.Invoke(this, new ModelConfigurationChangedEventArgs
+    {
+        InstrumentName = instrumentName
+    });
 
     /// <summary>
     /// Used to seed the database with an initial instrument and price. 
@@ -105,7 +124,7 @@ public class InstrumentModelManager : IInstrumentModelManager
             // If the model type is valid, the *default* configuration will be created for that model type
             await EnsureModelConfigurationAsync(instrument, context);
 
-            OnConfigurationChanged(instrumentName, instrument.ModelType);
+            OnInstrumentAdded(instrumentName); // Notify that a new instrument has been added
 
             return (instrument, true);
         }
@@ -114,6 +133,24 @@ public class InstrumentModelManager : IInstrumentModelManager
             _logger.LogInformation("Instrument '{InstrumentName}' already exists", instrumentName);
             return (instrument, false);
         }
+    }
+
+    public async Task<bool> TryRemoveInstrument(string instrumentName) 
+    {         
+        using var scope = _serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+        var instrument = await context.Instruments
+            .FirstOrDefaultAsync(i => i.Name == instrumentName);
+        if (instrument == null)
+        {
+            _logger.LogWarning("Attempted to remove non-existent instrument '{InstrumentName}'", instrumentName);
+            return false;
+        }
+        context.Instruments.Remove(instrument);
+        await context.SaveChangesAsync();
+        _logger.LogInformation("Removed instrument '{InstrumentName}'", instrumentName);
+        OnInstrumentRemoved(instrumentName); // Notify that the instrument has been removed
+        return true;
     }
 
     /// <summary>
@@ -310,7 +347,7 @@ public class InstrumentModelManager : IInstrumentModelManager
             instrumentName, previousModel, newModelType);
 
         // Notify subscribers of configuration change
-        OnConfigurationChanged(instrumentName, newModelType);
+        OnModelSwitched(instrumentName, newModelType);
 
         return previousModel;
     }
@@ -534,7 +571,7 @@ public class InstrumentModelManager : IInstrumentModelManager
         instrument.TickIntervalMillieconds = tickIntervalMs;
 
         await context.SaveChangesAsync();
-        OnConfigurationChanged(instrumentName);
+        OnTickIntervalChanged(instrumentName, tickIntervalMs);
 
         return instrument.TickIntervalMillieconds;
     }

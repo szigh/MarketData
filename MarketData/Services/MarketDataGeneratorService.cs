@@ -36,6 +36,10 @@ public class MarketDataGeneratorService : BackgroundService
 
         // Subscribe to configuration changes for hot reload
         _modelManager.ConfigurationChanged += OnConfigurationChanged;
+        _modelManager.ModelSwitched += OnConfigurationChanged;
+        _modelManager.InstrumentAdded += OnConfigurationChanged;
+        _modelManager.InstrumentRemoved += OnInstrumentRemoved;
+        _modelManager.TickIntervalChanged += OnTickIntervalChanged;
     }
 
     /// <summary>
@@ -79,17 +83,35 @@ public class MarketDataGeneratorService : BackgroundService
                     $"Please seed the database with an initial price.");
     }
 
-    /// <summary>
-    /// Event handler for configuration changes - triggers hot reload
-    /// </summary>
     private void OnConfigurationChanged(object? sender, ModelConfigurationChangedEventArgs e)
     {
         _logger.LogInformation(
-            "Configuration changed for instrument '{InstrumentName}' (Model: {ModelType}). Triggering hot reload...",
-            e.InstrumentName, e.ModelType ?? "config update");
+            "Configuration changed for instrument '{InstrumentName}'. Triggering hot reload...",
+            e.InstrumentName);
 
         // Fire and forget - don't block the caller
         _ = HotReloadInstrumentAsync(e.InstrumentName);
+    }
+
+    private void OnTickIntervalChanged(object? sender, ModelConfigurationChangedEventArgs e)
+    {
+        if (_instruments.TryGetValue(e.InstrumentName, out var instrument))
+        {
+            instrument.TickIntervalMillieconds = e.NewTickIntervalMs;
+        }
+    }
+
+    private void OnInstrumentRemoved(object? sender, ModelConfigurationChangedEventArgs e)
+    {
+        _logger.LogInformation("Instrument '{InstrumentName}' removed. Cleaning up resources...", e.InstrumentName);
+
+        // Remove instrument from dictionaries
+        _instruments.TryRemove(e.InstrumentName, out _);
+        _priceSimulators.TryRemove(e.InstrumentName, out _);
+        _lastPrices.TryRemove(e.InstrumentName, out _);
+        _lastTickTimes.TryRemove(e.InstrumentName, out _);
+        _lastDatabaseUpdates.TryRemove(e.InstrumentName, out _);
+        _lastGrpcPublish.TryRemove(e.InstrumentName, out _);
     }
 
     /// <summary>
@@ -286,6 +308,10 @@ public class MarketDataGeneratorService : BackgroundService
     {
         // Unsubscribe from configuration changes
         _modelManager.ConfigurationChanged -= OnConfigurationChanged;
+        _modelManager.ModelSwitched -= OnConfigurationChanged;
+        _modelManager.InstrumentAdded -= OnConfigurationChanged;
+        _modelManager.InstrumentRemoved -= OnInstrumentRemoved;
+        _modelManager.TickIntervalChanged -= OnTickIntervalChanged;
 
         base.Dispose();
     }

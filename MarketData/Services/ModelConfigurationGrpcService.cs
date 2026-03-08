@@ -354,6 +354,7 @@ public class ModelConfigurationGrpcService : ModelConfigurationService.ModelConf
                 (decimal)request.InitialPriceValue, 
                 new DateTime(request.InitialPriceTimestamp),
                 request.ModelType);
+
             if (created)
             {
                 _logger.LogInformation("Instrument '{Instrument}' added successfully with tick interval {TickIntervalMs} ms",
@@ -388,6 +389,50 @@ public class ModelConfigurationGrpcService : ModelConfigurationService.ModelConf
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error adding instrument {Instrument}", request.InstrumentName);
+            throw new RpcException(new Status(StatusCode.Internal, "Internal server error"));
+        }
+    }
+
+    public override async Task<TryRemoveInstrumentResponse> TryRemoveInstrument(
+        TryRemoveInstrumentRequest request, 
+        ServerCallContext context)
+    {
+        try
+        {
+            _logger.LogInformation("gRPC: Remove instrument request for '{InstrumentName}'", request.InstrumentName);
+            var removed = await _modelManager.TryRemoveInstrument(request.InstrumentName);
+            if (removed)
+            {
+                _logger.LogInformation("Instrument '{InstrumentName}' removed successfully", request.InstrumentName);
+                return new TryRemoveInstrumentResponse
+                {
+                    Removed = true,
+                    Message = $"Instrument '{request.InstrumentName}' removed successfully"
+                };
+            }
+            else
+            {
+                _logger.LogInformation("Instrument '{InstrumentName}' not found. No instrument removed.", request.InstrumentName);
+                return new TryRemoveInstrumentResponse
+                {
+                    Removed = false,
+                    Message = $"Instrument '{request.InstrumentName}' not found"
+                };
+            }
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, $"Invalid argument for {nameof(TryRemoveInstrument)}");
+            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, $"{nameof(InvalidOperationException)} for {nameof(TryRemoveInstrument)}");
+            throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing instrument {Instrument}", request.InstrumentName);
             throw new RpcException(new Status(StatusCode.Internal, "Internal server error"));
         }
     }

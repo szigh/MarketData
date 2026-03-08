@@ -30,8 +30,9 @@ internal class Program
             var sep = new string('=', 30);
             Console.WriteLine($"Menu {sep}");
             Console.WriteLine($"1. Add instrument");
-            Console.WriteLine($"2. View configurations");
-            Console.WriteLine($"3. Start price streaming");
+            Console.WriteLine($"2. Remove instrument");
+            Console.WriteLine($"3. View configurations");
+            Console.WriteLine($"4. Start price streaming");
 
             Console.Write($">>> ");
             var input = Console.ReadLine();
@@ -41,9 +42,13 @@ internal class Program
             }
             else if (input == "2")
             {
-                await modelConfigClient.GetConfiguredInstruments(printConfigs: true);
+                await modelConfigClient.RemoveInstrument();
             }
             else if (input == "3")
+            {
+                await modelConfigClient.GetConfiguredInstruments(printConfigs: true);
+            }
+            else if (input == "4")
             {
                 await priceStreamer.Start();
             }

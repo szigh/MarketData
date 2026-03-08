@@ -6,7 +6,6 @@ namespace MarketData.Services;
 public class ModelConfigurationChangedEventArgs : EventArgs
 {
     public string InstrumentName { get; init; } = string.Empty;
-    public string? ModelType { get; init; }
-    public DateTime Timestamp { get; init; }
+    public string NewModelType { get; init; } = string.Empty;
+    public int NewTickIntervalMs { get; init; }
 }
-

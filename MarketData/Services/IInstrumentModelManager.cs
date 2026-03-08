@@ -10,11 +10,11 @@ namespace MarketData.Services;
 /// </summary>
 public interface IInstrumentModelManager
 {
-    /// <summary>
-    /// Event raised when a model configuration is changed.
-    /// Subscribers can use this to hot-reload simulators.
-    /// </summary>
     event EventHandler<ModelConfigurationChangedEventArgs>? ConfigurationChanged;
+    event EventHandler<ModelConfigurationChangedEventArgs>? ModelSwitched;
+    event EventHandler<ModelConfigurationChangedEventArgs>? TickIntervalChanged;
+    event EventHandler<ModelConfigurationChangedEventArgs>? InstrumentAdded;
+    event EventHandler<ModelConfigurationChangedEventArgs>? InstrumentRemoved;
 
     /// <summary>
     /// Gets an instrument with all its model configurations loaded
@@ -103,4 +103,5 @@ public interface IInstrumentModelManager
         string instrumentName, int tickIntervalMs,
         decimal initialPriceValue, DateTime initialPriceTimestamp,
         string? modelType = null);
+    Task<bool> TryRemoveInstrument(string instrumentName);
 }

@@ -127,7 +127,29 @@ public class InstrumentModelManagerTests : IDisposable
 
         Assert.NotNull(eventArgs);
         Assert.Equal("AAPL", eventArgs.InstrumentName);
-        Assert.Equal("MeanReverting", eventArgs.ModelType);
+        Assert.Equal("MeanReverting", eventArgs.NewModelType);
+    }
+
+    [Fact]
+    public async Task UpdateTickIntervalAsync_RaisesConfigurationChangedEvent()
+    {
+        var instrument = new Instrument
+        {
+            Name = "AAPL",
+            ModelType = "Flat",
+            TickIntervalMillieconds = 1000
+        };
+        _context.Instruments.Add(instrument);
+        await _context.SaveChangesAsync();
+
+        ModelConfigurationChangedEventArgs? eventArgs = null;
+        _manager.ConfigurationChanged += (sender, args) => eventArgs = args;
+
+        await _manager.UpdateTickIntervalAsync("AAPL", 2000);
+
+        Assert.NotNull(eventArgs);
+        Assert.Equal("AAPL", eventArgs.InstrumentName);
+        Assert.Equal(2000, eventArgs.NewTickIntervalMs);
     }
 
     [Fact]
@@ -870,7 +892,6 @@ public class InstrumentModelManagerTests : IDisposable
 
         Assert.NotNull(eventArgs);
         Assert.Equal("NVDA", eventArgs.InstrumentName);
-        Assert.Equal("Flat", eventArgs.ModelType);
     }
 
     [Fact]
