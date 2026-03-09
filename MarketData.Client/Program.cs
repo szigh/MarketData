@@ -1,68 +1,57 @@
-using Grpc.Net.Client;
+using MarketData.Client;
 using MarketData.Client.Shared.Configuration;
-using MarketData.Grpc;
 using Microsoft.Extensions.Configuration;
 
-var configuration = new ConfigurationBuilder()
-    .SetBasePath(Directory.GetCurrentDirectory())
-    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-    .Build();
-
-var grpcSettings = configuration.GetSection(GrpcSettings.SectionName).Get<GrpcSettings>() 
-    ?? new GrpcSettings();
-
-Console.WriteLine("Market Data gRPC Client");
-Console.WriteLine("======================\n");
-Console.WriteLine($"Connecting to: {grpcSettings.ServerUrl}\n");
-
-// Configure the gRPC channel
-var channel = GrpcChannel.ForAddress(grpcSettings.ServerUrl);
-var client = new MarketDataService.MarketDataServiceClient(channel);
-
-Console.Write("Enter instruments to subscribe (comma-separated, e.g., FTSE,AAPL): ");
-var input = Console.ReadLine();
-
-if (string.IsNullOrWhiteSpace(input))
+internal class Program
 {
-    Console.WriteLine("No instruments specified. Exiting.");
-    return;
-}
-
-var instruments = input.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-
-var request = new SubscribeRequest();
-foreach (var instrument in instruments)
-{
-    request.Instruments.Add(instrument);
-}
-
-Console.WriteLine($"\nSubscribing to: {string.Join(", ", request.Instruments)}");
-Console.WriteLine("Waiting for price updates... (Press Ctrl+C to exit)\n");
-
-var cts = new CancellationTokenSource();
-Console.CancelKeyPress += (sender, e) =>
-{
-    e.Cancel = true;
-    cts.Cancel();
-};
-
-try
-{
-    using var call = client.SubscribeToPrices(request, cancellationToken: cts.Token);
-
-    while (await call.ResponseStream.MoveNext(cts.Token))
+    private static async Task Main(string[] args)
     {
-        var priceUpdate = call.ResponseStream.Current;
-        var timestamp = new DateTime(priceUpdate.Timestamp);
-        Console.WriteLine($"[{timestamp:HH:mm:ss.fff}] {priceUpdate.Instrument,-10} {priceUpdate.Value:F4}");
+        var configuration = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .Build();
+
+        var grpcSettings = configuration.GetSection(GrpcSettings.SectionName)
+            .Get<GrpcSettings>() ?? new GrpcSettings();
+
+        var modelConfigClient = new GrpcModelConfigClient(grpcSettings);
+        var priceStreamer = new PriceStreamer(grpcSettings);
+
+        while (true)
+        {
+            Console.WriteLine();
+            Console.WriteLine();
+            Console.WriteLine($"Press (Ctrl+C) to exit.");
+            Console.WriteLine();
+
+            var availableInstruments = await modelConfigClient.GetConfiguredInstruments();
+            Console.WriteLine($"Available instruments: {string.Join(", ", availableInstruments)}");
+            
+            var sep = new string('=', 30);
+            Console.WriteLine($"Menu {sep}");
+            Console.WriteLine($"1. Add instrument");
+            Console.WriteLine($"2. Remove instrument");
+            Console.WriteLine($"3. View configurations");
+            Console.WriteLine($"4. Start price streaming");
+
+            Console.Write($">>> ");
+            var input = Console.ReadLine();
+            if(input == "1")
+            {
+                await modelConfigClient.AddInstrument();
+            }
+            else if (input == "2")
+            {
+                await modelConfigClient.RemoveInstrument();
+            }
+            else if (input == "3")
+            {
+                await modelConfigClient.GetConfiguredInstruments(printConfigs: true);
+            }
+            else if (input == "4")
+            {
+                await priceStreamer.Start();
+            }
+        }
     }
-}
-catch (OperationCanceledException)
-{
-    Console.WriteLine("\nShutting down...");
-}
-catch (Exception ex)
-{
-    Console.WriteLine($"\nError: {ex.Message}");
-    Console.WriteLine($"Make sure the MarketData API is running on {grpcSettings.ServerUrl}");
 }

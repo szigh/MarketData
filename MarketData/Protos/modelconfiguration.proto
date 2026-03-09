@@ -4,27 +4,33 @@ option csharp_namespace = "MarketData.Grpc";
 
 // Service for managing instrument model configurations
 service ModelConfigurationService {
+    rpc GetAllInstruments(GetAllInstrumentsRequest) returns (GetAllInstrumentsResponse);
+    rpc TryAddInstrument(TryAddInstrumentRequest) returns (TryAddInstrumentResponse);
+    rpc TryRemoveInstrument(TryRemoveInstrumentRequest) returns (TryRemoveInstrumentResponse);
     rpc GetSupportedModels(GetSupportedModelsRequest) returns (SupportedModelsResponse);
-
-    // Get all configurations for an instrument
     rpc GetConfigurations(GetConfigurationsRequest) returns (ConfigurationsResponse);
-
     rpc UpdateTickInterval(UpdateTickIntervalRequest) returns (UpdateConfigResponse);
-
-    // Switch the active model for an instrument
     rpc SwitchModel(SwitchModelRequest) returns (SwitchModelResponse);
-
-    // Update RandomMultiplicative configuration
     rpc UpdateRandomMultiplicativeConfig(UpdateRandomMultiplicativeRequest) returns (UpdateConfigResponse);
-
-    // Update MeanReverting configuration
     rpc UpdateMeanRevertingConfig(UpdateMeanRevertingRequest) returns (UpdateConfigResponse);
-
-    // Update RandomAdditiveWalk configuration
     rpc UpdateRandomAdditiveWalkConfig(UpdateRandomAdditiveWalkRequest) returns (UpdateConfigResponse);
 }
 
 // Request messages
+message GetAllInstrumentsRequest{}
+
+message TryAddInstrumentRequest{
+    string instrument_name = 1;
+    int32 tick_interval_ms = 2;
+    double initial_price_value = 3;
+    int64 initial_price_timestamp = 4;
+    optional string model_type = 5;
+}
+
+message TryRemoveInstrumentRequest{
+    string instrument_name = 1;
+}
+
 message GetSupportedModelsRequest{}
 
 message GetConfigurationsRequest {
@@ -61,6 +67,20 @@ message UpdateRandomAdditiveWalkRequest {
 }
 
 // Response messages
+message GetAllInstrumentsResponse{
+    repeated ConfigurationsResponse configurations = 1;
+}
+
+message TryAddInstrumentResponse{
+    string message = 1;
+    bool added = 2;
+}
+
+message TryRemoveInstrumentResponse{
+    string message = 1;
+    bool removed = 2;
+}
+
 message SupportedModelsResponse {
     repeated string supported_models = 1;
 }

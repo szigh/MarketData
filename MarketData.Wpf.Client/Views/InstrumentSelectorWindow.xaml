@@ -25,12 +25,7 @@
                   x:Name="InstrumentComboBox"
                   FontSize="16"
                   Padding="5"
-                  SelectedIndex="0">
-            <ComboBoxItem Content="FTSE"/>
-            <ComboBoxItem Content="SNP"/>
-            <ComboBoxItem Content="DAX"/>
-            <ComboBoxItem Content="NIKKEI"/>
-        </ComboBox>
+                  SelectedIndex="0"/>
 
         <StackPanel Grid.Row="3" 
                     Orientation="Horizontal" 

@@ -21,6 +21,7 @@
 
   <ItemGroup>
     <Protobuf Include="..\MarketData\Protos\marketdata.proto" GrpcServices="Client" />
+	<Protobuf Include="..\MarketData\Protos\modelconfiguration.proto" GrpcServices="Client" />
   </ItemGroup>
 
   <ItemGroup>

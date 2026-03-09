@@ -1,0 +1,28 @@
+[
+  {
+    "Name": "WPF + Server",
+    "Projects": [
+      {
+        "Path": "MarketData.Wpf.Client\\MarketData.Wpf.Client.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "MarketData\\MarketData.csproj",
+        "Action": "Start"
+      }
+    ]
+  },
+  {
+    "Name": "Console + Server",
+    "Projects": [
+      {
+        "Path": "MarketData.Client\\MarketData.Client.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "MarketData\\MarketData.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

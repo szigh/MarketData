@@ -23,9 +23,16 @@ builder.Services.AddGrpc();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    // Apply pending migrations at startup in development environment
+    //!Important: in production this should be in deployment scripts, not in application code
+    using (var scope = app.Services.CreateScope())
+    {
+        var context = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+        context.Database.Migrate();
+    }
+
     app.MapOpenApi();
     app.MapScalarApiReference();
 }

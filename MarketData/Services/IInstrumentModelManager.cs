@@ -1,3 +1,4 @@
+using MarketData.Data;
 using MarketData.Models;
 using MarketData.PriceSimulator;
 
@@ -9,11 +10,11 @@ namespace MarketData.Services;
 /// </summary>
 public interface IInstrumentModelManager
 {
-    /// <summary>
-    /// Event raised when a model configuration is changed.
-    /// Subscribers can use this to hot-reload simulators.
-    /// </summary>
     event EventHandler<ModelConfigurationChangedEventArgs>? ConfigurationChanged;
+    event EventHandler<ModelConfigurationChangedEventArgs>? ModelSwitched;
+    event EventHandler<ModelConfigurationChangedEventArgs>? TickIntervalChanged;
+    event EventHandler<ModelConfigurationChangedEventArgs>? InstrumentAdded;
+    event EventHandler<ModelConfigurationChangedEventArgs>? InstrumentRemoved;
 
     /// <summary>
     /// Gets an instrument with all its model configurations loaded
@@ -64,4 +65,45 @@ public interface IInstrumentModelManager
     /// Creates the appropriate price simulator for an instrument based on its model type and configuration
     /// </summary>
     IPriceSimulator CreatePriceSimulator(Instrument instrument);
+
+    /// <summary>
+    /// Asynchronously ensures that the model type for the specified instrument is supported and, if necessary,
+    /// updates it to a default or supported type within the given market data context.
+    /// </summary>
+    /// <remarks>This method may perform validation by checking the instrument against existing data in the
+    /// provided context. If the model type is missing or unsupported, it may be changed to a default or supported
+    /// value. The operation is asynchronous and may involve I/O or database access.</remarks>
+    /// <param name="instrument">The instrument for which the model type validation and adjustment is performed.</param>
+    /// <param name="context">The market data context that provides the environment and data necessary for validation.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains <see langword="true"/> if the model
+    /// type was missing or unsupported and has been changed or defaulted; otherwise, <see langword="false"/> if no change was
+    /// necessary and the existing model type was already supported.</returns>
+    Task<bool> EnsureModelTypeAsync(Instrument instrument, MarketDataContext context);
+
+    /// <summary>
+    /// Ensures that the model configuration for the specified instrument is present and correctly set up within the
+    /// given market data context.
+    /// </summary>
+    /// <remarks>This method is asynchronous and should be awaited. Throws an exception if the provided
+    /// parameters are invalid or if the configuration process encounters an error.</remarks>
+    /// <param name="instrument">The instrument for which to ensure model configuration. Cannot be null.</param>
+    /// <param name="context">The market data context in which the model configuration is to be applied. Must be a valid context instance.</param>
+    /// <returns>A task that represents the asynchronous operation to ensure the model configuration.</returns>
+    Task EnsureModelConfigurationAsync(Instrument instrument, MarketDataContext context);
+
+    /// <summary>
+    /// Seeds Instrument and Price data for a new instrument. 
+    /// If the instrument already exists, it does nothing.
+    /// </summary>
+    /// <param name="instrumentName">The name of the instrument</param>
+    /// <param name="tickIntervalMs">The tick interval in milliseconds</param>
+    /// <param name="initialPriceValue">The initial price value</param>
+    /// <param name="initialPriceTimestamp">The timestamp of the initial price</param>
+    /// <param name="modelType">The model type to use, optional. Defaults to DefaultModelType.</param>
+    /// <returns>A tuple containing the instrument and a boolean indicating if it was created</returns>
+    Task<(Instrument instrument, bool created)> GetOrCreateInstrumentAsync(
+        string instrumentName, int tickIntervalMs,
+        decimal initialPriceValue, DateTime initialPriceTimestamp,
+        string? modelType = null);
+    Task<bool> TryRemoveInstrument(string instrumentName);
 }

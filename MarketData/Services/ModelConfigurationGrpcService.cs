@@ -1,5 +1,8 @@
 using Grpc.Core;
 using MarketData.Grpc;
+using MarketData.Models;
+using MarketData.PriceSimulator;
+using System.Text.Json;
 
 namespace MarketData.Services;
 
@@ -59,62 +62,7 @@ public class ModelConfigurationGrpcService : ModelConfigurationService.ModelConf
                     $"Instrument '{request.InstrumentName}' not found"));
             }
 
-            var response = new ConfigurationsResponse
-            {
-                InstrumentName = instrument.Name,
-                ActiveModel = instrument.ModelType ?? "None"
-            };
-
-            // Add RandomMultiplicative configuration if exists
-            if (instrument.RandomMultiplicativeConfig != null)
-            {
-                response.RandomMultiplicative = new RandomMultiplicativeConfigData
-                {
-                    StandardDeviation = instrument.RandomMultiplicativeConfig.StandardDeviation,
-                    Mean = instrument.RandomMultiplicativeConfig.Mean
-                };
-            }
-
-            // Add MeanReverting configuration if exists
-            if (instrument.MeanRevertingConfig != null)
-            {
-                response.MeanReverting = new MeanRevertingConfigData
-                {
-                    Mean = instrument.MeanRevertingConfig.Mean,
-                    Kappa = instrument.MeanRevertingConfig.Kappa,
-                    Sigma = instrument.MeanRevertingConfig.Sigma,
-                    Dt = instrument.MeanRevertingConfig.Dt
-                };
-            }
-
-            // Add Flat configuration indicator
-            response.FlatConfigured = instrument.FlatConfig != null;
-
-            // Add RandomAdditiveWalk configuration if exists
-            if (instrument.RandomAdditiveWalkConfig != null)
-            {
-                var walkStepsData = new RandomAdditiveWalkConfigData();
-
-                // Deserialize JSON to get walk steps
-                var walkSteps = System.Text.Json.JsonSerializer.Deserialize<List<MarketData.PriceSimulator.RandomWalkStep>>(
-                    instrument.RandomAdditiveWalkConfig.WalkStepsJson);
-
-                if (walkSteps != null)
-                {
-                    foreach (var step in walkSteps)
-                    {
-                        walkStepsData.WalkSteps.Add(new WalkStep
-                        {
-                            Probability = step.Probability,
-                            StepValue = step.Value
-                        });
-                    }
-                }
-
-                response.RandomAdditiveWalk = walkStepsData;
-            }
-
-            response.TickIntervalMs = instrument.TickIntervalMillieconds;
+            var response = BuildConfigurationResponse(instrument);
 
             _logger.LogDebug("Returning configurations for '{InstrumentName}' with active model '{ModelType}'",
                 instrument.Name, instrument.ModelType);
@@ -123,7 +71,7 @@ public class ModelConfigurationGrpcService : ModelConfigurationService.ModelConf
         }
         catch (RpcException)
         {
-            throw; // Re-throw RpcExceptions as-is
+            throw;
         }
         catch (Exception ex)
         {
@@ -340,7 +288,7 @@ public class ModelConfigurationGrpcService : ModelConfigurationService.ModelConf
                 Value = s.StepValue
             }).ToList();
 
-            var walkStepsJson = System.Text.Json.JsonSerializer.Serialize(walkStepsForJson);
+            var walkStepsJson = JsonSerializer.Serialize(walkStepsForJson);
 
             await _modelManager.UpdateRandomAdditiveWalkConfigAsync(
                 request.InstrumentName,
@@ -369,4 +317,190 @@ public class ModelConfigurationGrpcService : ModelConfigurationService.ModelConf
             throw new RpcException(new Status(StatusCode.Internal, "Internal server error"));
         }
     }
+
+    public override async Task<GetAllInstrumentsResponse> GetAllInstruments(
+        GetAllInstrumentsRequest request, 
+        ServerCallContext context)
+    {
+        try
+        {
+            _logger.LogInformation("gRPC: GetAllInstruments request");
+            var instruments = (await _modelManager.LoadAndInitializeAllInstrumentsAsync())
+                .Values;
+            var response = new GetAllInstrumentsResponse();
+            response.Configurations.AddRange(instruments.Select(BuildConfigurationResponse));
+            return response;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting all instruments");
+            throw new RpcException(new Status(StatusCode.Internal, "Internal server error"));
+        }
+    }
+
+    public override async Task<TryAddInstrumentResponse> TryAddInstrument(
+        TryAddInstrumentRequest request, 
+        ServerCallContext context)
+    {
+        try
+        {
+            _logger.LogInformation("gRPC: Try add instrument request: " +
+                "Instrument {Instrument}, tick interval {TickIntervalMs}",
+                request.InstrumentName, request.TickIntervalMs);
+
+            var initialPriceTimestampTicks = request.InitialPriceTimestamp;
+            if (initialPriceTimestampTicks == 0)
+                throw new ArgumentException("InitialPriceTimestamp must be a valid non-zero ticks value.", nameof(request.InitialPriceTimestamp));
+            if (initialPriceTimestampTicks < DateTime.MinValue.Ticks || initialPriceTimestampTicks > DateTime.MaxValue.Ticks)
+                throw new ArgumentException("InitialPriceTimestamp is out of the valid DateTime range.", nameof(request.InitialPriceTimestamp));
+            if (string.IsNullOrWhiteSpace(request.InstrumentName))
+                throw new ArgumentException("InstrumentName must be a non-empty, non-whitespace string.", nameof(request.InstrumentName));
+            if (request.TickIntervalMs <= 0)
+                throw new ArgumentException("TickIntervalMs must be greater than zero.", nameof(request.TickIntervalMs));
+            
+            var initialPriceTimestamp = new DateTime(initialPriceTimestampTicks, DateTimeKind.Utc);
+
+            var (instrument, created) = await _modelManager.GetOrCreateInstrumentAsync(
+                request.InstrumentName, 
+                request.TickIntervalMs,
+                (decimal)request.InitialPriceValue, 
+                initialPriceTimestamp,
+                request.ModelType);
+
+            if (created)
+            {
+                _logger.LogInformation("Instrument '{Instrument}' added successfully with tick interval {TickIntervalMs} ms",
+                    request.InstrumentName, request.TickIntervalMs);
+                return new TryAddInstrumentResponse
+                {
+                    Added = true,
+                    Message = $"Instrument '{request.InstrumentName}' added successfully"
+                };
+            }
+            else
+            {
+                _logger.LogInformation("Instrument '{Instrument}' already exists. No new instrument added.",
+                    request.InstrumentName);
+                return new TryAddInstrumentResponse
+                {
+                    Added = false,
+                    Message = $"Instrument '{request.InstrumentName}' already exists"
+                };
+            }
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, $"Invalid argument for {nameof(TryAddInstrument)}");
+            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, $"{nameof(InvalidOperationException)} for {nameof(TryAddInstrument)}");
+            throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error adding instrument {Instrument}", request.InstrumentName);
+            throw new RpcException(new Status(StatusCode.Internal, "Internal server error"));
+        }
+    }
+
+    public override async Task<TryRemoveInstrumentResponse> TryRemoveInstrument(
+        TryRemoveInstrumentRequest request, 
+        ServerCallContext context)
+    {
+        try
+        {
+            _logger.LogInformation("gRPC: Remove instrument request for '{InstrumentName}'", request.InstrumentName);
+            var removed = await _modelManager.TryRemoveInstrument(request.InstrumentName);
+            if (removed)
+            {
+                _logger.LogInformation("Instrument '{InstrumentName}' removed successfully", request.InstrumentName);
+                return new TryRemoveInstrumentResponse
+                {
+                    Removed = true,
+                    Message = $"Instrument '{request.InstrumentName}' removed successfully"
+                };
+            }
+            else
+            {
+                _logger.LogInformation("Instrument '{InstrumentName}' not found. No instrument removed.", request.InstrumentName);
+                return new TryRemoveInstrumentResponse
+                {
+                    Removed = false,
+                    Message = $"Instrument '{request.InstrumentName}' not found"
+                };
+            }
+        }
+        catch (ArgumentException ex)
+        {
+            _logger.LogWarning(ex, $"Invalid argument for {nameof(TryRemoveInstrument)}");
+            throw new RpcException(new Status(StatusCode.InvalidArgument, ex.Message));
+        }
+        catch (InvalidOperationException ex)
+        {
+            _logger.LogWarning(ex, $"{nameof(InvalidOperationException)} for {nameof(TryRemoveInstrument)}");
+            throw new RpcException(new Status(StatusCode.Unknown, ex.Message));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error removing instrument {Instrument}", request.InstrumentName);
+            throw new RpcException(new Status(StatusCode.Internal, "Internal server error"));
+        }
+    }
+
+    private static ConfigurationsResponse BuildConfigurationResponse(Instrument instrument)
+    {
+        var response = new ConfigurationsResponse
+        {
+            InstrumentName = instrument.Name,
+            ActiveModel = instrument.ModelType ?? "None",
+            TickIntervalMs = instrument.TickIntervalMillieconds,
+            FlatConfigured = instrument.FlatConfig != null
+        };
+
+        if (instrument.RandomMultiplicativeConfig != null)
+        {
+            response.RandomMultiplicative = new RandomMultiplicativeConfigData
+            {
+                StandardDeviation = instrument.RandomMultiplicativeConfig.StandardDeviation,
+                Mean = instrument.RandomMultiplicativeConfig.Mean
+            };
+        }
+
+        if (instrument.MeanRevertingConfig != null)
+        {
+            response.MeanReverting = new MeanRevertingConfigData
+            {
+                Mean = instrument.MeanRevertingConfig.Mean,
+                Kappa = instrument.MeanRevertingConfig.Kappa,
+                Sigma = instrument.MeanRevertingConfig.Sigma,
+                Dt = instrument.MeanRevertingConfig.Dt
+            };
+        }
+
+        if (instrument.RandomAdditiveWalkConfig != null)
+        {
+            var walkStepsData = new RandomAdditiveWalkConfigData();
+            var walkSteps = JsonSerializer.Deserialize<List<RandomWalkStep>>(
+                instrument.RandomAdditiveWalkConfig.WalkStepsJson);
+
+            if (walkSteps != null)
+            {
+                foreach (var step in walkSteps)
+                {
+                    walkStepsData.WalkSteps.Add(new WalkStep
+                    {
+                        Probability = step.Probability,
+                        StepValue = step.Value
+                    });
+                }
+            }
+
+            response.RandomAdditiveWalk = walkStepsData;
+        }
+
+        return response;
+    }
+
 }

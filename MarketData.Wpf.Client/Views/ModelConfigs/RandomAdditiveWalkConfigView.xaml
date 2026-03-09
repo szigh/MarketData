@@ -39,7 +39,7 @@
                     <Border BorderBrush="DarkGray" 
                             BorderThickness="1" 
                             Padding="10" 
-                            Margin="0,5"
+                            Margin="0,2"
                             Background="#2A2A2A">
                         <Grid>
                             <Grid.RowDefinitions>
@@ -49,24 +49,29 @@
                             </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
+								<ColumnDefinition Width="Auto"/>
+								<ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
 
                             <!-- Probability -->
-                            <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,0,5">
-                                <TextBlock Text="Probability (0-1):" Foreground="LightGray" Margin="0,0,0,3"/>
-                                <TextBox Text="{Binding Probability}"
+                                <TextBlock Grid.Row="0" Grid.Column="0"
+                                    VerticalAlignment="Center"
+										   Margin="3"
+										   Text="Probability (0-1):" Foreground="LightGray"/>
+                                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Probability}"
                                          Width="150"
-                                         HorizontalAlignment="Left"/>
-                            </StackPanel>
+                                         HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+										 Margin="3"/>
 
                             <!-- Step Value -->
-                            <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,0,0,5">
-                                <TextBlock Text="Step Value:" Foreground="LightGray" Margin="0,0,0,3"/>
-                                <TextBox Text="{Binding StepValue}"
+                                <TextBlock Grid.Row="1" Grid.Column="0"
+                                    VerticalAlignment="Center" Text="Step Value:" Foreground="LightGray" Margin="3"/>
+                                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding StepValue}"
                                          Width="150"
-                                         HorizontalAlignment="Left"/>
-                            </StackPanel>
+                                         HorizontalAlignment="Left"
+                                    VerticalAlignment="Center"
+										 Margin="3"/>
 
                             <!-- Display Percentage -->
                             <TextBlock Grid.Row="2" Grid.Column="0"
@@ -75,13 +80,14 @@
                                        FontStyle="Italic"/>
 
                             <!-- Remove Button -->
-                            <Button Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
+                            <Button Grid.Row="0" Grid.RowSpan="2" Grid.Column="2"
                                     Content="Remove"
                                     Style="{StaticResource DangerButton}"
                                     Command="{Binding DataContext.RemoveStepCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                     CommandParameter="{Binding}"
                                     Width="80"
-                                    VerticalAlignment="Center"/>
+                                    VerticalAlignment="Center"
+									Margin="5,0,0,0"/>
                         </Grid>
                     </Border>
                 </DataTemplate>

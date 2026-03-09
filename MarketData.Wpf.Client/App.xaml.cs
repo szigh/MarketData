@@ -1,4 +1,5 @@
 ﻿using System.Windows;
+using Grpc.Net.ClientFactory;
 using MarketData.Client.Shared.Configuration;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
@@ -35,18 +36,26 @@ public partial class App : Application
     {
         services.Configure<GrpcSettings>(_configuration!.GetSection(GrpcSettings.SectionName));
 
-        services.AddGrpcClient<MarketDataService.MarketDataServiceClient>(
-            (serviceProvider, options) =>
-        {
-            var grpcSettings = serviceProvider.GetRequiredService<IOptions<GrpcSettings>>().Value;
-            options.Address = new Uri(grpcSettings.ServerUrl);
-        });
+        ConfigureGrpcClients(services);
 
         services.AddSingleton<IModelConfigService, ModelConfigService>();
         services.AddTransient<InstrumentViewModelFactory>();
 
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
+    }
+
+    private static void ConfigureGrpcClients(IServiceCollection services)
+    {
+        Action<IServiceProvider, GrpcClientFactoryOptions> configureGrpcClient =
+            (serviceProvider, options) =>
+            {
+                var grpcSettings = serviceProvider.GetRequiredService<IOptions<GrpcSettings>>().Value;
+                options.Address = new Uri(grpcSettings.ServerUrl);
+            };
+        services.AddGrpcClient<MarketDataService.MarketDataServiceClient>(configureGrpcClient);
+        services.AddGrpcClient<ModelConfigurationService.ModelConfigurationServiceClient>(
+            configureGrpcClient);
     }
 
     protected override void OnExit(ExitEventArgs e)
