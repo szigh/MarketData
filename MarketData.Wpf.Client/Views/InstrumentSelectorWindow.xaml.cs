@@ -10,7 +10,7 @@ public partial class InstrumentSelectorWindow : Window
     public InstrumentSelectorWindow(IEnumerable<string> availableInstruments)
     {
         InitializeComponent();
-        InstrumentComboBox.Items.Add("FTSE"); // default option
+        InstrumentComboBox.Items.Add(new ComboBoxItem { Content = "FTSE" }); // default option
         foreach (var instrument in availableInstruments.Distinct())
         {
             if (instrument != "FTSE") // avoid adding duplicate
