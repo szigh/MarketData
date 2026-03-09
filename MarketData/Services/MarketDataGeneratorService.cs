@@ -58,29 +58,43 @@ public class MarketDataGeneratorService : BackgroundService
         }
 
         // Load initial prices and create simulators for each instrument
+        var instrumentNames = _instruments.Keys.ToList();
+        var latestPrices = await GetLatestPricesAsync(instrumentNames, ct);
+
         foreach (var instrument in _instruments.Values)
         {
-            var latestPrice = await GetLatestPrice(instrument.Name, ct);
-
-            _lastPrices[instrument.Name] = latestPrice.Value;
+            _lastPrices[instrument.Name] = latestPrices[instrument.Name].Value;
             _priceSimulators[instrument.Name] = _modelManager.CreatePriceSimulator(instrument);
         }
 
         _logger.LogInformation("Initialized {Count} instruments", _instruments.Count);
     }
 
-    private async Task<Price> GetLatestPrice(string instrumentName, CancellationToken ct)
+    private async Task<Dictionary<string, Price>> GetLatestPricesAsync(
+        IEnumerable<string> instrumentNames, CancellationToken ct = default)
     {
         using var scope = _serviceProvider.CreateScope();
         var dbContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
-        return await dbContext.Prices
+
+        var latestPrices = await dbContext.Prices
             .AsNoTracking()
-            .Where(p => p.Instrument == instrumentName)
-            .OrderByDescending(p => p.Timestamp)
-            .FirstOrDefaultAsync(ct)
-                ?? throw new InvalidOperationException(
-                    $"No initial price found for instrument '{instrumentName}'. " +
-                    $"Please seed the database with an initial price.");
+            .Where(p => instrumentNames.Contains(p.Instrument))
+            .GroupBy(p => p.Instrument)
+            .Select(g => g.OrderByDescending(p => p.Timestamp).First())
+            .ToListAsync(ct);
+
+        var result = latestPrices.ToDictionary(p => p.Instrument!, p => p);
+
+        // Check for missing instruments
+        var missingInstruments = instrumentNames.Except(result.Keys);
+        if (missingInstruments.Any())
+        {
+            throw new InvalidOperationException(
+                $"No initial prices found for instruments: {string.Join(", ", missingInstruments)}. " +
+                $"Please seed the database with initial prices.");
+        }
+
+        return result;
     }
 
     private void OnConfigurationChanged(object? sender, ModelConfigurationChangedEventArgs e)
@@ -145,11 +159,12 @@ public class MarketDataGeneratorService : BackgroundService
 
             _priceSimulators[instrumentName] = newSimulator;
 
-            // This is the case where a new instrument is added
+            // This is needed in the case where a new instrument is added
             if (!_lastPrices.ContainsKey(instrumentName))
             {
-                _lastPrices[instrumentName] = 
-                    (await GetLatestPrice(instrument.Name, CancellationToken.None)).Value;
+                var latestPrices = await GetLatestPricesAsync([instrument.Name]);
+                var latestPrice = latestPrices[instrument.Name].Value;
+                _lastPrices[instrumentName] = latestPrice;
             }
 
             // This step must be done after simulator is created + price is set,
