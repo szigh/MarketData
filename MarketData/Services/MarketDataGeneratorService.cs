@@ -237,7 +237,11 @@ public class MarketDataGeneratorService : BackgroundService
             if (TakeActionNeeded(_lastTickTimes, instrument.Name, now, instrument.TickIntervalMillieconds))
             {
                 await GeneratePriceForInstrument(instrument.Name, ct);
-                _lastTickTimes[instrument.Name] = now;
+
+                if (_instruments.ContainsKey(instrument.Name))
+                {
+                    _lastTickTimes[instrument.Name] = now;
+                }
             }
         }
     }
@@ -246,10 +250,12 @@ public class MarketDataGeneratorService : BackgroundService
         string instrumentName, 
         CancellationToken ct)
     {
-        var currentPrice = _lastPrices[instrumentName];
-        var simulator = _priceSimulators[instrumentName];
+        if(!_lastPrices.TryGetValue(instrumentName, out var currentPrice) || 
+            !_priceSimulators.TryGetValue(instrumentName, out var simulator))
+            return;
+
         var newPrice = (decimal)(await simulator.GenerateNextPrice((double)currentPrice));
-        _lastPrices[instrumentName] = newPrice;
+        _lastPrices.TryUpdate(instrumentName, newPrice, currentPrice);
 
         var price = new Price
         {
@@ -272,9 +278,13 @@ public class MarketDataGeneratorService : BackgroundService
            
         _logger.LogInformation("[{Timestamp}] Publishing price for {Instrument}: {Price}", 
             price.Timestamp, price.Instrument, price.Value);
-        
+
         await MarketDataGrpcService.BroadcastPrice(price.Instrument!, price.Value, price.Timestamp);
-        _lastGrpcPublish[price.Instrument!] = price.Timestamp;
+
+        if (_instruments.ContainsKey(price.Instrument!))
+        {
+            _lastGrpcPublish[price.Instrument!] = price.Timestamp;
+        }
     }
 
     private async Task PersistPriceAsync(Price price, CancellationToken ct)
@@ -290,7 +300,10 @@ public class MarketDataGeneratorService : BackgroundService
         dbContext.Prices.Add(price);
         await dbContext.SaveChangesAsync(ct);
 
-        _lastDatabaseUpdates[price.Instrument!] = price.Timestamp;
+        if (_instruments.ContainsKey(price.Instrument!))
+        {
+            _lastDatabaseUpdates[price.Instrument!] = price.Timestamp;
+        }
     }
 
     /// <summary>
