@@ -67,15 +67,17 @@ public interface IInstrumentModelManager
     IPriceSimulator CreatePriceSimulator(Instrument instrument);
 
     /// <summary>
-    /// Asynchronously validates that the model type is appropriate for the specified instrument within the given market
-    /// data context.
+    /// Asynchronously ensures that the model type for the specified instrument is supported and, if necessary,
+    /// updates it to a default or supported type within the given market data context.
     /// </summary>
     /// <remarks>This method may perform validation by checking the instrument against existing data in the
-    /// provided context. The operation is asynchronous and may involve I/O or database access.</remarks>
-    /// <param name="instrument">The instrument for which the model type validation is performed.</param>
+    /// provided context. If the model type is missing or unsupported, it may be changed to a default or supported
+    /// value. The operation is asynchronous and may involve I/O or database access.</remarks>
+    /// <param name="instrument">The instrument for which the model type validation and adjustment is performed.</param>
     /// <param name="context">The market data context that provides the environment and data necessary for validation.</param>
     /// <returns>A task that represents the asynchronous operation. The task result contains <see langword="true"/> if the model
-    /// type is valid for the specified instrument; otherwise, <see langword="false"/>.</returns>
+    /// type was missing or unsupported and has been changed or defaulted; otherwise, <see langword="false"/> if no change was
+    /// necessary and the existing model type was already supported.</returns>
     Task<bool> EnsureModelTypeAsync(Instrument instrument, MarketDataContext context);
 
     /// <summary>
