@@ -46,13 +46,19 @@ public class InstrumentViewModel : ViewModelBase
 
     private async Task OpenModelConfigAsync()
     {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // timeout for loading config
         try
         {
-            var config = await _modelConfigService.GetConfigurationsAsync(_instrument);
-            var supportedModels = await _modelConfigService.GetSupportedModelsAsync();
+            var config = await _modelConfigService.GetConfigurationsAsync(_instrument, cts.Token);
+            var supportedModels = await _modelConfigService.GetSupportedModelsAsync(cts.Token);
             var vm = new ModelConfigViewModel(_instrument, _modelConfigService, config, supportedModels);
             var view = new ModelConfigWindow(vm);
             view.Show();
+        }
+        catch (OperationCanceledException oce)
+        {
+            MessageBox.Show($"Loading configuration was cancelled: {oce.Message}", "Timeout", 
+                MessageBoxButton.OK, MessageBoxImage.Warning);
         }
         catch (Exception ex)
         {
@@ -93,7 +99,7 @@ public class InstrumentViewModel : ViewModelBase
         private set => SetProperty(ref _isStreaming, value);
     }
 
-    private async Task GetHistoricalCandles()
+    private async Task GetHistoricalCandles(CancellationToken ct)
     {
         //load last 1d to pre-populate the chart
         var now = DateTime.UtcNow;
@@ -103,7 +109,8 @@ public class InstrumentViewModel : ViewModelBase
             Instrument = Instrument,
             StartTimestamp = start.Ticks,
             EndTimestamp = now.Ticks
-        });
+        }, cancellationToken: ct);
+
         foreach (var dataPoint in historicalData.Prices.OrderBy(x => x.Timestamp))
         {
             await UpdateCandleChartAsync(dataPoint);
@@ -115,9 +122,9 @@ public class InstrumentViewModel : ViewModelBase
         if (IsStreaming)
             return; // is this ever hit?
 
-        await GetHistoricalCandles();
-
         _cancellationTokenSource = new CancellationTokenSource();
+        await GetHistoricalCandles(_cancellationTokenSource.Token);
+
         IsStreaming = true;
 
         try

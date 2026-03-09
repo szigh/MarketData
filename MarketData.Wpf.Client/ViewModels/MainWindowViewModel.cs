@@ -123,6 +123,18 @@ public class MainWindowViewModel : ViewModelBase
         {
             await tab.InstrumentViewModel.StopStreamingAsync();
         }
-        Tabs.Clear();
+        try 
+        {
+            Tabs.Clear();
+        } 
+        catch (NullReferenceException)
+        {
+            // This can happen if the application is closing and the Tabs collection has already been disposed.
+            // We can safely ignore this exception since we're trying to clear the tabs during shutdown.
+        }
+        catch (Exception)
+        {
+            throw;
+        }
     }
 }

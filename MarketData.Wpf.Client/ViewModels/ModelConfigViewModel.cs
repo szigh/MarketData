@@ -118,11 +118,12 @@ public class ModelConfigViewModel : ViewModelBase
 
     private async Task ExecutePublishChanges()
     {
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // timeout for publishing changes
         if (_activeConfigViewModel != null)
         {
             try
             {
-                await _activeConfigViewModel.ExecutePublishConfigChangesSafe();
+                await _activeConfigViewModel.ExecutePublishConfigChangesSafe(cts.Token);
             }
             catch (Exception ex)
             {
@@ -136,10 +137,10 @@ public class ModelConfigViewModel : ViewModelBase
             try
             {
                 IsSwitchingModel = true;
-                var result = await _modelConfigService.SwitchModelAsync(_instrument, _activeModel);
+                var result = await _modelConfigService.SwitchModelAsync(_instrument, _activeModel, cts.Token);
                 if (result.NewModel == _activeModel)
                 {
-                    var configs = await _modelConfigService.GetConfigurationsAsync(_instrument);
+                    var configs = await _modelConfigService.GetConfigurationsAsync(_instrument, cts.Token);
                     _config = configs;
                     UpdateActiveConfigViewModel();
                     _activeModelChanged = false;
@@ -159,7 +160,7 @@ public class ModelConfigViewModel : ViewModelBase
         {
             try
             {
-                var result = await _modelConfigService.UpdateTickIntervalAsync(_instrument, _tickIntervalMs);
+                var result = await _modelConfigService.UpdateTickIntervalAsync(_instrument, _tickIntervalMs, cts.Token);
                 if (result.Success)
                     _tickIntervalChanged = false;
             }

@@ -13,9 +13,9 @@ internal class GrpcModelConfigClient : GrpcClientBase
         _client = new ModelConfigurationService.ModelConfigurationServiceClient(_channel);
     }
 
-    public async Task<IEnumerable<string>> GetConfiguredInstruments(bool printConfigs = false)
+    public async Task<IEnumerable<string>> GetConfiguredInstruments(bool printConfigs = false, CancellationToken ct = default)
     {
-        var result = await _client.GetAllInstrumentsAsync(new GetAllInstrumentsRequest());
+        var result = await _client.GetAllInstrumentsAsync(new GetAllInstrumentsRequest(), cancellationToken: ct);
         if (printConfigs)
         {
             result.Configurations.ToList().ForEach(config =>
@@ -29,7 +29,7 @@ internal class GrpcModelConfigClient : GrpcClientBase
         return result.Configurations.Select(c => c.InstrumentName);
     }
 
-    public async Task AddInstrument()
+    public async Task AddInstrument(CancellationToken ct = default)
     {
         Console.WriteLine("Adding instrument");
         Console.Write($"Enter instrument name: ");
@@ -45,7 +45,7 @@ internal class GrpcModelConfigClient : GrpcClientBase
             TickIntervalMs = tickInterval,
             InitialPriceValue = initialPrice,
             InitialPriceTimestamp = DateTime.UtcNow.Ticks
-        });
+        }, cancellationToken: ct);
 
         if (response.Added)
             Console.WriteLine($"Instrument {name} added successfully:\r\n{response.Message}");
@@ -53,7 +53,7 @@ internal class GrpcModelConfigClient : GrpcClientBase
             Console.WriteLine($"Failed to add instrument {name}. Reason: {response.Message}");
     }
 
-    public async Task RemoveInstrument()
+    public async Task RemoveInstrument(CancellationToken ct = default)
     {
         Console.WriteLine("Removing instrument");
         Console.Write($"Enter instrument name: ");
@@ -61,7 +61,7 @@ internal class GrpcModelConfigClient : GrpcClientBase
         var response = await _client.TryRemoveInstrumentAsync(new TryRemoveInstrumentRequest
         {
             InstrumentName = name,
-        });
+        }, cancellationToken: ct);
         if (response.Removed)
             Console.WriteLine($"Instrument {name} removed successfully:\r\n{response.Message}");
         else

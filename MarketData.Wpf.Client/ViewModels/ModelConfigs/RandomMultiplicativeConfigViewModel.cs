@@ -37,9 +37,9 @@ public class RandomMultiplicativeConfigViewModel : ModelConfigViewModelBase
         }
     }
 
-    protected override async Task<bool> TryExecutePublishConfigChangesAsync()
+    protected override async Task<bool> TryExecutePublishConfigChangesAsync(CancellationToken ct)
     {
-        await _modelConfigService.UpdateRandomMultiplicativeConfigAsync(InstrumentName, StandardDeviation, Mean);
+        await _modelConfigService.UpdateRandomMultiplicativeConfigAsync(InstrumentName, StandardDeviation, Mean, ct);
         return true;
     }
 }

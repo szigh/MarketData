@@ -7,7 +7,7 @@ public class FlatConfigViewModel : ModelConfigViewModelBase
     {
     }
 
-    protected override Task<bool> TryExecutePublishConfigChangesAsync()
+    protected override Task<bool> TryExecutePublishConfigChangesAsync(CancellationToken ct = default)
     {
         return Task.FromResult(true);
     }

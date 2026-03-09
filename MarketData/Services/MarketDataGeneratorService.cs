@@ -50,7 +50,7 @@ public class MarketDataGeneratorService : BackgroundService
         _logger.LogInformation("Initializing instruments and price simulators...");
 
         // Load and initialize all instruments efficiently in a single batch
-        var instrumentDict = await _modelManager.LoadAndInitializeAllInstrumentsAsync();
+        var instrumentDict = await _modelManager.LoadAndInitializeAllInstrumentsAsync(ct);
 
         foreach (var kvp in instrumentDict)
         {
@@ -131,7 +131,7 @@ public class MarketDataGeneratorService : BackgroundService
     /// <summary>
     /// Hot reloads a single instrument's simulator with new configuration
     /// </summary>
-    private async Task HotReloadInstrumentAsync(string instrumentName)
+    private async Task HotReloadInstrumentAsync(string instrumentName, CancellationToken ct = default)
     {
         try
         {
@@ -144,7 +144,7 @@ public class MarketDataGeneratorService : BackgroundService
                 .Include(i => i.MeanRevertingConfig)
                 .Include(i => i.FlatConfig)
                 .Include(i => i.RandomAdditiveWalkConfig)
-                .FirstOrDefaultAsync(i => i.Name == instrumentName);
+                .FirstOrDefaultAsync(i => i.Name == instrumentName, ct);
 
             if (instrument == null)
             {
@@ -162,7 +162,7 @@ public class MarketDataGeneratorService : BackgroundService
             // This is needed in the case where a new instrument is added
             if (!_lastPrices.ContainsKey(instrumentName))
             {
-                var latestPrices = await GetLatestPricesAsync([instrument.Name]);
+                var latestPrices = await GetLatestPricesAsync([instrument.Name], ct);
                 var latestPrice = latestPrices[instrument.Name].Value;
                 _lastPrices[instrumentName] = latestPrice;
             }
@@ -236,7 +236,7 @@ public class MarketDataGeneratorService : BackgroundService
         {
             if (TakeActionNeeded(_lastTickTimes, instrument.Name, now, instrument.TickIntervalMillieconds))
             {
-                await GeneratePriceForInstrument(instrument.Name, ct);
+                await GeneratePriceForInstrumentAsync(instrument.Name, ct);
 
                 if (_instruments.ContainsKey(instrument.Name))
                 {
@@ -246,7 +246,7 @@ public class MarketDataGeneratorService : BackgroundService
         }
     }
 
-    private async Task GeneratePriceForInstrument(
+    private async Task GeneratePriceForInstrumentAsync(
         string instrumentName, 
         CancellationToken ct)
     {
@@ -268,10 +268,10 @@ public class MarketDataGeneratorService : BackgroundService
             instrumentName, newPrice, currentPrice);
 
         await PersistPriceAsync(price, ct);
-        await PublishPriceAsync(price);
+        await PublishPriceAsync(price, ct);
     }
 
-    private async Task PublishPriceAsync(Price price)
+    private async Task PublishPriceAsync(Price price, CancellationToken ct = default)
     {
         if (!TakeActionNeeded(_lastGrpcPublish, price.Instrument!, price.Timestamp, _options.GrpcPublishMilliseconds))
             return;
@@ -279,7 +279,7 @@ public class MarketDataGeneratorService : BackgroundService
         _logger.LogDebug("[{Timestamp}] Publishing price for {Instrument}: {Price}", 
             price.Timestamp, price.Instrument, price.Value);
 
-        await MarketDataGrpcService.BroadcastPrice(price.Instrument!, price.Value, price.Timestamp);
+        await MarketDataGrpcService.BroadcastPrice(price.Instrument!, price.Value, price.Timestamp, ct);
 
         if (_instruments.ContainsKey(price.Instrument!))
         {
@@ -287,7 +287,7 @@ public class MarketDataGeneratorService : BackgroundService
         }
     }
 
-    private async Task PersistPriceAsync(Price price, CancellationToken ct)
+    private async Task PersistPriceAsync(Price price, CancellationToken ct = default)
     {
         if (!TakeActionNeeded(_lastDatabaseUpdates, price.Instrument!, price.Timestamp, _options.DatabasePersistenceMilliseconds))
             return;

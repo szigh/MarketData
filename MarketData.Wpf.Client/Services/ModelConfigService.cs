@@ -17,40 +17,41 @@ public class ModelConfigService : IModelConfigService, IDisposable
         _client = new ModelConfigurationService.ModelConfigurationServiceClient(_channel);
     }
 
-    public async Task<SupportedModelsResponse> GetSupportedModelsAsync()
+    public async Task<SupportedModelsResponse> GetSupportedModelsAsync(CancellationToken ct = default)
     {
         return await _client.GetSupportedModelsAsync(
-            new GetSupportedModelsRequest());
+            new GetSupportedModelsRequest(), cancellationToken: ct);
     }
 
-    public async Task<ConfigurationsResponse> GetConfigurationsAsync(string instrumentName)
+    public async Task<ConfigurationsResponse> GetConfigurationsAsync(string instrumentName, CancellationToken ct = default)
     {
         return await _client.GetConfigurationsAsync(
-            new GetConfigurationsRequest { InstrumentName = instrumentName });
+            new GetConfigurationsRequest { InstrumentName = instrumentName }, cancellationToken: ct);
     }
 
-    public async Task<SwitchModelResponse> SwitchModelAsync(string instrumentName, string modelType)
+    public async Task<SwitchModelResponse> SwitchModelAsync(string instrumentName, string modelType, CancellationToken ct = default)
     {
         return await _client.SwitchModelAsync(new SwitchModelRequest
         {
             InstrumentName = instrumentName,
             ModelType = modelType
-        });
+        }, cancellationToken: ct);
     }
 
-    public async Task<UpdateConfigResponse> UpdateTickIntervalAsync(string instrumentName, int tickIntervalMs)
+    public async Task<UpdateConfigResponse> UpdateTickIntervalAsync(string instrumentName, int tickIntervalMs, CancellationToken ct = default)
     {
         return await _client.UpdateTickIntervalAsync(new UpdateTickIntervalRequest
         {
             InstrumentName = instrumentName,
             TickIntervalMs = tickIntervalMs
-        });
+        }, cancellationToken: ct);
     }
 
     public async Task UpdateRandomMultiplicativeConfigAsync(
         string instrumentName,
         double standardDeviation,
-        double mean)
+        double mean,
+        CancellationToken ct = default)
     {
         await _client.UpdateRandomMultiplicativeConfigAsync(
             new UpdateRandomMultiplicativeRequest
@@ -58,7 +59,7 @@ public class ModelConfigService : IModelConfigService, IDisposable
                 InstrumentName = instrumentName,
                 StandardDeviation = standardDeviation,
                 Mean = mean
-            });
+            }, cancellationToken: ct);
     }
 
     public async Task UpdateMeanRevertingConfigAsync(
@@ -66,7 +67,8 @@ public class ModelConfigService : IModelConfigService, IDisposable
         double mean,
         double kappa,
         double sigma,
-        double dt)
+        double dt,
+        CancellationToken ct = default)
     {
         await _client.UpdateMeanRevertingConfigAsync(
             new UpdateMeanRevertingRequest
@@ -76,12 +78,13 @@ public class ModelConfigService : IModelConfigService, IDisposable
                 Kappa = kappa,
                 Sigma = sigma,
                 Dt = dt
-            });
+            }, cancellationToken: ct);
     }
 
     public async Task UpdateRandomAdditiveWalkConfigAsync(
         string instrumentName,
-        IEnumerable<(double probability, double stepValue)> walkSteps)
+        IEnumerable<(double probability, double stepValue)> walkSteps, 
+        CancellationToken ct = default)
     {
         var request = new UpdateRandomAdditiveWalkRequest
         {
@@ -97,7 +100,7 @@ public class ModelConfigService : IModelConfigService, IDisposable
             });
         }
 
-        await _client.UpdateRandomAdditiveWalkConfigAsync(request);
+        await _client.UpdateRandomAdditiveWalkConfigAsync(request, cancellationToken: ct);
     }
 
     public void Dispose()

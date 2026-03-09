@@ -19,16 +19,16 @@ public class InstrumentsController : ControllerBase
     }
 
     [HttpGet]
-    public async Task<ActionResult<IEnumerable<Instrument>>> GetInstruments()
+    public async Task<ActionResult<IEnumerable<Instrument>>> GetInstruments(CancellationToken ct)
     {
-        return Ok(await _context.Instruments.ToListAsync());
+        return Ok(await _context.Instruments.ToListAsync(ct));
     }
 
     [HttpPost]
-    public async Task<ActionResult<Instrument>> CreateInstrument(CreateInstrumentRequest request)
+    public async Task<ActionResult<Instrument>> CreateInstrument(CreateInstrumentRequest request, CancellationToken ct)
     {
         var existingInstrument = await _context.Instruments
-            .FirstOrDefaultAsync(i => i.Name == request.Name);
+            .FirstOrDefaultAsync(i => i.Name == request.Name, ct);
 
         if (existingInstrument != null)
         {
@@ -52,7 +52,7 @@ public class InstrumentsController : ControllerBase
 
         _context.Prices.Add(initialPrice);
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(ct);
 
         _logger.LogInformation("Created instrument '{Name}' with initial price {Price}", 
             request.Name, request.InitialPrice);
@@ -61,10 +61,10 @@ public class InstrumentsController : ControllerBase
     }
 
     [HttpGet("{name}")]
-    public async Task<ActionResult<Instrument>> GetInstrument(string name)
+    public async Task<ActionResult<Instrument>> GetInstrument(string name, CancellationToken ct)
     {
         var instrument = await _context.Instruments
-            .FirstOrDefaultAsync(i => i.Name == name);
+            .FirstOrDefaultAsync(i => i.Name == name, ct);
 
         if (instrument == null)
         {
@@ -75,10 +75,10 @@ public class InstrumentsController : ControllerBase
     }
 
     [HttpPut("{name}/frequency")]
-    public async Task<ActionResult<Instrument>> UpdateInstrumentFrequency(string name, UpdateFrequencyRequest request)
+    public async Task<ActionResult<Instrument>> UpdateInstrumentFrequency(string name, UpdateFrequencyRequest request, CancellationToken ct)
     {
         var instrument = await _context.Instruments
-            .FirstOrDefaultAsync(i => i.Name == name);
+            .FirstOrDefaultAsync(i => i.Name == name, ct);
 
         if (instrument == null)
         {
@@ -86,7 +86,7 @@ public class InstrumentsController : ControllerBase
         }
 
         instrument.TickIntervalMillieconds = request.TickIntervalMilliseconds;
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(ct);
 
         _logger.LogInformation("Updated instrument '{Name}' tick interval to {Interval} seconds", 
             name, request.TickIntervalMilliseconds);
@@ -95,10 +95,10 @@ public class InstrumentsController : ControllerBase
     }
 
     [HttpDelete("{name}")]
-    public async Task<ActionResult> DeleteInstrument(string name)
+    public async Task<ActionResult> DeleteInstrument(string name, CancellationToken ct)
     {
         var instrument = await _context.Instruments
-            .FirstOrDefaultAsync(i => i.Name == name);
+            .FirstOrDefaultAsync(i => i.Name == name, ct);
 
         if (instrument == null)
         {
@@ -106,7 +106,7 @@ public class InstrumentsController : ControllerBase
         }
 
         _context.Instruments.Remove(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(ct);
 
         _logger.LogInformation("Deleted instrument '{Name}' - price generation stopped", name);
 

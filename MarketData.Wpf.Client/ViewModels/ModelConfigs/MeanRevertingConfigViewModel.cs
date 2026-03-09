@@ -60,9 +60,9 @@ public class MeanRevertingConfigViewModel : ModelConfigViewModelBase
         }
     }
 
-    protected override async Task<bool> TryExecutePublishConfigChangesAsync()
+    protected override async Task<bool> TryExecutePublishConfigChangesAsync(CancellationToken ct = default)
     {
-        await _modelConfigService.UpdateMeanRevertingConfigAsync(InstrumentName, Mean, Kappa, Sigma, Dt);
+        await _modelConfigService.UpdateMeanRevertingConfigAsync(InstrumentName, Mean, Kappa, Sigma, Dt, ct);
         return true;
     }
 }

@@ -106,7 +106,7 @@ public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
         OnPropertyChanged(nameof(IsValid));
     }
 
-    protected override async Task<bool> TryExecutePublishConfigChangesAsync()
+    protected override async Task<bool> TryExecutePublishConfigChangesAsync(CancellationToken ct)
     {
         if (!IsValid)
         {
@@ -115,7 +115,8 @@ public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
 
         await _modelConfigService.UpdateRandomAdditiveWalkConfigAsync(
             InstrumentName,
-            WalkSteps.Select(s => (s.Probability, s.StepValue)).ToList());
+            WalkSteps.Select(s => (s.Probability, s.StepValue)).ToList(),
+            ct);
 
         return true;
     }

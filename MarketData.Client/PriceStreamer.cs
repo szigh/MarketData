@@ -34,7 +34,7 @@ internal class PriceStreamer : GrpcClientBase
         Console.WriteLine($"\nSubscribing to: {string.Join(", ", request.Instruments)}");
         Console.WriteLine("Waiting for price updates... (Press ESC to exit)\n");
 
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         _ = Task.Run(() =>
         {
             while (!cts.Token.IsCancellationRequested)

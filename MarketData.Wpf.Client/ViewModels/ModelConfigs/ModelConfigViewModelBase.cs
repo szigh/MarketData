@@ -16,11 +16,11 @@ public abstract class ModelConfigViewModelBase : ViewModelBase
         _instrumentName = instrumentName;
     }
 
-    internal async Task ExecutePublishConfigChangesSafe()
+    internal async Task ExecutePublishConfigChangesSafe(CancellationToken ct = default)
     {
         try
         {
-            var success = await TryExecutePublishConfigChangesAsync();
+            var success = await TryExecutePublishConfigChangesAsync(ct);
             if (success)
                 IsModified = false;
             else
@@ -47,5 +47,5 @@ public abstract class ModelConfigViewModelBase : ViewModelBase
         set => SetProperty(ref _isModified, value);
     }
 
-    protected abstract Task<bool> TryExecutePublishConfigChangesAsync();
+    protected abstract Task<bool> TryExecutePublishConfigChangesAsync(CancellationToken ct = default);
 }

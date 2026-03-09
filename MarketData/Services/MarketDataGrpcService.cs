@@ -100,7 +100,8 @@ public class MarketDataGrpcService : MarketDataService.MarketDataServiceBase
         return response;
     }
 
-    public static async Task BroadcastPrice(string instrument, decimal value, DateTime timestamp)
+    public static async Task BroadcastPrice(string instrument, decimal value, DateTime timestamp, 
+        CancellationToken ct = default)
     {
         var update = new PriceUpdate
         {
@@ -117,7 +118,7 @@ public class MarketDataGrpcService : MarketDataService.MarketDataServiceBase
 
         foreach (var channel in channelsCopy)
         {
-            await channel.Writer.WriteAsync(update);
+            await channel.Writer.WriteAsync(update, ct);
         }
     }
 }

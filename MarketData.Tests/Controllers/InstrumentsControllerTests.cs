@@ -28,7 +28,7 @@ public class InstrumentsControllerTests : IDisposable
     {
         var request = new CreateInstrumentRequest("FTSE", 10050.50m, 1000);
 
-        var result = await _controller.CreateInstrument(request);
+        var result = await _controller.CreateInstrument(request, CancellationToken.None);
 
         var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
         var instrument = Assert.IsType<Instrument>(createdResult.Value);
@@ -50,7 +50,7 @@ public class InstrumentsControllerTests : IDisposable
 
         var request = new CreateInstrumentRequest("AAPL", 150.00m, 1000);
 
-        var result = await _controller.CreateInstrument(request);
+        var result = await _controller.CreateInstrument(request, CancellationToken.None);
 
         var conflictResult = Assert.IsType<ConflictObjectResult>(result.Result);
         Assert.Equal("Instrument 'AAPL' already exists", conflictResult.Value);
@@ -59,7 +59,7 @@ public class InstrumentsControllerTests : IDisposable
     [Fact]
     public async Task GetInstruments_WithNoInstruments_ReturnsEmptyList()
     {
-        var result = await _controller.GetInstruments();
+        var result = await _controller.GetInstruments(CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var instruments = Assert.IsType<IEnumerable<Instrument>>(okResult.Value, exactMatch: false);
@@ -76,7 +76,7 @@ public class InstrumentsControllerTests : IDisposable
         );
         await _context.SaveChangesAsync();
 
-        var result = await _controller.GetInstruments();
+        var result = await _controller.GetInstruments(CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var instruments = Assert.IsType<IEnumerable<Instrument>>(okResult.Value, exactMatch: false);
@@ -90,7 +90,7 @@ public class InstrumentsControllerTests : IDisposable
         _context.Instruments.Add(instrument);
         await _context.SaveChangesAsync();
 
-        var result = await _controller.GetInstrument("TSLA");
+        var result = await _controller.GetInstrument("TSLA", CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var returnedInstrument = Assert.IsType<Instrument>(okResult.Value);
@@ -101,7 +101,7 @@ public class InstrumentsControllerTests : IDisposable
     [Fact]
     public async Task GetInstrument_WithNonExistentName_ReturnsNotFound()
     {
-        var result = await _controller.GetInstrument("NONEXISTENT");
+        var result = await _controller.GetInstrument("NONEXISTENT", CancellationToken.None);
 
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
         Assert.Equal("Instrument 'NONEXISTENT' not found", notFoundResult.Value);
@@ -116,7 +116,7 @@ public class InstrumentsControllerTests : IDisposable
 
         var request = new UpdateFrequencyRequest(2500);
 
-        var result = await _controller.UpdateInstrumentFrequency("NVDA", request);
+        var result = await _controller.UpdateInstrumentFrequency("NVDA", request, CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var updatedInstrument = Assert.IsType<Instrument>(okResult.Value);
@@ -132,7 +132,7 @@ public class InstrumentsControllerTests : IDisposable
     {
         var request = new UpdateFrequencyRequest(3000);
 
-        var result = await _controller.UpdateInstrumentFrequency("NONEXISTENT", request);
+        var result = await _controller.UpdateInstrumentFrequency("NONEXISTENT", request, CancellationToken.None);
 
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
         Assert.Equal("Instrument 'NONEXISTENT' not found", notFoundResult.Value);
@@ -145,7 +145,7 @@ public class InstrumentsControllerTests : IDisposable
         _context.Instruments.Add(instrument);
         await _context.SaveChangesAsync();
 
-        var result = await _controller.DeleteInstrument("AMD");
+        var result = await _controller.DeleteInstrument("AMD", CancellationToken.None);
 
         Assert.IsType<NoContentResult>(result);
 
@@ -156,7 +156,7 @@ public class InstrumentsControllerTests : IDisposable
     [Fact]
     public async Task DeleteInstrument_WithNonExistentInstrument_ReturnsNotFound()
     {
-        var result = await _controller.DeleteInstrument("NONEXISTENT");
+        var result = await _controller.DeleteInstrument("NONEXISTENT", CancellationToken.None);
 
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result);
         Assert.Equal("Instrument 'NONEXISTENT' not found", notFoundResult.Value);

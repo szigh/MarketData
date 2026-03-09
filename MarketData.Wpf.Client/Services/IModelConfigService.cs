@@ -10,22 +10,22 @@ public interface IModelConfigService : IDisposable
     /// <summary>
     /// Gets the list of supported model types
     /// </summary>
-    Task<SupportedModelsResponse> GetSupportedModelsAsync();
+    Task<SupportedModelsResponse> GetSupportedModelsAsync(CancellationToken ct);
 
     /// <summary>
     /// Gets all configurations for a specific instrument
     /// </summary>
-    Task<ConfigurationsResponse> GetConfigurationsAsync(string instrumentName);
+    Task<ConfigurationsResponse> GetConfigurationsAsync(string instrumentName, CancellationToken ct);
 
     /// <summary>
     /// Switches the active model for an instrument
     /// </summary>
-    Task<SwitchModelResponse> SwitchModelAsync(string instrumentName, string modelType);
+    Task<SwitchModelResponse> SwitchModelAsync(string instrumentName, string modelType, CancellationToken ct);
 
     /// <summary>
     /// Updates the tick interval for an instrument
     /// </summary>
-    Task<UpdateConfigResponse> UpdateTickIntervalAsync(string instrumentName, int tickIntervalMs);
+    Task<UpdateConfigResponse> UpdateTickIntervalAsync(string instrumentName, int tickIntervalMs, CancellationToken ct);
 
     /// <summary>
     /// Updates RandomMultiplicative model configuration
@@ -33,7 +33,8 @@ public interface IModelConfigService : IDisposable
     Task UpdateRandomMultiplicativeConfigAsync(
         string instrumentName,
         double standardDeviation,
-        double mean);
+        double mean,
+        CancellationToken ct);
 
     /// <summary>
     /// Updates MeanReverting model configuration
@@ -43,12 +44,14 @@ public interface IModelConfigService : IDisposable
         double mean,
         double kappa,
         double sigma,
-        double dt);
+        double dt,
+        CancellationToken ct);
 
     /// <summary>
     /// Updates RandomAdditiveWalk model configuration
     /// </summary>
     Task UpdateRandomAdditiveWalkConfigAsync(
         string instrumentName,
-        IEnumerable<(double probability, double stepValue)> walkSteps);
+        IEnumerable<(double probability, double stepValue)> walkSteps,
+        CancellationToken ct);
 }
