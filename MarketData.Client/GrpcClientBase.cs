@@ -14,9 +14,9 @@ internal abstract class GrpcClientBase : IAsyncDisposable
         _channel = GrpcChannel.ForAddress(settings.ServerUrl);
     }
 
-    public virtual async ValueTask DisposeAsync()
+    public virtual ValueTask DisposeAsync()
     {
-        await _channel.ShutdownAsync();
         _channel.Dispose();
+        return ValueTask.CompletedTask;
     }
 }
