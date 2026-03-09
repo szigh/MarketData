@@ -1,7 +1,8 @@
-using System.Collections.ObjectModel;
-using System.Windows.Input;
 using MarketData.Grpc;
 using MarketData.Wpf.Shared;
+using System.Collections.ObjectModel;
+using System.Windows;
+using System.Windows.Input;
 
 namespace MarketData.Wpf.Client.ViewModels;
 
@@ -51,19 +52,28 @@ public class MainWindowViewModel : ViewModelBase
 
     private async Task ExecuteAddTab()
     {
-        var response = await _modelConfigurationServiceClient
-            .GetAllInstrumentsAsync(new GetAllInstrumentsRequest());
-
-        var instrumentSelector = new InstrumentSelectorWindow(
-            response.Configurations.Select(r => r.InstrumentName));
-
-        if (instrumentSelector.ShowDialog() == true)
+        try
         {
-            var selectedInstrument = instrumentSelector.SelectedInstrument;
-            if (!string.IsNullOrEmpty(selectedInstrument))
+            var response = await _modelConfigurationServiceClient
+                .GetAllInstrumentsAsync(new GetAllInstrumentsRequest());
+
+            var instrumentSelector = new InstrumentSelectorWindow(
+                response.Configurations.Select(r => r.InstrumentName));
+
+            if (instrumentSelector.ShowDialog() == true)
             {
-                AddTab(selectedInstrument);
+                var selectedInstrument = instrumentSelector.SelectedInstrument;
+                if (!string.IsNullOrEmpty(selectedInstrument))
+                {
+                    AddTab(selectedInstrument);
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Failed to fetch instrument configurations: {ex.Message}", 
+                "Error",
+                MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
