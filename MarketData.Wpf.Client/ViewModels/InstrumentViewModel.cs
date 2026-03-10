@@ -15,6 +15,7 @@ public class InstrumentViewModel : ViewModelBase
 {
     private readonly MarketDataService.MarketDataServiceClient _grpcClient;
     private readonly IModelConfigService _modelConfigService;
+    private readonly IDialogService _dialogService;
 
     private CandleBuilder<double> _candleBuilder;
     private int _loadHistoryOnStartMinutes = 1440;
@@ -30,11 +31,13 @@ public class InstrumentViewModel : ViewModelBase
     public InstrumentViewModel(
         MarketDataService.MarketDataServiceClient grpcClient, 
         IModelConfigService modelConfigService,
+        IDialogService dialogService,
         IOptions<CandleChartSettings> candleChartConfig,
         string instrumentName)
     {
         _grpcClient = grpcClient;
         _modelConfigService = modelConfigService;
+        _dialogService = dialogService;
         _instrument = instrumentName;
         Price = "#.##";
         Timestamp = string.Empty;
@@ -53,8 +56,7 @@ public class InstrumentViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Invalid candle chart configuration: {ex.Message}", "Configuration Error", 
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            _dialogService.ShowError($"Invalid candle chart configuration: {ex.Message}", "Configuration Error");
             throw;
         }
 
@@ -68,30 +70,22 @@ public class InstrumentViewModel : ViewModelBase
 
     private async Task OpenModelConfigAsync()
     {
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // timeout for loading config
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         try
         {
             var config = await _modelConfigService.GetConfigurationsAsync(_instrument, cts.Token);
             var supportedModels = await _modelConfigService.GetSupportedModelsAsync(cts.Token);
-            var vm = new ModelConfigViewModel(_instrument, _modelConfigService, config, supportedModels);
-            var view = new ModelConfigWindow(vm);
-            view.Show();
+            var vm = new ModelConfigViewModel(
+                _instrument, config, supportedModels, _modelConfigService, _dialogService);
+            _dialogService.ShowWindow<ModelConfigWindow, ModelConfigViewModel>(vm);
         }
         catch (OperationCanceledException oce)
         {
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                MessageBox.Show($"Loading configuration was cancelled: {oce.Message}", "Timeout",
-                MessageBoxButton.OK, MessageBoxImage.Warning);
-            });
+            _dialogService.ShowWarning($"Loading configuration was cancelled: {oce.Message}", "Timeout");
         }
         catch (Exception ex)
         {
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                MessageBox.Show($"Failed to load configuration: {ex.Message}", "Error", 
-                    MessageBoxButton.OK, MessageBoxImage.Error);
-            });
+            _dialogService.ShowError($"Failed to load configuration: {ex.Message}");
         }
     }
 
@@ -141,19 +135,15 @@ public class InstrumentViewModel : ViewModelBase
         }
         catch (TimeoutException)
         {
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                MessageBox.Show("Historical data could not be loaded within the timeout period. " +
-                    "Streaming will continue with live data only.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-            });
+            _dialogService.ShowWarning(
+                "Historical data could not be loaded within the timeout period. " +
+                "Streaming will continue with live data only.");
         }
         catch (Exception ex)
         {
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                MessageBox.Show($"Failed to load historical data: {ex.Message}. " +
-                    $"Streaming will continue with live data only.", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
-            });
+            _dialogService.ShowWarning(
+                $"Failed to load historical data: {ex.Message}. " +
+                $"Streaming will continue with live data only.");
         }
 
         IsStreaming = true;

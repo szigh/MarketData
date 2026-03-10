@@ -13,8 +13,8 @@ public class MeanRevertingConfigViewModel : ModelConfigViewModelBase
     private double _dt;
 
     public MeanRevertingConfigViewModel(string instrumentName, MeanRevertingConfigData config, 
-        IModelConfigService modelConfigService)
-        : base(instrumentName)
+        IModelConfigService modelConfigService, IDialogService dialogService)
+        : base(instrumentName, dialogService)
     {
         _mean = config.Mean;
         _kappa = config.Kappa;

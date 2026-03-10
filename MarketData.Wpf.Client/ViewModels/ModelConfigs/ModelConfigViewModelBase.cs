@@ -1,3 +1,4 @@
+using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Shared;
 using System.Windows;
 
@@ -10,8 +11,9 @@ public abstract class ModelConfigViewModelBase : ViewModelBase
 {
     protected string _instrumentName;
     protected bool _isModified = false;
+    protected readonly IDialogService _dialogService;
 
-    protected ModelConfigViewModelBase(string instrumentName)
+    protected ModelConfigViewModelBase(string instrumentName, IDialogService dialogService)
     {
         _instrumentName = instrumentName;
     }
@@ -25,17 +27,15 @@ public abstract class ModelConfigViewModelBase : ViewModelBase
                 IsModified = false;
             else
             {
-                MessageBox.Show($"Failed to publish config changes. " +
-                    $"Please check your input and try again.",
-                    "Failed to publish config changes",
-                    MessageBoxButton.OK, MessageBoxImage.Warning);
+                _dialogService.ShowWarning(
+                     $"Failed to publish config changes. " +
+                     $"Please check your input and try again.");
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Error publishing config changes: {ex}",
-                "Error publishing config changes",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            _dialogService.ShowError($"Failed to publish config changes: {ex.Message}",
+                "Error publishing config changes");
         }
     }
 

@@ -12,8 +12,8 @@ public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
     private string _validationMessage = string.Empty;
 
     public RandomAdditiveWalkConfigViewModel(string instrumentName, RandomAdditiveWalkConfigData config,
-        IModelConfigService modelConfigService)
-        : base(instrumentName)
+        IModelConfigService modelConfigService, IDialogService dialogService)
+        : base(instrumentName, dialogService)
     {
         _modelConfigService = modelConfigService;
         WalkSteps = new ObservableCollection<WalkStepViewModel>(

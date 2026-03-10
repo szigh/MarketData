@@ -63,6 +63,7 @@ internal static class ServiceCollectionExtensions
         services.ConfigureGrpcClients();
 
         services.AddSingleton<IModelConfigService, ModelConfigService>();
+        services.AddSingleton<IDialogService, DialogService>();
         services.AddTransient<InstrumentViewModelFactory>();
 
         services.AddSingleton<MainWindowViewModel>();

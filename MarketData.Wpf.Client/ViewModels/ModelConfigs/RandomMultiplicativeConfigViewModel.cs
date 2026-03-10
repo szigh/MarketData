@@ -10,8 +10,8 @@ public class RandomMultiplicativeConfigViewModel : ModelConfigViewModelBase
     private double _mean;
 
     public RandomMultiplicativeConfigViewModel(string instrumentName, RandomMultiplicativeConfigData config,
-        IModelConfigService modelConfigService)
-        : base(instrumentName)
+        IModelConfigService modelConfigService, IDialogService dialogService)
+        : base(instrumentName, dialogService)
     {
         _mean = config.Mean;
         _standardDeviation = config.StandardDeviation;

@@ -3,7 +3,6 @@ using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using MarketData.Wpf.Shared;
 using System.ComponentModel;
-using System.Windows;
 using System.Windows.Input;
 
 namespace MarketData.Wpf.Client.ViewModels;
@@ -11,6 +10,7 @@ namespace MarketData.Wpf.Client.ViewModels;
 public class ModelConfigViewModel : ViewModelBase
 {
     private readonly IModelConfigService _modelConfigService;
+    private readonly IDialogService _dialogService;
     private readonly ModelConfigViewModelFactory _viewModelFactory;
     private readonly string _instrument;
     private readonly string[] _supportedModels;
@@ -25,9 +25,10 @@ public class ModelConfigViewModel : ViewModelBase
 
     public ModelConfigViewModel(
         string instrument,
-        IModelConfigService modelConfigService,
         ConfigurationsResponse config,
-        SupportedModelsResponse supportedModels)
+        SupportedModelsResponse supportedModels,
+        IModelConfigService modelConfigService,
+        IDialogService dialogService)
     {
         _instrument = instrument;
         _supportedModels = supportedModels.SupportedModels.ToArray();
@@ -35,7 +36,8 @@ public class ModelConfigViewModel : ViewModelBase
         _activeModel = config.ActiveModel;
         _tickIntervalMs = config.TickIntervalMs;
         _modelConfigService = modelConfigService;
-        _viewModelFactory = new ModelConfigViewModelFactory(instrument, modelConfigService);
+        _dialogService = dialogService;
+        _viewModelFactory = new ModelConfigViewModelFactory(instrument, modelConfigService, dialogService);
 
         // Create the appropriate child ViewModel based on active model
         UpdateActiveConfigViewModel();
@@ -127,9 +129,8 @@ public class ModelConfigViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to update model parameters: {ex.Message}",
-                    "Error updating model parameters",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                _dialogService.ShowError($"Failed to publish model configuration changes: {ex.Message}", 
+                    "Error publishing changes");
             }
         }
         if (_activeModelChanged)
@@ -151,9 +152,8 @@ public class ModelConfigViewModel : ViewModelBase
             catch (Exception ex)
             {
                 IsSwitchingModel = false;
-                MessageBox.Show($"Failed to switch model: {ex.Message}",
-                    "Error switching model",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                _dialogService.ShowError($"Failed to switch model: {ex.Message}",
+                    "Error switching model");
             }
         }
         if (_tickIntervalChanged)
@@ -166,9 +166,8 @@ public class ModelConfigViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Failed to update tick interval: {ex.Message}",
-                    "Error updating tick interval",
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                _dialogService.ShowError($"Failed to update tick interval: {ex.Message}",
+                    "Error updating tick interval");
             }
         }
 
