@@ -6,7 +6,9 @@ using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.ViewModels;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Serilog;
 
 namespace MarketData.Wpf.Client;
 
@@ -24,24 +26,51 @@ public partial class App : Application
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .Build();
 
-        var services = new ServiceCollection();
+        // Configure Serilog
+        Log.Logger = new LoggerConfiguration()
+            .ReadFrom.Configuration(_configuration)
+            .CreateLogger();
 
-        services.AddSingleton<IConfiguration>(_configuration);
+        try
+        {
+            Log.Information("Starting WPF Market Data Client");
 
-        services.ConfigureServices();
+            var services = new ServiceCollection();
 
-        _serviceProvider = services.BuildServiceProvider();
+            services.AddSingleton<IConfiguration>(_configuration);
 
-        var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
-        mainWindow.Show();
+            services.AddLogging(loggingBuilder =>
+            {
+                loggingBuilder.ClearProviders();
+                loggingBuilder.AddSerilog(dispose: true);
+            });
+
+            services.ConfigureServices();
+
+            _serviceProvider = services.BuildServiceProvider();
+
+            var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+            mainWindow.Show();
+
+            Log.Information("WPF Market Data Client started successfully");
+        }
+        catch (Exception ex)
+        {
+            Log.Fatal(ex, "Application terminated unexpectedly");
+            throw;
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        Log.Information("Shutting down WPF Market Data Client");
+
         if (_serviceProvider is IDisposable disposable)
         {
             disposable.Dispose();
         }
+
+        Log.CloseAndFlush();
         base.OnExit(e);
     }
 }
