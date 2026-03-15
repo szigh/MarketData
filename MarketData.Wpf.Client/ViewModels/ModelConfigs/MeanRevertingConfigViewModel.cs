@@ -1,5 +1,7 @@
 using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
+using Microsoft.Extensions.Logging;
+using System.ComponentModel.DataAnnotations;
 
 namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 
@@ -13,8 +15,8 @@ public class MeanRevertingConfigViewModel : ModelConfigViewModelBase
     private double _dt;
 
     public MeanRevertingConfigViewModel(string instrumentName, MeanRevertingConfigData config, 
-        IModelConfigService modelConfigService, IDialogService dialogService)
-        : base(instrumentName, dialogService)
+        IModelConfigService modelConfigService, IDialogService dialogService, ILogger<MeanRevertingConfigViewModel> logger)
+        : base(instrumentName, dialogService, logger)
     {
         _mean = config.Mean;
         _kappa = config.Kappa;
@@ -62,7 +64,15 @@ public class MeanRevertingConfigViewModel : ModelConfigViewModelBase
 
     protected override async Task<bool> TryExecutePublishConfigChangesAsync(CancellationToken ct = default)
     {
+        if(!ValidateProperties())
+            throw new ValidationException("Properties must satisfy: Sigma > 0, Dt >= 0, Kappa >= 0. Please check your input and try again.");
+
         await _modelConfigService.UpdateMeanRevertingConfigAsync(InstrumentName, Mean, Kappa, Sigma, Dt, ct);
         return true;
+    }
+
+    protected override bool ValidateProperties()
+    {
+        return Sigma > 0 && Dt >= 0 && Kappa >= 0;
     }
 }

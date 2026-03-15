@@ -3,29 +3,19 @@ using System.Collections.ObjectModel;
 
 namespace MarketData.Wpf.Client.FancyCandlesImplementations
 {
-    internal class Candle : ICandle
+    internal class Candle(DateTime t, (double o, double h, double l, double c, double v) ohlcv, int precision) : ICandle
     {
-        public Candle(DateTime t, (double o, double h, double l, double c, double v) ohlcv, int precision)
-        {
-            this.t = t;
-            O = double.Round(ohlcv.o, precision);
-            H = double.Round(ohlcv.h, precision);
-            L = double.Round(ohlcv.l, precision);
-            C = double.Round(ohlcv.c, precision);
-            V = ohlcv.v;
-        }
-        public DateTime t {get;set;}
-        public double O {get;set;}
-        public double H {get;set;}
-        public double L {get;set;}
-        public double C {get;set;}
-        public double V {get;set;}
+        public DateTime t { get; set; } = t;
+        public double O { get; set; } = double.Round(ohlcv.o, precision);
+        public double H { get; set; } = double.Round(ohlcv.h, precision);
+        public double L { get; set; } = double.Round(ohlcv.l, precision);
+        public double C { get; set; } = double.Round(ohlcv.c, precision);
+        public double V { get; set; } = ohlcv.v;
     }
 
-    public class CandlesSource(TimeFrame timeFrame) : 
-        ObservableCollection<ICandle>, ICandlesSource
+    public class CandlesSource(TimeFrame timeFrame) : ObservableCollection<ICandle>, ICandlesSource
     {
-        private readonly TimeFrame _timeFrame = timeFrame;
-        public TimeFrame TimeFrame { get => _timeFrame; }
+        public TimeFrame TimeFrame { get; } = timeFrame;
+        bool ICollection<ICandle>.IsReadOnly => false;
     }
 }

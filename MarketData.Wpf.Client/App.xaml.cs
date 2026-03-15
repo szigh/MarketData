@@ -33,16 +33,18 @@ public partial class App : Application
 
         try
         {
+            LogBanner();
+            Log.Information($"");
             Log.Information("Starting WPF Market Data Client");
 
             var services = new ServiceCollection();
 
             services.AddSingleton<IConfiguration>(_configuration);
 
-            services.AddLogging(loggingBuilder =>
+            services.AddLogging(builder =>
             {
-                loggingBuilder.ClearProviders();
-                loggingBuilder.AddSerilog(dispose: true);
+                builder.ClearProviders();
+                builder.AddSerilog(dispose: true);
             });
 
             services.ConfigureServices();
@@ -59,6 +61,27 @@ public partial class App : Application
             Log.Fatal(ex, "Application terminated unexpectedly");
             throw;
         }
+    }
+
+    private static void LogBanner()
+    {
+        const string banner =
+@"
+__  __            _        _         _       _        
+ |  \/  |          | |      | |       | |     | |       
+ | \  / | __ _ _ __| | _____| |_    __| | __ _| |_ __ _ 
+ | |\/| |/ _` | '__| |/ / _ \ __|  / _` |/ _` | __/ _` |
+ | |  | | (_| | |  |   <  __/ |_  | (_| | (_| | || (_| |
+ |_|  |_|\__,_|_|  |_|\_\___|\__|  \__,_|\__,_|\__\__,_|
+ __          _______  ______        _ _            _    
+ \ \        / /  __ \|  ____|      | (_)          | |   
+  \ \  /\  / /| |__) | |__      ___| |_  ___ _ __ | |_  
+   \ \/  \/ / |  ___/|  __|    / __| | |/ _ \ '_ \| __| 
+    \  /\  /  | |    | |      | (__| | |  __/ | | | |_  
+     \/  \/   |_|    |_|       \___|_|_|\___|_| |_|\__| 
+                                                        
+                                                        ";
+        Log.Logger.Information(banner);
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -79,6 +102,8 @@ internal static class ServiceCollectionExtensions
 {
     internal static IServiceCollection ConfigureServices(this IServiceCollection services)
     {
+        Log.Logger.Information("Configuring services and options");
+
         services.AddOptions<GrpcSettings>()
             .BindConfiguration(GrpcSettings.SectionName)
             .ValidateDataAnnotations()
@@ -103,6 +128,8 @@ internal static class ServiceCollectionExtensions
 
     internal static IServiceCollection ConfigureGrpcClients(this IServiceCollection services)
     {
+        Log.Logger.Information("Configuring gRPC clients with server URL from configuration");
+
         services.AddGrpcClient<MarketDataService.MarketDataServiceClient>(ConfigureClient);
         services.AddGrpcClient<ModelConfigurationService.ModelConfigurationServiceClient>(ConfigureClient);
 
@@ -112,3 +139,4 @@ internal static class ServiceCollectionExtensions
             options.Address = new Uri(sp.GetRequiredService<IOptions<GrpcSettings>>().Value.ServerUrl);
     }
 }
+

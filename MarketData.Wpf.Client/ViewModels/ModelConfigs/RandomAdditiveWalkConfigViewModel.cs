@@ -1,8 +1,10 @@
 using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Shared;
+using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.ComponentModel.DataAnnotations;
 
 namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 
@@ -12,8 +14,8 @@ public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
     private string _validationMessage = string.Empty;
 
     public RandomAdditiveWalkConfigViewModel(string instrumentName, RandomAdditiveWalkConfigData config,
-        IModelConfigService modelConfigService, IDialogService dialogService)
-        : base(instrumentName, dialogService)
+        IModelConfigService modelConfigService, IDialogService dialogService, ILogger<RandomAdditiveWalkConfigViewModel> logger)
+        : base(instrumentName, dialogService, logger)
     {
         _modelConfigService = modelConfigService;
         WalkSteps = new ObservableCollection<WalkStepViewModel>(
@@ -41,8 +43,6 @@ public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
         get => _validationMessage;
         private set => SetProperty(ref _validationMessage, value);
     }
-
-    public bool IsValid => string.IsNullOrEmpty(ValidationMessage);
 
     private void AddStep()
     {
@@ -78,6 +78,27 @@ public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
         ValidateProbabilities();
     }
 
+    protected override async Task<bool> TryExecutePublishConfigChangesAsync(CancellationToken ct)
+    {
+        if (!ValidateProperties())
+        {
+            throw new ValidationException("Invalid configuration: " + ValidationMessage);
+        }
+
+        await _modelConfigService.UpdateRandomAdditiveWalkConfigAsync(
+            InstrumentName,
+            WalkSteps.Select(s => (s.Probability, s.StepValue)).ToList(),
+            ct);
+
+        return true;
+    }
+
+    protected override bool ValidateProperties()
+    {
+        ValidateProbabilities();
+        return string.IsNullOrEmpty(ValidationMessage);
+    }
+
     private void ValidateProbabilities()
     {
         // Check if all probabilities are in range [0, 1]
@@ -86,7 +107,6 @@ public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
             if (step.Probability < 0 || step.Probability > 1)
             {
                 ValidationMessage = $"All probabilities must be between 0 and 1.";
-                OnPropertyChanged(nameof(IsValid));
                 return;
             }
         }
@@ -98,27 +118,10 @@ public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
         if (Math.Abs(sum - 1.0) > tolerance)
         {
             ValidationMessage = $"Probabilities must sum to 1.0 (current sum: {sum:F4}).";
-            OnPropertyChanged(nameof(IsValid));
             return;
         }
 
         ValidationMessage = string.Empty;
-        OnPropertyChanged(nameof(IsValid));
-    }
-
-    protected override async Task<bool> TryExecutePublishConfigChangesAsync(CancellationToken ct)
-    {
-        if (!IsValid)
-        {
-            return false;
-        }
-
-        await _modelConfigService.UpdateRandomAdditiveWalkConfigAsync(
-            InstrumentName,
-            WalkSteps.Select(s => (s.Probability, s.StepValue)).ToList(),
-            ct);
-
-        return true;
     }
 }
 

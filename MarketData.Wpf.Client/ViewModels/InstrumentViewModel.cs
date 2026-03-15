@@ -1,5 +1,3 @@
-using System.Windows;
-using System.Windows.Input;
 using FancyCandles;
 using Grpc.Core;
 using MarketData.Grpc;
@@ -7,12 +5,17 @@ using MarketData.Wpf.Client.FancyCandlesImplementations;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.Views;
 using MarketData.Wpf.Shared;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using System.Windows;
+using System.Windows.Input;
 
 namespace MarketData.Wpf.Client.ViewModels;
 
 public class InstrumentViewModel : ViewModelBase
 {
+    private readonly ILogger _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly MarketDataService.MarketDataServiceClient _grpcClient;
     private readonly IModelConfigService _modelConfigService;
     private readonly IDialogService _dialogService;
@@ -28,16 +31,18 @@ public class InstrumentViewModel : ViewModelBase
     private CandlesSource _candles;
     private bool _isStreaming;
 
-    public InstrumentViewModel(
+    public InstrumentViewModel(string instrumentName,
         MarketDataService.MarketDataServiceClient grpcClient, 
         IModelConfigService modelConfigService,
         IDialogService dialogService,
         IOptions<CandleChartSettings> candleChartConfig,
-        string instrumentName)
+        ILoggerFactory loggerFactory)
     {
         _grpcClient = grpcClient;
         _modelConfigService = modelConfigService;
         _dialogService = dialogService;
+        _logger = loggerFactory.CreateLogger<InstrumentViewModel>();
+        _loggerFactory = loggerFactory;
         _instrument = instrumentName;
         Price = "#.##";
         Timestamp = string.Empty;
@@ -56,15 +61,20 @@ public class InstrumentViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to load candle chart configuration");
             _dialogService.ShowError($"Invalid candle chart configuration: {ex.Message}", "Configuration Error");
             throw;
         }
 
+        _logger.LogInformation("Initializing candle chart with time frame {TimeFrame}, precision {Precision}, " +
+            "and history load of {HistoryMinutes} minutes",
+            config.CandleTimeFrame, config.CandlePrecision, config.LoadHistoryOnStartMinutes);
+
         TimeFrame chartTimeFrame = config.CandleTimeFrame;
         _candlePrecision = config.CandlePrecision;
         _loadHistoryOnStartMinutes = config.LoadHistoryOnStartMinutes;
-        _candleBuilder = new CandleBuilder<double>(
-            TimeSpan.FromSeconds(chartTimeFrame.ToSeconds()), true);
+
+        _candleBuilder = new CandleBuilder<double>(chartTimeFrame.ToTimeSpan(), _logger, true);
         Candles = new CandlesSource(chartTimeFrame);
     }
 
@@ -73,18 +83,25 @@ public class InstrumentViewModel : ViewModelBase
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         try
         {
+            _logger.LogInformation("Loading model configuration for instrument {Instrument}", _instrument);
+
             var config = await _modelConfigService.GetConfigurationsAsync(_instrument, cts.Token);
             var supportedModels = await _modelConfigService.GetSupportedModelsAsync(cts.Token);
             var vm = new ModelConfigViewModel(
-                _instrument, config, supportedModels, _modelConfigService, _dialogService);
+                _instrument, config, supportedModels, _modelConfigService, _dialogService, _loggerFactory);
+
+            _logger.LogInformation("Model configuration loaded successfully for instrument {Instrument}, " +
+                "opening configuration window", _instrument);
             _dialogService.ShowWindow<ModelConfigWindow, ModelConfigViewModel>(vm);
         }
         catch (OperationCanceledException oce)
         {
+            _logger.LogWarning(oce, "Loading model configuration for instrument {Instrument} was cancelled", _instrument);
             _dialogService.ShowWarning($"Loading configuration was cancelled: {oce.Message}", "Timeout");
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to load model configuration for instrument {Instrument}", _instrument);
             _dialogService.ShowError($"Failed to load configuration: {ex.Message}");
         }
     }
@@ -130,17 +147,20 @@ public class InstrumentViewModel : ViewModelBase
 
         try
         {
+            _logger.LogInformation("Loading historical data for instrument {Instrument} with a timeout of 10 seconds", _instrument);
             await GetHistoricalCandles(_cancellationTokenSource.Token)
                 .WaitAsync(TimeSpan.FromSeconds(10));
         }
         catch (TimeoutException)
         {
+            _logger.LogWarning("Loading historical data for instrument {Instrument} timed out", _instrument);
             _dialogService.ShowWarning(
                 "Historical data could not be loaded within the timeout period. " +
                 "Streaming will continue with live data only.");
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to load historical data for instrument {Instrument}", _instrument);
             _dialogService.ShowWarning(
                 $"Failed to load historical data: {ex.Message}. " +
                 $"Streaming will continue with live data only.");
@@ -153,10 +173,14 @@ public class InstrumentViewModel : ViewModelBase
             var request = new SubscribeRequest();
             request.Instruments.Add(Instrument);
 
+            _logger.LogInformation("Starting price stream for instrument {Instrument}", _instrument);
             using var call = _grpcClient.SubscribeToPrices(request, cancellationToken: _cancellationTokenSource.Token);
 
             await foreach (var priceUpdate in call.ResponseStream.ReadAllAsync(_cancellationTokenSource.Token))
             {
+                _logger.LogTrace("Received price update for instrument {Instrument}: {Price} at {Timestamp}",
+                    _instrument, priceUpdate.Value, new DateTime(priceUpdate.Timestamp));
+
                 // Update UI on the UI thread
                 await Application.Current.Dispatcher.InvokeAsync(() =>
                 {
@@ -170,11 +194,13 @@ public class InstrumentViewModel : ViewModelBase
         }
         catch (RpcException ex) when (ex.StatusCode == StatusCode.Cancelled)
         {
+            _logger.LogInformation("Price stream for instrument {Instrument} was cancelled", _instrument);
             // Stream was cancelled, this is expected on shutdown
         }
         catch (Exception ex)
         {
             // Handle other errors
+            _logger.LogError(ex, "An error occurred while streaming prices for instrument {Instrument}", _instrument);
             await Application.Current.Dispatcher.InvokeAsync(() =>
             {
                 Price = $"Error: {ex.Message}";
@@ -183,6 +209,7 @@ public class InstrumentViewModel : ViewModelBase
         finally
         {
             IsStreaming = false;
+            _logger.LogInformation("Stopped price stream for instrument {Instrument}", _instrument);
         }
     }
 
@@ -191,12 +218,19 @@ public class InstrumentViewModel : ViewModelBase
         // load last N minutes to pre-populate the chart
         var now = DateTime.UtcNow;
         var start = now.AddMinutes(-_loadHistoryOnStartMinutes);
+
+        _logger.LogInformation("Loading historical data for instrument {Instrument} from {Start} to {End}", 
+            _instrument, start, now);
+
         var historicalData = _grpcClient.GetHistoricalData(new HistoricalDataRequest
         {
             Instrument = Instrument,
             StartTimestamp = start.Ticks,
             EndTimestamp = now.Ticks
         }, cancellationToken: ct);
+
+        _logger.LogInformation("Received historical data for instrument {Instrument} with {Count} price points",
+            _instrument, historicalData.Prices.Count);
 
         PriceUpdate? lastPrice = null;
         foreach (var dataPoint in historicalData.Prices.OrderBy(x => x.Timestamp))
@@ -218,6 +252,9 @@ public class InstrumentViewModel : ViewModelBase
 
     private async Task UpdateCandleChartAsync(PriceUpdate priceUpdate)
     {
+        _logger.LogTrace("Updating candle chart for instrument {Instrument} with price {Price} at {Timestamp}",
+            _instrument, priceUpdate.Value, new DateTime(priceUpdate.Timestamp));
+
         var candle = _candleBuilder.AddPoint(
                             new DateTime(priceUpdate.Timestamp), priceUpdate.Value);
 
@@ -228,11 +265,16 @@ public class InstrumentViewModel : ViewModelBase
                 Candles.Add(new Candle(new DateTime(priceUpdate.Timestamp),
                     candle.Value, _candlePrecision));
             });
+
+            _logger.LogDebug("Candle completed for instrument {Instrument}: O={Open}, H={High}, L={Low}, C={Close}",
+                _instrument, candle.Value.o, candle.Value.h, candle.Value.l, candle.Value.c);
         }
     }
 
     public async Task StopStreamingAsync()
     {
+        _logger.LogInformation("Stopping streaming for instrument {Instrument}", _instrument);
+
         if (_cancellationTokenSource != null)
         {
             _cancellationTokenSource.Cancel();
