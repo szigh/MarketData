@@ -1,18 +1,22 @@
 ﻿using Grpc.Net.Client;
 using MarketData.Client.Shared.Configuration;
 using MarketData.Grpc;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
 namespace MarketData.Wpf.Client.Services;
 
 public class ModelConfigService : IModelConfigService, IDisposable
 {
+    private readonly ILogger<ModelConfigService> _logger;
     private readonly GrpcChannel _channel;
     private readonly ModelConfigurationService.ModelConfigurationServiceClient _client;
+
     private bool _disposed;
 
-    public ModelConfigService(IOptions<GrpcSettings> grpcSettings)
+    public ModelConfigService(IOptions<GrpcSettings> grpcSettings, ILoggerFactory loggerFactory, ILogger<ModelConfigService> logger)
     {
+        _logger = logger;
         _channel = GrpcChannel.ForAddress(grpcSettings.Value.ServerUrl);
         _client = new ModelConfigurationService.ModelConfigurationServiceClient(_channel);
     }

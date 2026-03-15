@@ -122,8 +122,7 @@ public class ModelConfigViewModel : ViewModelBase
 
     private async Task ExecutePublishChanges()
     {
-        _logger.LogInformation("Publishing model/configuration changes for instrument {Instrument}, " +
-            "active model {ActiveModel}, tick interval ms {TickIntervalMs}", _instrument, _activeModel, _tickIntervalMs);
+        _logger.LogDebug($"{nameof(ExecutePublishChanges)} called");
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // timeout for publishing changes
         var publisher = new ModelConfigPublisher(_instrument, _activeModel, _modelConfigService, _dialogService, _logger);

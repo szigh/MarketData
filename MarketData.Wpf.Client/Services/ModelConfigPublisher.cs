@@ -4,9 +4,9 @@ using Microsoft.Extensions.Logging;
 
 namespace MarketData.Wpf.Client.Services;
 
-enum PublishResult { NotStarted, NotApplicable, Success, SuccessUnverified, Failure }
+enum PublishResult { NotApplicable, NotStarted, Success, SuccessUnverified, Failure }
 
-public class ModelConfigPublisher : IDisposable
+public class ModelConfigPublisher : IDisposable, IModelConfigPublisher
 {
     private readonly IDisposable? _logScope;
     private readonly ILogger _logger;
@@ -16,16 +16,16 @@ public class ModelConfigPublisher : IDisposable
     private readonly string _instrument;
     private readonly string _activeModel;
 
-    private PublishResult _modelParamsResult = 0;
-    private PublishResult _activeModelResult = 0;
-    private PublishResult _tickIntervalResult = 0;
+    private PublishResult _modelParamsResult = PublishResult.NotApplicable;
+    private PublishResult _activeModelResult = PublishResult.NotApplicable;
+    private PublishResult _tickIntervalResult = PublishResult.NotApplicable;
 
-    public ModelConfigPublisher(string instrument, string activeModel, 
-        IModelConfigService modelConfigService, 
-        IDialogService dialogService, 
+    public ModelConfigPublisher(string instrument, string activeModel,
+        IModelConfigService modelConfigService,
+        IDialogService dialogService,
         ILogger logger)
     {
-        _logScope = logger.BeginScope($"[{nameof(ModelConfigPublisher)} Instrument={instrument}, ActiveModel={activeModel}]");
+        _logScope = logger.BeginScope($"{nameof(ModelConfigPublisher)}: Instrument={instrument}, ActiveModel={activeModel}");
         _logger = logger;
         _modelConfigService = modelConfigService;
         _dialogService = dialogService;
@@ -40,7 +40,6 @@ public class ModelConfigPublisher : IDisposable
             var result = await _modelConfigService.UpdateTickIntervalAsync(_instrument, tickIntervalMs, ct);
             if (result.Success)
             {
-                //_tickIntervalChanged = false;
                 _logger.LogInformation("{Status} Updated tick interval to {TickIntervalMs} ms for instrument {Instrument}.",
                     PublishResult.Success, tickIntervalMs, _instrument);
                 _tickIntervalResult = PublishResult.Success;
@@ -126,8 +125,8 @@ public class ModelConfigPublisher : IDisposable
                 "Error publishing changes");
             _logger.LogError(ex, "{Status} Failed to publish configuration changes for model {ActiveModel} " +
                 "on instrument {Instrument}", PublishResult.Failure, _activeModel, _instrument);
-            
-             _modelParamsResult = PublishResult.Failure;
+
+            _modelParamsResult = PublishResult.Failure;
 
             return false;
         }
@@ -164,6 +163,6 @@ public class ModelConfigPublisher : IDisposable
     public void Dispose()
     {
         _logScope?.Dispose();
-        _modelConfigService.Dispose();
+        _modelConfigService?.Dispose();
     }
 }
