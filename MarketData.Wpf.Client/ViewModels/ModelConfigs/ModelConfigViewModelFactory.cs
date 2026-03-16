@@ -11,10 +11,14 @@ public class ModelConfigViewModelFactory
     private readonly string _instrumentName;
     private readonly IModelConfigService _modelConfigService;
 
-    public ModelConfigViewModelFactory(string instrumentName, IModelConfigService modelConfigService)
+    private readonly IDialogService _dialogService;
+
+    public ModelConfigViewModelFactory(string instrumentName, 
+        IModelConfigService modelConfigService, IDialogService dialogService)
     {
         _instrumentName = instrumentName;
         _modelConfigService = modelConfigService;
+        _dialogService = dialogService;
     }
 
     /// <summary>
@@ -25,16 +29,16 @@ public class ModelConfigViewModelFactory
         return modelType switch
         {
             "RandomMultiplicative" when config.RandomMultiplicative != null =>
-                new RandomMultiplicativeConfigViewModel(_instrumentName, config.RandomMultiplicative, _modelConfigService),
+                new RandomMultiplicativeConfigViewModel(_instrumentName, config.RandomMultiplicative, _modelConfigService, _dialogService),
 
             "MeanReverting" when config.MeanReverting != null =>
-                new MeanRevertingConfigViewModel(_instrumentName, config.MeanReverting, _modelConfigService),
+                new MeanRevertingConfigViewModel(_instrumentName, config.MeanReverting, _modelConfigService, _dialogService),
 
             "Flat" =>
-                new FlatConfigViewModel(_instrumentName),
+                new FlatConfigViewModel(_instrumentName, _dialogService),
 
             "RandomAdditiveWalk" when config.RandomAdditiveWalk != null =>
-                new RandomAdditiveWalkConfigViewModel(_instrumentName, config.RandomAdditiveWalk, _modelConfigService),
+                new RandomAdditiveWalkConfigViewModel(_instrumentName, config.RandomAdditiveWalk, _modelConfigService, _dialogService),
 
             _ => null
         };

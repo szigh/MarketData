@@ -1,9 +1,11 @@
+using MarketData.Wpf.Client.Services;
+
 namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 
 public class FlatConfigViewModel : ModelConfigViewModelBase
 {
-    public FlatConfigViewModel(string instrumentName)
-        : base(instrumentName)
+    public FlatConfigViewModel(string instrumentName, IDialogService dialogService)
+        : base(instrumentName, dialogService)
     {
     }
 

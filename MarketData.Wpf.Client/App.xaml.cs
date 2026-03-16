@@ -25,37 +25,15 @@ public partial class App : Application
             .Build();
 
         var services = new ServiceCollection();
-        ConfigureServices(services);
+
+        services.AddSingleton<IConfiguration>(_configuration);
+
+        services.ConfigureServices();
+
         _serviceProvider = services.BuildServiceProvider();
 
         var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
         mainWindow.Show();
-    }
-
-    private void ConfigureServices(IServiceCollection services)
-    {
-        services.Configure<GrpcSettings>(_configuration!.GetSection(GrpcSettings.SectionName));
-
-        ConfigureGrpcClients(services);
-
-        services.AddSingleton<IModelConfigService, ModelConfigService>();
-        services.AddTransient<InstrumentViewModelFactory>();
-
-        services.AddSingleton<MainWindowViewModel>();
-        services.AddSingleton<MainWindow>();
-    }
-
-    private static void ConfigureGrpcClients(IServiceCollection services)
-    {
-        Action<IServiceProvider, GrpcClientFactoryOptions> configureGrpcClient =
-            (serviceProvider, options) =>
-            {
-                var grpcSettings = serviceProvider.GetRequiredService<IOptions<GrpcSettings>>().Value;
-                options.Address = new Uri(grpcSettings.ServerUrl);
-            };
-        services.AddGrpcClient<MarketDataService.MarketDataServiceClient>(configureGrpcClient);
-        services.AddGrpcClient<ModelConfigurationService.ModelConfigurationServiceClient>(
-            configureGrpcClient);
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -65,5 +43,43 @@ public partial class App : Application
             disposable.Dispose();
         }
         base.OnExit(e);
+    }
+}
+
+internal static class ServiceCollectionExtensions
+{
+    internal static IServiceCollection ConfigureServices(this IServiceCollection services)
+    {
+        services.AddOptions<GrpcSettings>()
+            .BindConfiguration(GrpcSettings.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.AddOptions<CandleChartSettings>()
+            .BindConfiguration(CandleChartSettings.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
+        services.ConfigureGrpcClients();
+
+        services.AddSingleton<IModelConfigService, ModelConfigService>();
+        services.AddSingleton<IDialogService, DialogService>();
+        services.AddTransient<InstrumentViewModelFactory>();
+
+        services.AddSingleton<MainWindowViewModel>();
+        services.AddSingleton<MainWindow>();
+
+        return services;
+    }
+
+    internal static IServiceCollection ConfigureGrpcClients(this IServiceCollection services)
+    {
+        services.AddGrpcClient<MarketDataService.MarketDataServiceClient>(ConfigureClient);
+        services.AddGrpcClient<ModelConfigurationService.ModelConfigurationServiceClient>(ConfigureClient);
+
+        return services;
+
+        static void ConfigureClient(IServiceProvider sp, GrpcClientFactoryOptions options) =>
+            options.Address = new Uri(sp.GetRequiredService<IOptions<GrpcSettings>>().Value.ServerUrl);
     }
 }

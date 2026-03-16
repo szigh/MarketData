@@ -7,6 +7,7 @@ using MarketData.Wpf.Client.FancyCandlesImplementations;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.Views;
 using MarketData.Wpf.Shared;
+using Microsoft.Extensions.Options;
 
 namespace MarketData.Wpf.Client.ViewModels;
 
@@ -14,9 +15,11 @@ public class InstrumentViewModel : ViewModelBase
 {
     private readonly MarketDataService.MarketDataServiceClient _grpcClient;
     private readonly IModelConfigService _modelConfigService;
-    private const TimeFrame _chartTimeFrame = TimeFrame.S10;
-    private readonly CandleBuilder<double> _candleBuilder;
-    private const int _candlePrecision = 2;
+    private readonly IDialogService _dialogService;
+
+    private CandleBuilder<double> _candleBuilder;
+    private int _loadHistoryOnStartMinutes = 1440;
+    private int _candlePrecision = 2;
 
     private string _price;
     private string _instrument;
@@ -28,42 +31,61 @@ public class InstrumentViewModel : ViewModelBase
     public InstrumentViewModel(
         MarketDataService.MarketDataServiceClient grpcClient, 
         IModelConfigService modelConfigService,
+        IDialogService dialogService,
+        IOptions<CandleChartSettings> candleChartConfig,
         string instrumentName)
     {
         _grpcClient = grpcClient;
         _modelConfigService = modelConfigService;
-
+        _dialogService = dialogService;
         _instrument = instrumentName;
         Price = "#.##";
         Timestamp = string.Empty;
 
         ModelConfigCommand = new AsyncRelayCommand(OpenModelConfigAsync);
 
+        InitializeCandleChart(candleChartConfig);
+    }
+
+    private void InitializeCandleChart(IOptions<CandleChartSettings> candleChartConfig)
+    {
+        CandleChartSettings config;
+        try
+        {
+            config = candleChartConfig.Value;
+        }
+        catch (Exception ex)
+        {
+            _dialogService.ShowError($"Invalid candle chart configuration: {ex.Message}", "Configuration Error");
+            throw;
+        }
+
+        TimeFrame chartTimeFrame = config.CandleTimeFrame;
+        _candlePrecision = config.CandlePrecision;
+        _loadHistoryOnStartMinutes = config.LoadHistoryOnStartMinutes;
         _candleBuilder = new CandleBuilder<double>(
-            TimeSpan.FromSeconds(_chartTimeFrame.ToSeconds()), true);
-        Candles = new CandlesSource(_chartTimeFrame);
+            TimeSpan.FromSeconds(chartTimeFrame.ToSeconds()), true);
+        Candles = new CandlesSource(chartTimeFrame);
     }
 
     private async Task OpenModelConfigAsync()
     {
-        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // timeout for loading config
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
         try
         {
             var config = await _modelConfigService.GetConfigurationsAsync(_instrument, cts.Token);
             var supportedModels = await _modelConfigService.GetSupportedModelsAsync(cts.Token);
-            var vm = new ModelConfigViewModel(_instrument, _modelConfigService, config, supportedModels);
-            var view = new ModelConfigWindow(vm);
-            view.Show();
+            var vm = new ModelConfigViewModel(
+                _instrument, config, supportedModels, _modelConfigService, _dialogService);
+            _dialogService.ShowWindow<ModelConfigWindow, ModelConfigViewModel>(vm);
         }
         catch (OperationCanceledException oce)
         {
-            MessageBox.Show($"Loading configuration was cancelled: {oce.Message}", "Timeout", 
-                MessageBoxButton.OK, MessageBoxImage.Warning);
+            _dialogService.ShowWarning($"Loading configuration was cancelled: {oce.Message}", "Timeout");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Failed to load configuration: {ex.Message}", "Error", 
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            _dialogService.ShowError($"Failed to load configuration: {ex.Message}");
         }
     }
 
@@ -99,31 +121,30 @@ public class InstrumentViewModel : ViewModelBase
         private set => SetProperty(ref _isStreaming, value);
     }
 
-    private async Task GetHistoricalCandles(CancellationToken ct)
-    {
-        //load last 1d to pre-populate the chart
-        var now = DateTime.UtcNow;
-        var start = now.AddDays(-1);
-        var historicalData = _grpcClient.GetHistoricalData(new HistoricalDataRequest
-        {
-            Instrument = Instrument,
-            StartTimestamp = start.Ticks,
-            EndTimestamp = now.Ticks
-        }, cancellationToken: ct);
-
-        foreach (var dataPoint in historicalData.Prices.OrderBy(x => x.Timestamp))
-        {
-            await UpdateCandleChartAsync(dataPoint);
-        }
-    }
-
     public async Task StartStreamingAsync()
     {
         if (IsStreaming)
             return; // is this ever hit?
 
         _cancellationTokenSource = new CancellationTokenSource();
-        await GetHistoricalCandles(_cancellationTokenSource.Token);
+
+        try
+        {
+            await GetHistoricalCandles(_cancellationTokenSource.Token)
+                .WaitAsync(TimeSpan.FromSeconds(10));
+        }
+        catch (TimeoutException)
+        {
+            _dialogService.ShowWarning(
+                "Historical data could not be loaded within the timeout period. " +
+                "Streaming will continue with live data only.");
+        }
+        catch (Exception ex)
+        {
+            _dialogService.ShowWarning(
+                $"Failed to load historical data: {ex.Message}. " +
+                $"Streaming will continue with live data only.");
+        }
 
         IsStreaming = true;
 
@@ -162,6 +183,36 @@ public class InstrumentViewModel : ViewModelBase
         finally
         {
             IsStreaming = false;
+        }
+    }
+
+    private async Task GetHistoricalCandles(CancellationToken ct)
+    {
+        // load last N minutes to pre-populate the chart
+        var now = DateTime.UtcNow;
+        var start = now.AddMinutes(-_loadHistoryOnStartMinutes);
+        var historicalData = _grpcClient.GetHistoricalData(new HistoricalDataRequest
+        {
+            Instrument = Instrument,
+            StartTimestamp = start.Ticks,
+            EndTimestamp = now.Ticks
+        }, cancellationToken: ct);
+
+        PriceUpdate? lastPrice = null;
+        foreach (var dataPoint in historicalData.Prices.OrderBy(x => x.Timestamp))
+        {
+            await UpdateCandleChartAsync(dataPoint);
+            lastPrice = dataPoint;
+        }
+
+        if (lastPrice != null)
+        {
+            await Application.Current.Dispatcher.InvokeAsync(() =>
+            {
+                Price = lastPrice.Value.ToString("F2");
+                Timestamp = new DateTime(lastPrice.Timestamp)
+                    .ToString("HH:mm:ss.fff");
+            });
         }
     }
 

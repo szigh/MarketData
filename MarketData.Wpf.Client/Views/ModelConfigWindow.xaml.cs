@@ -8,10 +8,14 @@ namespace MarketData.Wpf.Client.Views
     /// </summary>
     public partial class ModelConfigWindow : Window
     {
-        public ModelConfigWindow(ModelConfigViewModel vm)
+        public ModelConfigWindow()
+        {
+            InitializeComponent();
+        }
+
+        public ModelConfigWindow(ModelConfigViewModel vm) : this()
         {
             DataContext = vm;
-            InitializeComponent();
         }
     }
 }

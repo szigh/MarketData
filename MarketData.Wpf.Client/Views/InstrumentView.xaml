@@ -42,9 +42,16 @@
                            FontSize="14" 
                            Foreground="Gray"
                            Margin="0,0,0,5"/>
-                <TextBlock Text="{Binding Timestamp}" 
-                           FontSize="18"
-                           Foreground="DarkGray"/>
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="{Binding Timestamp}" 
+                               FontSize="18"
+                               Foreground="DarkGray"/>
+                    <TextBlock Text="UTC" 
+                               FontSize="14" 
+                               Foreground="DarkGray"
+                               VerticalAlignment="Bottom"
+                               Margin="5,0,0,1"/>
+                </StackPanel>
             </StackPanel>
         </Border>
 

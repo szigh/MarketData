@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace MarketData.Client.Shared.Configuration;
 
 /// <summary>
@@ -25,5 +27,6 @@ public class GrpcSettings
     /// The URL of the gRPC server.
     /// Default value is "https://localhost:7264"
     /// </summary>
+    [Url]
     public string ServerUrl { get; set; } = "https://localhost:7264";
 }

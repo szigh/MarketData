@@ -1,7 +1,7 @@
 using MarketData.Grpc;
+using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Shared;
 using System.Collections.ObjectModel;
-using System.Windows;
 using System.Windows.Input;
 
 namespace MarketData.Wpf.Client.ViewModels;
@@ -10,16 +10,20 @@ public class MainWindowViewModel : ViewModelBase
 {
     private readonly InstrumentViewModelFactory _instrumentViewModelFactory;
     private readonly ModelConfigurationService.ModelConfigurationServiceClient _modelConfigurationServiceClient;
+    private readonly IDialogService _dialogService;
+
     private string _title = "Market Data Client";
     private ObservableCollection<InstrumentTabViewModel> _tabs;
     private InstrumentTabViewModel? _selectedTab;
 
     public MainWindowViewModel(
         InstrumentViewModelFactory instrumentViewModelFactory,
-        ModelConfigurationService.ModelConfigurationServiceClient modelConfigurationServiceClient)
+        ModelConfigurationService.ModelConfigurationServiceClient modelConfigurationServiceClient,
+        IDialogService dialogService)
     {
         _instrumentViewModelFactory = instrumentViewModelFactory;
         _modelConfigurationServiceClient = modelConfigurationServiceClient;
+        _dialogService = dialogService;
         _tabs = [];
 
         AddTabCommand = new AsyncRelayCommand(ExecuteAddTab);
@@ -56,24 +60,17 @@ public class MainWindowViewModel : ViewModelBase
         {
             var response = await _modelConfigurationServiceClient
                 .GetAllInstrumentsAsync(new GetAllInstrumentsRequest());
+            var instrumentNames = response.Configurations.Select(c => c.InstrumentName);
+            var selectedInstrument = await _dialogService.ShowInstrumentSelectorAsync(instrumentNames);
 
-            var instrumentSelector = new InstrumentSelectorWindow(
-                response.Configurations.Select(r => r.InstrumentName));
-
-            if (instrumentSelector.ShowDialog() == true)
+            if (!string.IsNullOrEmpty(selectedInstrument))
             {
-                var selectedInstrument = instrumentSelector.SelectedInstrument;
-                if (!string.IsNullOrEmpty(selectedInstrument))
-                {
-                    AddTab(selectedInstrument);
-                }
+                AddTab(selectedInstrument);
             }
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Failed to fetch instrument configurations: {ex.Message}", 
-                "Error",
-                MessageBoxButton.OK, MessageBoxImage.Error);
+            _dialogService.ShowError("Failed to fetch instrument configurations", ex.Message);
         }
     }
 
