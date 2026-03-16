@@ -23,18 +23,21 @@ public class ModelConfigService : IModelConfigService, IDisposable
 
     public async Task<SupportedModelsResponse> GetSupportedModelsAsync(CancellationToken ct = default)
     {
+        _logger.LogInformation("Requesting supported models from gRPC service.");
         return await _client.GetSupportedModelsAsync(
             new GetSupportedModelsRequest(), cancellationToken: ct);
     }
 
     public async Task<ConfigurationsResponse> GetConfigurationsAsync(string instrumentName, CancellationToken ct = default)
     {
+        _logger.LogInformation("Requesting current configurations for instrument {Instrument} from gRPC service.", instrumentName);
         return await _client.GetConfigurationsAsync(
             new GetConfigurationsRequest { InstrumentName = instrumentName }, cancellationToken: ct);
     }
 
     public async Task<SwitchModelResponse> SwitchModelAsync(string instrumentName, string modelType, CancellationToken ct = default)
     {
+        _logger.LogInformation("Requesting model switch for instrument {Instrument} to model type {ModelType} from gRPC service.", instrumentName, modelType);
         return await _client.SwitchModelAsync(new SwitchModelRequest
         {
             InstrumentName = instrumentName,
@@ -44,6 +47,7 @@ public class ModelConfigService : IModelConfigService, IDisposable
 
     public async Task<UpdateConfigResponse> UpdateTickIntervalAsync(string instrumentName, int tickIntervalMs, CancellationToken ct = default)
     {
+        _logger.LogInformation("Requesting tick interval update for instrument {Instrument} to {TickIntervalMs} ms from gRPC service.", instrumentName, tickIntervalMs);
         return await _client.UpdateTickIntervalAsync(new UpdateTickIntervalRequest
         {
             InstrumentName = instrumentName,
@@ -57,6 +61,9 @@ public class ModelConfigService : IModelConfigService, IDisposable
         double mean,
         CancellationToken ct = default)
     {
+        _logger.LogInformation("Requesting Random Multiplicative config update for instrument {Instrument} " +
+            "with StdDev={StandardDeviation}, Mean={Mean} from gRPC service.", instrumentName, standardDeviation, mean);
+        
         await _client.UpdateRandomMultiplicativeConfigAsync(
             new UpdateRandomMultiplicativeRequest
             {
@@ -74,6 +81,10 @@ public class ModelConfigService : IModelConfigService, IDisposable
         double dt,
         CancellationToken ct = default)
     {
+        _logger.LogInformation("Requesting Mean Reverting config update for instrument {Instrument} " +
+            "with Mean={Mean}, Kappa={Kappa}, Sigma={Sigma}, Dt={Dt} from gRPC service.", 
+            instrumentName, mean, kappa, sigma, dt);
+
         await _client.UpdateMeanRevertingConfigAsync(
             new UpdateMeanRevertingRequest
             {
@@ -104,6 +115,8 @@ public class ModelConfigService : IModelConfigService, IDisposable
             });
         }
 
+        _logger.LogInformation("Requesting Random Additive Walk config update for instrument {Instrument} with {StepCount} steps from gRPC service.", 
+            instrumentName, request.WalkSteps.Count);
         await _client.UpdateRandomAdditiveWalkConfigAsync(request, cancellationToken: ct);
     }
 
