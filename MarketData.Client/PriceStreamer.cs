@@ -12,6 +12,11 @@ internal class PriceStreamer : GrpcClientBase
         _client = new MarketDataService.MarketDataServiceClient(_channel);
     }
 
+    public async Task InitializeAsync(CancellationToken ct = default)
+    {
+        await WaitForConnectionAsync(ct);
+    }
+
     public async Task Start()
     {
         Console.Write("Enter instruments to subscribe (comma-separated, e.g., FTSE,AAPL): ");
