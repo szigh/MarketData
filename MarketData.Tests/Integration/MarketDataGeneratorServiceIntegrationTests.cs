@@ -31,6 +31,7 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
                 // dependencies for MarketDataGeneratorService
                 services.AddSingleton<IPriceSimulatorFactory, PriceSimulatorFactory>();
                 services.AddSingleton<IInstrumentModelManager, InstrumentModelManager>();
+                services.AddSingleton<IDefaultModelConfigFactory, DefaultModelConfigFactory>();
 
                 // Configure with FAST intervals for testing (not production values!)
                 services.Configure<MarketDataGeneratorOptions>(options =>
