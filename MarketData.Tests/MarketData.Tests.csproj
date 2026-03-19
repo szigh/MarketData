@@ -31,10 +31,4 @@
   <ItemGroup>
     <ProjectReference Include="..\MarketData\MarketData.csproj" />
   </ItemGroup>
-
-  <ItemGroup>
-    <Protobuf Include="..\MarketData\Protos\marketdata.proto" GrpcServices="Client" Link="Protos\marketdata.proto" />
-    <Protobuf Include="..\MarketData\Protos\modelconfiguration.proto" GrpcServices="Client" Link="Protos\modelconfiguration.proto" />
-  </ItemGroup>
-
 </Project>
