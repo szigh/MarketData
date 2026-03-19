@@ -8,6 +8,9 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon>MarketData-client-icon.ico</ApplicationIcon>
     <Title>WPF Market Data Client</Title>
+
+	  <!-- FancyCandles package warning - was restored using .NETFramework-->
+	  <NoWarn>NU1701</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
