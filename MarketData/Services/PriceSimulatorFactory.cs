@@ -10,11 +10,13 @@ namespace MarketData.Services;
 /// </summary>
 public class PriceSimulatorFactory : IPriceSimulatorFactory
 {
+    private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<PriceSimulatorFactory> _logger;
 
-    public PriceSimulatorFactory(ILogger<PriceSimulatorFactory> logger)
+    public PriceSimulatorFactory(ILoggerFactory loggerFactory, ILogger<PriceSimulatorFactory> logger)
     {
         _logger = logger;
+        _loggerFactory = loggerFactory;
     }
 
     /// <summary>
@@ -50,7 +52,8 @@ public class PriceSimulatorFactory : IPriceSimulatorFactory
             "Creating RandomMultiplicativeProcess for '{InstrumentName}' with StdDev={StdDev}, Mean={Mean}",
             instrument.Name, config.StandardDeviation, config.Mean);
 
-        return new RandomMultiplicativeProcess(config.StandardDeviation, config.Mean);
+        return new RandomMultiplicativeProcess(config.StandardDeviation, config.Mean, 
+            _loggerFactory.CreateLogger<RandomMultiplicativeProcess>());
     }
 
     private IPriceSimulator CreateMeanRevertingSimulator(Instrument instrument)
@@ -63,7 +66,8 @@ public class PriceSimulatorFactory : IPriceSimulatorFactory
             "Creating MeanRevertingProcess for '{InstrumentName}' with Mean={Mean}, Kappa={Kappa}, Sigma={Sigma}, Dt={Dt}",
             instrument.Name, config.Mean, config.Kappa, config.Sigma, config.Dt);
 
-        return new MeanRevertingProcess(config.Mean, config.Kappa, config.Sigma, config.Dt);
+        return new MeanRevertingProcess(config.Mean, config.Kappa, config.Sigma, config.Dt, 
+            _loggerFactory.CreateLogger<MeanRevertingProcess>());
     }
 
     private IPriceSimulator CreateFlatSimulator(Instrument instrument)

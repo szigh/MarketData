@@ -34,7 +34,8 @@ public class InstrumentModelManagerTests : IDisposable
         _manager = new InstrumentModelManager(
             _serviceProvider,
             _mockFactory.Object,
-            NullLogger<InstrumentModelManager>.Instance);
+            NullLogger<InstrumentModelManager>.Instance,
+            new DefaultModelConfigFactory(NullLogger<DefaultModelConfigFactory>.Instance));
     }
 
     [Fact]

@@ -42,7 +42,7 @@ public class MarketDataGrpcService : MarketDataService.MarketDataServiceBase
             {
                 if (request.Instruments.Contains(priceUpdate.Instrument))
                 {
-                    _logger.LogTrace("Sending update for {Instrument}: {Value} at {Timestamp}",
+                    _logger.LogTrace("Writing price update to stream for {Instrument}: {Value} at {Timestamp}",
                         priceUpdate.Instrument,
                         priceUpdate.Value,
                         new DateTime(priceUpdate.Timestamp));
@@ -81,8 +81,8 @@ public class MarketDataGrpcService : MarketDataService.MarketDataServiceBase
 
         var prices = await dbContext.Prices
             .Where(p => p.Instrument == request.Instrument &&
-                       p.Timestamp >= startDate &&
-                       p.Timestamp <= endDate)
+                        p.Timestamp >= startDate &&
+                        p.Timestamp <= endDate)
             .OrderBy(p => p.Timestamp)
             .Select(p => new PriceUpdate
             {

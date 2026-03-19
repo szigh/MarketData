@@ -1,13 +1,24 @@
-﻿namespace MarketData.PriceSimulator;
+﻿using Microsoft.Extensions.Logging;
+
+namespace MarketData.PriceSimulator;
 
 public class RandomAdditiveWalk : IPriceSimulator
 {
     private readonly Random _random = Random.Shared;
     private readonly RandomWalkSteps _walkSteps;
+    private readonly ILogger<RandomAdditiveWalk>? _logger;
 
-    public RandomAdditiveWalk(RandomWalkSteps walkSteps)
+    public RandomAdditiveWalk(RandomWalkSteps walkSteps) 
+        : this(walkSteps, null)
+    {
+    }
+
+    public RandomAdditiveWalk(RandomWalkSteps walkSteps, ILogger<RandomAdditiveWalk>? logger)
     {
         _walkSteps = walkSteps;
+        _logger = logger;
+
+        _logger?.LogDebug("Created RandomAdditiveWalk with {StepCount} steps", walkSteps.WalkSteps.Count);
     }
 
     public Task<double> GenerateNextPrice(double price)

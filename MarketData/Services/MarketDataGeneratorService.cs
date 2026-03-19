@@ -109,6 +109,10 @@ public class MarketDataGeneratorService : BackgroundService
 
     private void OnTickIntervalChanged(object? sender, ModelConfigurationChangedEventArgs e)
     {
+        _logger.LogInformation(
+            "Tick interval changed for instrument '{InstrumentName}' to {NewTickIntervalMs} ms",
+            e.InstrumentName, e.NewTickIntervalMs);
+
         if (_instruments.TryGetValue(e.InstrumentName, out var instrument))
         {
             instrument.TickIntervalMillieconds = e.NewTickIntervalMs;
@@ -213,8 +217,9 @@ public class MarketDataGeneratorService : BackgroundService
                 await GeneratePricesAsync(ct);
                 await Task.Delay(TimeSpan.FromMilliseconds(_options.CheckIntervalMilliseconds), ct);
             }
-            catch (OperationCanceledException)
+            catch (OperationCanceledException oce)
             {
+                _logger.LogInformation("Market Data Generator Service cancellation requested: {Message}", oce.Message);
                 //service is stopping
                 break;
             }

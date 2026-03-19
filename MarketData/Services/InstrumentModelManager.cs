@@ -17,6 +17,7 @@ public class InstrumentModelManager : IInstrumentModelManager
     private readonly IServiceProvider _serviceProvider;
     private readonly IPriceSimulatorFactory _simulatorFactory;
     private readonly ILogger<InstrumentModelManager> _logger;
+    private readonly IDefaultModelConfigFactory _configFactory;
     private const string DefaultModelType = "Flat";
 
     public event EventHandler<ModelConfigurationChangedEventArgs>? ConfigurationChanged;
@@ -28,11 +29,13 @@ public class InstrumentModelManager : IInstrumentModelManager
     public InstrumentModelManager(
         IServiceProvider serviceProvider,
         IPriceSimulatorFactory simulatorFactory,
-        ILogger<InstrumentModelManager> logger)
+        ILogger<InstrumentModelManager> logger,
+        IDefaultModelConfigFactory configFactory)
     {
         _serviceProvider = serviceProvider;
         _simulatorFactory = simulatorFactory;
         _logger = logger;
+        _configFactory = configFactory;
     }
 
     protected virtual void OnConfigurationChanged(string instrumentName) => 
@@ -204,6 +207,7 @@ public class InstrumentModelManager : IInstrumentModelManager
 
     /// <summary>
     /// Loads all instruments with configurations and ensures they are properly initialized.
+    /// It is NOT readonly - if any instruments are missing configurations for their model type, they will be created with default values.
     /// This is an efficient batch operation that uses a single DbContext.
     /// </summary>
     public async Task<Dictionary<string, Instrument>> LoadAndInitializeAllInstrumentsAsync(
@@ -211,6 +215,8 @@ public class InstrumentModelManager : IInstrumentModelManager
     {
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+
+        _logger.LogInformation("Loading all instruments with configurations from the database");
 
         var instruments = await context.Instruments
             .Include(i => i.RandomMultiplicativeConfig)
@@ -266,6 +272,8 @@ public class InstrumentModelManager : IInstrumentModelManager
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
 
+        _logger.LogInformation("Retrieving instrument '{InstrumentName}' with configurations", instrumentName);
+
         return await context.Instruments
             .Include(i => i.RandomMultiplicativeConfig)
             .Include(i => i.MeanRevertingConfig)
@@ -278,14 +286,14 @@ public class InstrumentModelManager : IInstrumentModelManager
     /// <summary>
     /// Creates a default configuration for the instrument's current model type
     /// </summary>
-    private static async Task CreateDefaultConfigurationAsync(
+    private async Task CreateDefaultConfigurationAsync(
         Instrument instrument, MarketDataContext context, CancellationToken ct = default)
     {
         switch (instrument.ModelType)
         {
             case "RandomMultiplicative":
                 context.RandomMultiplicativeConfigs.Add(
-                    DefaultModelConfigFactory.CreateRandomMultiplicativeConfig(instrument.Id));
+                    _configFactory.CreateDefaultRandomMultiplicativeConfig(instrument.Id));
                 break;
 
             case "MeanReverting":
@@ -296,16 +304,16 @@ public class InstrumentModelManager : IInstrumentModelManager
                     .FirstOrDefaultAsync(ct);
                 var mean = lastPrice == default ? 100d : (double)lastPrice; // Use last price as mean if available
                 context.MeanRevertingConfigs.Add(
-                    DefaultModelConfigFactory.CreateMeanRevertingConfig(instrument.Id, mean));
+                    _configFactory.CreateMeanRevertingConfig(instrument.Id, mean));
                 break;
 
             case "Flat":
-                context.FlatConfigs.Add(DefaultModelConfigFactory.CreateFlatConfig(instrument.Id));
+                context.FlatConfigs.Add(_configFactory.CreateFlatConfig(instrument.Id));
                 break;
 
             case "RandomAdditiveWalk":
                 context.RandomAdditiveWalkConfigs.Add(
-                    DefaultModelConfigFactory.CreateRandomAdditiveWalkConfig(instrument.Id));
+                    _configFactory.CreateRandomAdditiveWalkConfig(instrument.Id));
                 break;
         }
 
@@ -581,6 +589,10 @@ public class InstrumentModelManager : IInstrumentModelManager
         {
             throw new InvalidOperationException($"Instrument '{instrumentName}' not found");
         }
+
+        _logger.LogInformation(
+            "Updating tick interval for instrument '{InstrumentName}' from {PreviousInterval}ms to {NewInterval}ms",
+            instrumentName, instrument.TickIntervalMillieconds, tickIntervalMs);
 
         instrument.TickIntervalMillieconds = tickIntervalMs;
 

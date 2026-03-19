@@ -13,6 +13,11 @@ internal class GrpcModelConfigClient : GrpcClientBase
         _client = new ModelConfigurationService.ModelConfigurationServiceClient(_channel);
     }
 
+    public async Task InitializeAsync(CancellationToken ct = default)
+    {
+        await WaitForConnectionAsync(ct);
+    }
+
     public async Task<IEnumerable<string>> GetConfiguredInstruments(bool printConfigs = false, CancellationToken ct = default)
     {
         var result = await _client.GetAllInstrumentsAsync(new GetAllInstrumentsRequest(), cancellationToken: ct);

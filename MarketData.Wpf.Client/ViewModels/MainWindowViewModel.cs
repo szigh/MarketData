@@ -1,6 +1,7 @@
 using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Shared;
+using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
@@ -8,6 +9,7 @@ namespace MarketData.Wpf.Client.ViewModels;
 
 public class MainWindowViewModel : ViewModelBase
 {
+    private readonly ILogger<MainWindowViewModel> _logger;
     private readonly InstrumentViewModelFactory _instrumentViewModelFactory;
     private readonly ModelConfigurationService.ModelConfigurationServiceClient _modelConfigurationServiceClient;
     private readonly IDialogService _dialogService;
@@ -19,11 +21,13 @@ public class MainWindowViewModel : ViewModelBase
     public MainWindowViewModel(
         InstrumentViewModelFactory instrumentViewModelFactory,
         ModelConfigurationService.ModelConfigurationServiceClient modelConfigurationServiceClient,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        ILogger<MainWindowViewModel> logger)
     {
         _instrumentViewModelFactory = instrumentViewModelFactory;
         _modelConfigurationServiceClient = modelConfigurationServiceClient;
         _dialogService = dialogService;
+        _logger = logger;
         _tabs = [];
 
         AddTabCommand = new AsyncRelayCommand(ExecuteAddTab);
@@ -56,12 +60,17 @@ public class MainWindowViewModel : ViewModelBase
 
     private async Task ExecuteAddTab()
     {
+        _logger.LogInformation("Executing AddTabCommand");
         try
         {
+            _logger.LogInformation("Fetching instrument configurations from gRPC service");
             var response = await _modelConfigurationServiceClient
                 .GetAllInstrumentsAsync(new GetAllInstrumentsRequest());
             var instrumentNames = response.Configurations.Select(c => c.InstrumentName);
+            _logger.LogInformation("Received {Count} instrument configurations", instrumentNames.Count());
+
             var selectedInstrument = await _dialogService.ShowInstrumentSelectorAsync(instrumentNames);
+            _logger.LogInformation("User selected instrument: {Instrument}", selectedInstrument);
 
             if (!string.IsNullOrEmpty(selectedInstrument))
             {
@@ -70,17 +79,21 @@ public class MainWindowViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
+            _logger.LogError(ex, "Failed to fetch instrument configurations");
             _dialogService.ShowError("Failed to fetch instrument configurations", ex.Message);
         }
     }
 
     private void AddTab(string instrumentName)
     {
+        _logger.LogInformation("Adding tab for instrument: {Instrument}", instrumentName);
+
         var instrumentViewModel = _instrumentViewModelFactory.Create(instrumentName);
         var tabViewModel = new InstrumentTabViewModel(instrumentViewModel);
         Tabs.Add(tabViewModel);
         SelectedTab = tabViewModel;
 
+        _logger.LogInformation("Starting streaming for instrument: {Instrument}", instrumentName);
         _ = instrumentViewModel.StartStreamingAsync();
     }
 
@@ -92,8 +105,10 @@ public class MainWindowViewModel : ViewModelBase
 
     private async void ExecuteCloseTab(InstrumentTabViewModel? tab)
     {
+        _logger.LogInformation("Executing CloseTabCommand for tab: {TabHeader}", tab?.Header);
         if (tab != null && Tabs.Contains(tab) && Tabs.Count > 1)
         {
+            _logger.LogInformation("Stopping streaming for instrument: {Instrument}", tab.Header);
             await tab.InstrumentViewModel.StopStreamingAsync();
 
             // Re-check after await - tab might have been removed by another concurrent call
@@ -116,6 +131,7 @@ public class MainWindowViewModel : ViewModelBase
 
     public async Task CloseAllTabsAsync()
     {
+        _logger.LogInformation("Closing all tabs");
         foreach (var tab in Tabs)
         {
             await tab.InstrumentViewModel.StopStreamingAsync();
@@ -124,13 +140,15 @@ public class MainWindowViewModel : ViewModelBase
         {
             Tabs.Clear();
         } 
-        catch (NullReferenceException)
+        catch (NullReferenceException nre)
         {
+            _logger.LogWarning(nre, "Tabs collection has already been disposed");
             // This can happen if the application is closing and the Tabs collection has already been disposed.
             // We can safely ignore this exception since we're trying to clear the tabs during shutdown.
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Unexpected error while closing tabs");
             throw;
         }
     }

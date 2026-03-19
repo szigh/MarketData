@@ -1,7 +1,9 @@
+using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using MarketData.Wpf.Shared;
+using Microsoft.Extensions.Logging;
 using System.ComponentModel;
 using System.Windows.Input;
 
@@ -9,13 +11,15 @@ namespace MarketData.Wpf.Client.ViewModels;
 
 public class ModelConfigViewModel : ViewModelBase
 {
+    private readonly ILogger<ModelConfigViewModel> _logger;
     private readonly IModelConfigService _modelConfigService;
     private readonly IDialogService _dialogService;
     private readonly ModelConfigViewModelFactory _viewModelFactory;
     private readonly string _instrument;
     private readonly string[] _supportedModels;
 
-    private ConfigurationsResponse _config;
+    private ConfigurationsResponse _configs;
+
     private string _activeModel;
     private int _tickIntervalMs;
     private bool _isSwitchingModel;
@@ -28,16 +32,18 @@ public class ModelConfigViewModel : ViewModelBase
         ConfigurationsResponse config,
         SupportedModelsResponse supportedModels,
         IModelConfigService modelConfigService,
-        IDialogService dialogService)
+        IDialogService dialogService,
+        ILoggerFactory loggerFactory)
     {
         _instrument = instrument;
         _supportedModels = supportedModels.SupportedModels.ToArray();
-        _config = config;
+        _configs = config;
         _activeModel = config.ActiveModel;
         _tickIntervalMs = config.TickIntervalMs;
         _modelConfigService = modelConfigService;
         _dialogService = dialogService;
-        _viewModelFactory = new ModelConfigViewModelFactory(instrument, modelConfigService, dialogService);
+        _logger = loggerFactory.CreateLogger<ModelConfigViewModel>();
+        _viewModelFactory = new ModelConfigViewModelFactory(instrument, modelConfigService, dialogService, loggerFactory);
 
         // Create the appropriate child ViewModel based on active model
         UpdateActiveConfigViewModel();
@@ -47,6 +53,7 @@ public class ModelConfigViewModel : ViewModelBase
 
     public ICommand PublishConfigChanges { get; }
 
+    // Expose the instrument name as a read-only property for display in the UI
     public string Instrument => _instrument;
 
     public int TickIntervalMs
@@ -63,13 +70,8 @@ public class ModelConfigViewModel : ViewModelBase
         }
     }
 
-    public bool HasModifications
-    {
-        get
-        {
-            return (ActiveConfigViewModel?.IsModified ?? false) || _activeModelChanged || _tickIntervalChanged;
-        }
-    }
+    public bool HasModifications => 
+        (ActiveConfigViewModel?.IsModified ?? false) || _activeModelChanged || _tickIntervalChanged;
 
     public string ActiveModel
     {
@@ -78,7 +80,7 @@ public class ModelConfigViewModel : ViewModelBase
         {
             if (_activeModel != value && !_isSwitchingModel)
             {
-                SetProperty(ref _activeModel, value); 
+                SetProperty(ref _activeModel, value);
                 UpdateActiveConfigViewModel(); // Update UI immediately
                 _activeModelChanged = true;
                 OnPropertyChanged(nameof(HasModifications));
@@ -92,6 +94,7 @@ public class ModelConfigViewModel : ViewModelBase
         private set => SetProperty(ref _isSwitchingModel, value);
     }
 
+    // referenced in WPF XAML to populate model selection dropdown
     public string[] SupportedModels => _supportedModels;
 
     /// <summary>
@@ -120,62 +123,50 @@ public class ModelConfigViewModel : ViewModelBase
 
     private async Task ExecutePublishChanges()
     {
+        _logger.LogDebug("{MethodName} called", nameof(ExecutePublishChanges));
+
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // timeout for publishing changes
-        if (_activeConfigViewModel != null)
+        using var publisher = new ModelConfigPublisher(_instrument, _activeModel, _modelConfigService, _dialogService, _logger);
+
+        if (_activeConfigViewModel != null && _activeConfigViewModel.IsModified)
         {
-            try
+            var success = await publisher.TryPublishModelParams(_activeConfigViewModel, cts.Token);
+            if (success)
             {
-                await _activeConfigViewModel.ExecutePublishConfigChangesSafe(cts.Token);
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowError($"Failed to publish model configuration changes: {ex.Message}", 
-                    "Error publishing changes");
+                // After successful publish, the ViewModel should have reset its modified state
+                if (_activeConfigViewModel.IsModified)
+                    throw new Exception("Model params should not be marked as modified after successful publish. " +
+                        "This likely means the ActiveConfigViewModel did not properly reset its modified state.");
             }
         }
+        
         if (_activeModelChanged)
         {
-            try
+            IsSwitchingModel = true;
+            var (success, configs) = await publisher.TrySwitchModel(cts.Token);
+            if (success && configs != null)
             {
-                IsSwitchingModel = true;
-                var result = await _modelConfigService.SwitchModelAsync(_instrument, _activeModel, cts.Token);
-                if (result.NewModel == _activeModel)
-                {
-                    var configs = await _modelConfigService.GetConfigurationsAsync(_instrument, cts.Token);
-                    _config = configs;
-                    UpdateActiveConfigViewModel();
-                    _activeModelChanged = false;
-                }
-
-                IsSwitchingModel = false;
+                _configs = configs;
+                UpdateActiveConfigViewModel(); // Refresh the config ViewModel with new configs from server
+                _activeModelChanged = false;
             }
-            catch (Exception ex)
-            {
-                IsSwitchingModel = false;
-                _dialogService.ShowError($"Failed to switch model: {ex.Message}",
-                    "Error switching model");
-            }
+            IsSwitchingModel = false;
         }
+
         if (_tickIntervalChanged)
         {
-            try
-            {
-                var result = await _modelConfigService.UpdateTickIntervalAsync(_instrument, _tickIntervalMs, cts.Token);
-                if (result.Success)
-                    _tickIntervalChanged = false;
-            }
-            catch (Exception ex)
-            {
-                _dialogService.ShowError($"Failed to update tick interval: {ex.Message}",
-                    "Error updating tick interval");
-            }
+            var success = await publisher.PublishTickInterval(_tickIntervalMs, cts.Token);
+            if (success)
+                _tickIntervalChanged = false;
         }
 
+        publisher.LogPublishResultsSummary();
         OnPropertyChanged(nameof(HasModifications));
     }
 
     private void UpdateActiveConfigViewModel()
     {
-        ActiveConfigViewModel = _viewModelFactory.Create(_activeModel, _config);
+        _logger.LogInformation("Updating ActiveConfigViewModel for instrument {Instrument} with active model {ActiveModel}", _instrument, _activeModel);
+        ActiveConfigViewModel = _viewModelFactory.Create(_activeModel, _configs);
     }
 }

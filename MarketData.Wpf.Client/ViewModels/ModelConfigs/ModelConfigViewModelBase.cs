@@ -1,5 +1,7 @@
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Shared;
+using Microsoft.Extensions.Logging;
+using System.ComponentModel.DataAnnotations;
 
 namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 
@@ -11,31 +13,40 @@ public abstract class ModelConfigViewModelBase : ViewModelBase
     protected string _instrumentName;
     protected bool _isModified = false;
     protected readonly IDialogService _dialogService;
+    protected readonly ILogger<ModelConfigViewModelBase> _logger;
 
-    protected ModelConfigViewModelBase(string instrumentName, IDialogService dialogService)
+    protected ModelConfigViewModelBase(string instrumentName, IDialogService dialogService, ILogger<ModelConfigViewModelBase> logger)
     {
         _instrumentName = instrumentName;
         _dialogService = dialogService;
+        _logger = logger;
     }
 
-    internal async Task ExecutePublishConfigChangesSafe(CancellationToken ct = default)
+    internal async Task<bool> ExecutePublishConfigChangesUnsafe(CancellationToken ct = default)
     {
+        bool success;
         try
         {
-            var success = await TryExecutePublishConfigChangesAsync(ct);
+            _logger.LogInformation("Attempting to publish config changes for instrument {Instrument}.", _instrumentName);
+            success = await TryExecutePublishConfigChangesAsync(ct);
+
             if (success)
+            {
                 IsModified = false;
+                return true;
+            }
             else
             {
-                _dialogService.ShowWarning(
-                     $"Failed to publish config changes. " +
-                     $"Please check your input and try again.");
+                return false;
             }
         }
-        catch (Exception ex)
+        catch (ValidationException)
         {
-            _dialogService.ShowError($"Failed to publish config changes: {ex.Message}",
-                "Error publishing config changes");
+            throw;
+        }
+        catch (Exception)
+        {
+            throw;
         }
     }
 
@@ -44,8 +55,9 @@ public abstract class ModelConfigViewModelBase : ViewModelBase
     public bool IsModified
     {
         get => _isModified;
-        set => SetProperty(ref _isModified, value);
+        protected set => SetProperty(ref _isModified, value);
     }
 
     protected abstract Task<bool> TryExecutePublishConfigChangesAsync(CancellationToken ct = default);
+    protected abstract bool ValidateProperties();
 }

@@ -1,4 +1,6 @@
-﻿namespace MarketData.PriceSimulator;
+﻿using Microsoft.Extensions.Logging;
+
+namespace MarketData.PriceSimulator;
 
 /// <summary>
 /// Implements a simple multiplicative price process where percentage moves follow a normal distribution.
@@ -57,8 +59,9 @@
 /// </remarks>
 public class RandomMultiplicativeProcess : IPriceSimulator
 {
-    private readonly double _standardDeviation; //or volatility
-    private readonly double _mean; //or drift
+    private readonly double _standardDeviation;
+    private readonly double _mean;
+    private readonly ILogger<RandomMultiplicativeProcess>? _logger;
 
     /// <summary>
     /// Initializes a new instance of the RandomMultiplicativeProcess class using the specified standard deviation to
@@ -68,43 +71,39 @@ public class RandomMultiplicativeProcess : IPriceSimulator
     ///     Example: If standardDeviation = 0.02 (2%):
     ///     ~68% of moves will be within ±2% of the current price
     ///     ~95% of moves will be within ±4% of the current price</param>
-    /// <param name="mean">The mean or drift of the percentage moves. Default is 0.
-    ///     <para><b>Important:</b> The relationship between mean and price drift is NON-TRIVIAL!</para>
-    ///     <para>
-    ///     The expected log price change per step is approximately: <b>E[log(1 + X)] ≈ μ - σ²/2</b>
-    ///     </para>
-    ///     <para>This means:</para>
-    ///     <list type="bullet">
-    ///         <item><b>μ &lt; σ²/2:</b> Price DECAYS on average (even if μ > 0!)</item>
-    ///         <item><b>μ = σ²/2:</b> Price neither grows nor decays (near-martingale)</item>
-    ///         <item><b>μ &gt; σ²/2:</b> Price GROWS on average</item>
-    ///     </list>
-    ///     <para>
-    ///     <b>Example:</b> With σ = 0.02 (2% volatility), the threshold is σ²/2 = 0.0002 (0.02%).
-    ///     To achieve upward drift, need μ > 0.0002, not just μ > 0.
-    ///     </para>
-    ///     <para>
-    ///     <b>Rule of thumb:</b> For upward drift, set μ > σ²/2. 
-    ///     For example, μ = σ²/2 × 2 gives a modest positive drift.
-    ///     </para>
-    /// </param>
-    public RandomMultiplicativeProcess(double standardDeviation, double mean = 0d)
+    /// <param name="mean">The mean or drift of the percentage moves.</param>
+    /// <param name="logger">Optional logger for diagnostics</param>
+    public RandomMultiplicativeProcess(double standardDeviation, double mean = 0d, 
+        ILogger<RandomMultiplicativeProcess>? logger = default)
     {
         if(standardDeviation <= 0)
         {
+            logger?.LogError("Invalid standard deviation: {StandardDeviation}. Must be positive.", standardDeviation);
             throw new ArgumentException("Standard deviation must be a positive value.", 
                 nameof(standardDeviation));
         }
 
         _standardDeviation = standardDeviation;
         _mean = mean;
+        _logger = logger;
+
+        _logger?.LogDebug("Created RandomMultiplicativeProcess with StdDev={StandardDeviation}, Mean={Mean}", 
+            standardDeviation, mean);
     }
 
     public async Task<double> GenerateNextPrice(double currentPrice)
     {
-        // Generate relative price change as a percentage
         var percentageMove = NormalDistribution.Generate(_mean, _standardDeviation);
         var newPrice = currentPrice * (1 + percentageMove);
+
+        _logger?.LogTrace("Generated price: {CurrentPrice} -> {NewPrice} (move: {PercentageMove:P4})", 
+            currentPrice, newPrice, percentageMove);
+
+        if (newPrice < 0)
+        {
+            _logger?.LogWarning("Negative price generated: {NewPrice} from {CurrentPrice} with move {PercentageMove:P4}", 
+                newPrice, currentPrice, percentageMove);
+        }
 
         return newPrice;
     }

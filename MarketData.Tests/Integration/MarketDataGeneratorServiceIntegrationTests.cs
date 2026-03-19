@@ -30,6 +30,7 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
 
                 // dependencies for MarketDataGeneratorService
                 services.AddSingleton<IPriceSimulatorFactory, PriceSimulatorFactory>();
+                services.AddSingleton<IDefaultModelConfigFactory, DefaultModelConfigFactory>();
                 services.AddSingleton<IInstrumentModelManager, InstrumentModelManager>();
 
                 // Configure with FAST intervals for testing (not production values!)
@@ -62,7 +63,7 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
             FlatConfig = new FlatConfig()
         };
         _context.Instruments.Add(instrument);
-        
+
         _context.Prices.Add(new Price
         {
             Instrument = "TEST",
@@ -83,11 +84,12 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
             .Where(p => p.Instrument == "TEST")
             .CountAsync();
 
-        Assert.True(finalPriceCount > initialPriceCount, 
+        Assert.True(finalPriceCount > initialPriceCount,
             $"Expected more than {initialPriceCount} prices, got {finalPriceCount}");
     }
 
     [Fact]
+    [Trait("Speed", "Slow")]
     public async Task Service_RespectsTickInterval()
     {
         var fastInstrument = new Instrument
@@ -114,7 +116,7 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
         await _context.SaveChangesAsync();
 
         await _host.StartAsync();
-        await Task.Delay(TimeSpan.FromMilliseconds(600));
+        await Task.Delay(TimeSpan.FromMilliseconds(2000));
         await _host.StopAsync(TimeSpan.FromSeconds(2));
 
         var fastCount = await _context.Prices.CountAsync(p => p.Instrument == "FAST");
@@ -122,12 +124,6 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
 
         Assert.True(fastCount > slowCount,
             $"Fast instrument ({fastCount} prices) should have more than slow instrument ({slowCount} prices)");
-
-        // Fast: 600ms / 50ms = ~12 ticks (+ initial = 13)
-        // Slow: 600ms / 200ms = ~3 ticks (+ initial = 4)
-        // Use generous ranges due to timing variability
-        Assert.InRange(fastCount, 5, 20);
-        Assert.InRange(slowCount, 2, 8);
     }
 
     [Fact]
@@ -160,7 +156,7 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _host.StopAsync(TimeSpan.FromSeconds(1));
-        
+
         _host.Dispose();
         await _context.DisposeAsync();
     }

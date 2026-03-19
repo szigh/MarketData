@@ -3,12 +3,13 @@
     "Name": "WPF + Server",
     "Projects": [
       {
-        "Path": "MarketData.Wpf.Client\\MarketData.Wpf.Client.csproj",
+        "Path": "MarketData.Wpf.Client\\MarketData.Client.Wpf.csproj",
         "Action": "Start"
       },
       {
         "Path": "MarketData\\MarketData.csproj",
-        "Action": "Start"
+        "Action": "Start",
+        "DebugTarget": "https"
       }
     ]
   },
@@ -21,7 +22,32 @@
       },
       {
         "Path": "MarketData\\MarketData.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      }
+    ]
+  },
+  {
+    "Name": "Browser + REST",
+    "Projects": [
+      {
+        "Path": "MarketData\\MarketData.csproj",
+        "Action": "Start",
+        "DebugTarget": "https with browser"
+      }
+    ]
+  },
+  {
+    "Name": "FastSimulate",
+    "Projects": [
+      {
+        "Path": "FastSimulate\\FastSimulate.csproj",
         "Action": "Start"
+      },
+      {
+        "Path": "MarketData\\MarketData.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
       }
     ]
   }
