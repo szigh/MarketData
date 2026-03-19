@@ -34,6 +34,7 @@ internal static class Bootstrapper
 
             services.ConfigureGrpcClients();
 
+            Logger.Information("Registering application specific services");
             services.AddSingleton<IModelConfigService, ModelConfigService>();
             services.AddSingleton<IDialogService, DialogService>();
             services.AddTransient<InstrumentViewModelFactory>();
