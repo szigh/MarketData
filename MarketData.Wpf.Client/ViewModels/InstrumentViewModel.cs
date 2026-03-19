@@ -18,19 +18,19 @@ public class InstrumentViewModel : ViewModelBase
 {
     private readonly ILogger _logger;
     private readonly ILoggerFactory _loggerFactory;
+    private CancellationTokenSource? _cancellationTokenSource;
     private readonly MarketDataService.MarketDataServiceClient _grpcClient;
     private readonly IModelConfigService _modelConfigService;
     private readonly IDialogService _dialogService;
 
     private CandleBuilder<double> _candleBuilder;
+    private CandlesSource _candles;
     private int _loadHistoryOnStartMinutes = 1440;
     private int _candlePrecision = 2;
 
     private string _price;
     private string _instrument;
     private string _timestamp;
-    private CancellationTokenSource? _cancellationTokenSource;
-    private CandlesSource _candles;
     private bool _isStreaming;
 
     public InstrumentViewModel(string instrumentName,
@@ -46,15 +46,15 @@ public class InstrumentViewModel : ViewModelBase
         _logger = loggerFactory.CreateLogger<InstrumentViewModel>();
         _loggerFactory = loggerFactory;
         _instrument = instrumentName;
-        Price = "#.##";
-        Timestamp = string.Empty;
+        _price = "#.##";
+        _timestamp = string.Empty;
 
         ModelConfigCommand = new AsyncRelayCommand(OpenModelConfigAsync);
 
-        InitializeCandleChart(candleChartConfig);
+        (_candleBuilder, _candles) = InitializeCandleChart(candleChartConfig);
     }
 
-    private void InitializeCandleChart(IOptions<CandleChartSettings> candleChartConfig)
+    private (CandleBuilder<double>, CandlesSource) InitializeCandleChart(IOptions<CandleChartSettings> candleChartConfig)
     {
         CandleChartSettings config;
         try
@@ -76,8 +76,8 @@ public class InstrumentViewModel : ViewModelBase
         _candlePrecision = config.CandlePrecision;
         _loadHistoryOnStartMinutes = config.LoadHistoryOnStartMinutes;
 
-        _candleBuilder = new CandleBuilder<double>(chartTimeFrame.ToTimeSpan(), _logger, true);
-        Candles = new CandlesSource(chartTimeFrame);
+        return (new CandleBuilder<double>(chartTimeFrame.ToTimeSpan(), _logger, true), 
+            new CandlesSource(chartTimeFrame));
     }
 
     private async Task OpenModelConfigAsync()
