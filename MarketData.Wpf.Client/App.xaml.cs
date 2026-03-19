@@ -1,5 +1,6 @@
 ﻿using Grpc.Net.ClientFactory;
 using MarketData.Client.Shared.Configuration;
+using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.ViewModels;

@@ -1,6 +1,6 @@
 using MarketData.Grpc;
 
-namespace MarketData.Wpf.Client.Services;
+namespace MarketData.Client.Wpf.Services;
 
 /// <summary>
 /// Service interface for managing model configurations via gRPC

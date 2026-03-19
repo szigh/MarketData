@@ -1,3 +1,4 @@
+using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Shared;
