@@ -1,3 +1,4 @@
+using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.ViewModels.ModelConfigs;
@@ -122,10 +123,10 @@ public class ModelConfigViewModel : ViewModelBase
 
     private async Task ExecutePublishChanges()
     {
-        _logger.LogDebug($"{nameof(ExecutePublishChanges)} called");
+        _logger.LogDebug("{MethodName} called", nameof(ExecutePublishChanges));
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10)); // timeout for publishing changes
-        var publisher = new ModelConfigPublisher(_instrument, _activeModel, _modelConfigService, _dialogService, _logger);
+        using var publisher = new ModelConfigPublisher(_instrument, _activeModel, _modelConfigService, _dialogService, _logger);
 
         if (_activeConfigViewModel != null && _activeConfigViewModel.IsModified)
         {

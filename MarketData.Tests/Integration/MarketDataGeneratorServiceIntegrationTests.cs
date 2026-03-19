@@ -63,7 +63,7 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
             FlatConfig = new FlatConfig()
         };
         _context.Instruments.Add(instrument);
-        
+
         _context.Prices.Add(new Price
         {
             Instrument = "TEST",
@@ -84,7 +84,7 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
             .Where(p => p.Instrument == "TEST")
             .CountAsync();
 
-        Assert.True(finalPriceCount > initialPriceCount, 
+        Assert.True(finalPriceCount > initialPriceCount,
             $"Expected more than {initialPriceCount} prices, got {finalPriceCount}");
     }
 
@@ -156,7 +156,7 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _host.StopAsync(TimeSpan.FromSeconds(1));
-        
+
         _host.Dispose();
         await _context.DisposeAsync();
     }

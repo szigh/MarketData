@@ -8,6 +8,9 @@
     <UseWPF>true</UseWPF>
     <ApplicationIcon>MarketData-client-icon.ico</ApplicationIcon>
     <Title>WPF Market Data Client</Title>
+
+	  <!-- FancyCandles package warning - was restored using .NETFramework-->
+	  <NoWarn>NU1701</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +31,10 @@
     <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="10.0.3" />
     <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.3" />
     <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.3" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+    <PackageReference Include="Serilog.Enrichers.Process" Version="3.0.0" />
+    <PackageReference Include="Serilog.Enrichers.Span" Version="3.1.0" />
+    <PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
@@ -49,5 +56,4 @@
     <ProjectReference Include="..\MarketData.Client.Shared\MarketData.Client.Shared.csproj" />
     <ProjectReference Include="..\MarketData.Wpf.Shared\MarketData.Wpf.Shared.csproj" />
   </ItemGroup>
-
 </Project>

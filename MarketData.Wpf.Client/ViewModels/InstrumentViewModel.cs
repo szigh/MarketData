@@ -1,5 +1,6 @@
 using FancyCandles;
 using Grpc.Core;
+using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.FancyCandlesImplementations;
 using MarketData.Wpf.Client.Services;
@@ -17,19 +18,19 @@ public class InstrumentViewModel : ViewModelBase
 {
     private readonly ILogger _logger;
     private readonly ILoggerFactory _loggerFactory;
+    private CancellationTokenSource? _cancellationTokenSource;
     private readonly MarketDataService.MarketDataServiceClient _grpcClient;
     private readonly IModelConfigService _modelConfigService;
     private readonly IDialogService _dialogService;
 
-    private CandleBuilder<double> _candleBuilder;
+    private readonly CandleBuilder<double> _candleBuilder;
+    private CandlesSource _candles;
     private int _loadHistoryOnStartMinutes = 1440;
     private int _candlePrecision = 2;
 
     private string _price;
     private string _instrument;
     private string _timestamp;
-    private CancellationTokenSource? _cancellationTokenSource;
-    private CandlesSource _candles;
     private bool _isStreaming;
 
     public InstrumentViewModel(string instrumentName,
@@ -45,15 +46,15 @@ public class InstrumentViewModel : ViewModelBase
         _logger = loggerFactory.CreateLogger<InstrumentViewModel>();
         _loggerFactory = loggerFactory;
         _instrument = instrumentName;
-        Price = "#.##";
-        Timestamp = string.Empty;
+        _price = "#.##";
+        _timestamp = string.Empty;
 
         ModelConfigCommand = new AsyncRelayCommand(OpenModelConfigAsync);
 
-        InitializeCandleChart(candleChartConfig);
+        (_candleBuilder, _candles) = InitializeCandleChart(candleChartConfig);
     }
 
-    private void InitializeCandleChart(IOptions<CandleChartSettings> candleChartConfig)
+    private (CandleBuilder<double>, CandlesSource) InitializeCandleChart(IOptions<CandleChartSettings> candleChartConfig)
     {
         CandleChartSettings config;
         try
@@ -75,8 +76,8 @@ public class InstrumentViewModel : ViewModelBase
         _candlePrecision = config.CandlePrecision;
         _loadHistoryOnStartMinutes = config.LoadHistoryOnStartMinutes;
 
-        _candleBuilder = new CandleBuilder<double>(chartTimeFrame.ToTimeSpan(), _logger, true);
-        Candles = new CandlesSource(chartTimeFrame);
+        return (new CandleBuilder<double>(chartTimeFrame.ToTimeSpan(), _logger, true), 
+            new CandlesSource(chartTimeFrame));
     }
 
     private async Task OpenModelConfigAsync()
@@ -198,14 +199,34 @@ public class InstrumentViewModel : ViewModelBase
             _logger.LogInformation("Price stream for instrument {Instrument} was cancelled", _instrument);
             // Stream was cancelled, this is expected on shutdown
         }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.Unavailable || ex.StatusCode == StatusCode.Internal 
+            || ex.StatusCode == StatusCode.NotFound)
+        {
+            _logger.LogError(ex, "gRPC error while streaming prices StatusCode=\"{StatusCode}\", Status=\"{Status}\". " +
+                "Instrument=\"{Instrument}\": {Message}",
+                ex.StatusCode, ex.Status, _instrument, ex.Message);
+            _dialogService.ShowError($"Stream error: {ex.StatusCode}. Check server is online, started and configured correctly.", 
+                "Streaming Error");
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.Unauthenticated || ex.StatusCode == StatusCode.PermissionDenied)
+        {
+            _logger.LogError(ex, "gRPC error while streaming prices StatusCode=\"{StatusCode}\", Status=\"{Status}\". " +
+                "Instrument=\"{Instrument}\": {Message}",
+                ex.StatusCode, ex.Status, _instrument, ex.Message);
+            _dialogService.ShowError($"Stream error: {ex.StatusCode}. Check you have appropriate authorization", "Streaming Error");
+        }
+        catch (RpcException ex)
+        {
+            _logger.LogError(ex, "gRPC error while streaming prices StatusCode=\"{StatusCode}\", Status=\"{Status}\". " +
+                "Instrument=\"{Instrument}\": {Message}",
+                ex.StatusCode, ex.Status, _instrument, ex.Message);
+            _dialogService.ShowError($"Stream error: {ex.StatusCode}.", "Streaming Error");
+        }
         catch (Exception ex)
         {
             // Handle other errors
             _logger.LogError(ex, "An error occurred while streaming prices for instrument {Instrument}", _instrument);
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                Price = $"Error: {ex.Message}";
-            });
+            _dialogService.ShowError($"An error occurred while streaming: {ex.Message}", "Streaming Error");
         }
         finally
         {

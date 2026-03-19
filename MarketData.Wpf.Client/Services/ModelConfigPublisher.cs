@@ -1,8 +1,10 @@
 using MarketData.Grpc;
+using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using Microsoft.Extensions.Logging;
+using System.ComponentModel.DataAnnotations;
 
-namespace MarketData.Wpf.Client.Services;
+namespace MarketData.Client.Wpf.Services;
 
 enum PublishResult { NotApplicable, NotStarted, Success, SuccessUnverified, Failure }
 
@@ -112,12 +114,35 @@ public class ModelConfigPublisher : IDisposable, IModelConfigPublisher
     {
         try
         {
-            await activeConfigVm.ExecutePublishConfigChangesSafe(ct);
-            _logger.LogInformation("{Status} Published configuration changes for model {ActiveModel} " +
-                "on instrument {Instrument}", PublishResult.SuccessUnverified, _activeModel, _instrument);
-            _modelParamsResult = PublishResult.SuccessUnverified;
+            var success = await activeConfigVm.ExecutePublishConfigChangesUnsafe(ct);
+            if (success)
+            {
+                _logger.LogInformation("{Status} Published configuration changes for model {ActiveModel} " +
+                    "on instrument {Instrument}", PublishResult.SuccessUnverified, _activeModel, _instrument);
+                _modelParamsResult = PublishResult.Success;
 
-            return true;
+                return true;
+            }
+            else
+            {
+                _dialogService.ShowError($"Failed to publish configuration changes for model {_activeModel}.",
+                    "Error publishing changes");
+                _logger.LogError("{Status} Failed to publish configuration changes for model {ActiveModel} " +
+                    "on instrument {Instrument}", PublishResult.Failure, _activeModel, _instrument);
+                _modelParamsResult = PublishResult.Failure;
+                return false;
+            }
+        }
+        catch (ValidationException vex)
+        {
+            _logger.LogWarning(vex, "Validation error while publishing config changes for model {ActiveModel} " +
+                "on instrument {Instrument}: {Message}", _activeModel, _instrument, vex.Message);
+            _dialogService.ShowWarning($"Validation error when pubishing configuration changes: {vex.Message}",
+                "Validation error");
+
+            _modelParamsResult = PublishResult.Failure;
+
+            return false;
         }
         catch (Exception ex)
         {
@@ -163,6 +188,6 @@ public class ModelConfigPublisher : IDisposable, IModelConfigPublisher
     public void Dispose()
     {
         _logScope?.Dispose();
-        _modelConfigService?.Dispose();
+        // Do not dispose _modelConfigService here; its lifetime is managed by the DI container (singleton).
     }
 }

@@ -1,5 +1,3 @@
-using Serilog;
-
 namespace MarketData.PriceSimulator;
 
 internal static class NormalDistribution
@@ -22,9 +20,6 @@ internal static class NormalDistribution
         var u2 = Random.Shared.NextDouble();
 
         var z = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Cos(2.0 * Math.PI * u2);
-
-        Log.Logger.Verbose("Generated normal random value: {Z} with mean {Mean} and standard deviation {StdDev}",
-            mean + standardDeviation * z, mean, standardDeviation);
 
         return mean + standardDeviation * z;
     }

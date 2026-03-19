@@ -1,5 +1,6 @@
 ﻿using Grpc.Net.Client;
 using MarketData.Client.Shared.Configuration;
+using MarketData.Client.Shared.Services;
 
 namespace MarketData.Client;
 
@@ -19,24 +20,10 @@ internal abstract class GrpcClientBase : IAsyncDisposable
         });
     }
 
-    protected async Task WaitForConnectionAsync(CancellationToken cancellationToken = default)
+    protected async Task WaitForConnectionAsync(CancellationToken ct = default)
     {
-        var maxRetries = 5;
-        var retryDelay = TimeSpan.FromMilliseconds(100);
-
-        for (int i = 0; i < maxRetries; i++)
-        {
-            try
-            {
-                await _channel.ConnectAsync(cancellationToken);
-                return;
-            }
-            catch (Exception) when (i < maxRetries - 1)
-            {
-                await Task.Delay(retryDelay, cancellationToken);
-                retryDelay = TimeSpan.FromMilliseconds(retryDelay.TotalMilliseconds * 1.5);
-            }
-        }
+        var initializer = new GrpcConnectionInitializer(_channel);
+        await initializer.InitializeAsync(ct: ct);
     }
 
     public virtual ValueTask DisposeAsync()

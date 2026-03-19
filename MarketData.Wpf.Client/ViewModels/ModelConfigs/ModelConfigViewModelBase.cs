@@ -22,41 +22,31 @@ public abstract class ModelConfigViewModelBase : ViewModelBase
         _logger = logger;
     }
 
-    internal async Task ExecutePublishConfigChangesSafe(CancellationToken ct = default)
+    internal async Task<bool> ExecutePublishConfigChangesUnsafe(CancellationToken ct = default)
     {
         bool success;
         try
         {
             _logger.LogInformation("Attempting to publish config changes for instrument {Instrument}.", _instrumentName);
             success = await TryExecutePublishConfigChangesAsync(ct);
-        }
-        catch (ValidationException vex)
-        {
-            _logger.LogWarning(vex, "Validation error while publishing config changes for instrument {Instrument}: {Message}",
-                _instrumentName, vex.Message);
-            _dialogService.ShowWarning($"Validation error: {vex.Message}",
-                "Validation error");
-            throw;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error while publishing config changes for instrument {Instrument}: {Message}",
-                _instrumentName, ex.Message);
-            _dialogService.ShowError($"Failed to publish config changes: {ex.Message}",
-                "Error publishing config changes");
-            throw;
-        }
 
-        if (success)
-            IsModified = false;
-        else
+            if (success)
+            {
+                IsModified = false;
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        catch (ValidationException)
         {
-            _logger.LogWarning("Publishing config changes for instrument {Instrument} did not succeed, but no exception was thrown. " +
-                "This likely means the TryExecutePublishConfigChangesAsync method returned false due to validation failure. " +
-                "Please check your input and try again.", _instrumentName);
-            _dialogService.ShowWarning(
-                 $"Failed to publish config changes. " +
-                 $"Please check your input and try again.");
+            throw;
+        }
+        catch (Exception)
+        {
+            throw;
         }
     }
 
