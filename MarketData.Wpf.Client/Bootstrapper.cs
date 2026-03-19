@@ -16,60 +16,54 @@ internal static class Bootstrapper
 {
     private static readonly Serilog.ILogger Logger = Log.ForContext(typeof(Bootstrapper));
 
-    extension(IServiceCollection services)
+    internal static IServiceCollection ConfigureServices(this IServiceCollection services)
     {
-        internal IServiceCollection ConfigureServices()
-        {
-            Logger.Information("Configuring services and options");
+        Logger.Information("Configuring services and options");
 
-            services.AddOptions<GrpcSettings>()
-                .BindConfiguration(GrpcSettings.SectionName)
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
+        services.AddOptions<GrpcSettings>()
+            .BindConfiguration(GrpcSettings.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-            services.AddOptions<CandleChartSettings>()
-                .BindConfiguration(CandleChartSettings.SectionName)
-                .ValidateDataAnnotations()
-                .ValidateOnStart();
+        services.AddOptions<CandleChartSettings>()
+            .BindConfiguration(CandleChartSettings.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
-            services.ConfigureGrpcClients();
+        services.ConfigureGrpcClients();
 
-            Logger.Information("Registering application specific services");
-            services.AddSingleton<IModelConfigService, ModelConfigService>();
-            services.AddSingleton<IDialogService, DialogService>();
-            services.AddTransient<InstrumentViewModelFactory>();
+        Logger.Information("Registering application specific services");
+        services.AddSingleton<IModelConfigService, ModelConfigService>();
+        services.AddSingleton<IDialogService, DialogService>();
+        services.AddTransient<InstrumentViewModelFactory>();
 
-            services.AddSingleton<MainWindowViewModel>();
-            services.AddSingleton<MainWindow>();
+        services.AddSingleton<MainWindowViewModel>();
+        services.AddSingleton<MainWindow>();
 
-            return services;
-        }
-
-        internal IServiceCollection ConfigureGrpcClients()
-        {
-            Logger.Information("Configuring gRPC clients with server URL from configuration");
-
-            services.AddSingleton(sp => GrpcChannel.ForAddress(sp.GetGrpcServerUrl(), DefaultChannelOptions));
-
-            services.AddSingleton<IGrpcConnectionInitializer>(sp =>
-                new GrpcConnectionInitializer(
-                    sp.GetRequiredService<GrpcChannel>(),
-                    sp.GetRequiredService<ILogger<GrpcConnectionInitializer>>()));
-
-            services.AddSingleton<MarketDataService.MarketDataServiceClient>(sp =>
-                new MarketDataService.MarketDataServiceClient(sp.GetRequiredService<GrpcChannel>()));
-
-            services.AddSingleton<ModelConfigurationService.ModelConfigurationServiceClient>(sp =>
-                new ModelConfigurationService.ModelConfigurationServiceClient(sp.GetRequiredService<GrpcChannel>()));
-
-            return services;
-        }
+        return services;
     }
 
-    extension(IServiceProvider sp)
+    internal static IServiceCollection ConfigureGrpcClients(this IServiceCollection services)
     {
-        internal string GetGrpcServerUrl() => sp.GetRequiredService<IOptions<GrpcSettings>>().Value.ServerUrl;
+        Logger.Information("Configuring gRPC clients with server URL from configuration");
+
+        services.AddSingleton(sp => GrpcChannel.ForAddress(sp.GetGrpcServerUrl(), DefaultChannelOptions));
+
+        services.AddSingleton<IGrpcConnectionInitializer>(sp =>
+            new GrpcConnectionInitializer(
+                sp.GetRequiredService<GrpcChannel>(),
+                sp.GetRequiredService<ILogger<GrpcConnectionInitializer>>()));
+
+        services.AddSingleton<MarketDataService.MarketDataServiceClient>(sp =>
+            new MarketDataService.MarketDataServiceClient(sp.GetRequiredService<GrpcChannel>()));
+
+        services.AddSingleton<ModelConfigurationService.ModelConfigurationServiceClient>(sp =>
+            new ModelConfigurationService.ModelConfigurationServiceClient(sp.GetRequiredService<GrpcChannel>()));
+
+        return services;
     }
+
+    internal static string GetGrpcServerUrl(this IServiceProvider sp) => sp.GetRequiredService<IOptions<GrpcSettings>>().Value.ServerUrl;
 
     internal static void InitializeGrpcConnections(IServiceProvider serviceProvider)
     {
