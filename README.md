@@ -432,8 +432,13 @@ The MarketData service is configured with **Serilog** for structured logging wit
 The following NuGet packages have been added to the MarketData project:
 
 ```xml
-<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
-<PackageReference Include="Serilog.Sinks.Console" />
+<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />    
+<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
+<PackageReference Include="Serilog.Enrichers.Process" Version="3.0.0" />
+<PackageReference Include="Serilog.Enrichers.Span" Version="3.1.0" />
+<PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
+<PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+<PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
 <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
 <PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
 ```
@@ -466,12 +471,70 @@ Development environment overrides:
 
 Run Seq in a Docker container:
 
+##### Option 1: Set Admin Password (Recommended for Production)
+
+**Docker Run:**
 ```bash
-docker run --name seq -d --restart unless-stopped \
+docker run -d \
+  --name seq \
   -e ACCEPT_EULA=Y \
+  -e SEQ_FIRSTRUN_ADMINPASSWORD=YourSecurePassword123! \
   -p 5341:80 \
-  -v C:/ProgramData/seq:/data \
+  -v seq-data:/data \
   datalust/seq:latest
+```
+
+**Docker Compose:**
+```yaml
+version: '3.8'
+services:
+  seq:
+    image: datalust/seq:latest
+    container_name: seq
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_ADMINPASSWORD=YourSecurePassword123!
+    ports:
+      - "5341:80"
+    volumes:
+      - seq-data:/data
+    restart: unless-stopped
+
+volumes:
+  seq-data:
+```
+
+##### Option 2: Disable Authentication (Development Only)
+
+**Docker Run:**
+```bash
+docker run -d \
+  --name seq \
+  -e ACCEPT_EULA=Y \
+  -e SEQ_FIRSTRUN_NOAUTHENTICATION=true \
+  -p 5341:80 \
+  -v seq-data:/data \
+  datalust/seq:latest
+```
+
+**Docker Compose:**
+```yaml
+version: '3.8'
+services:
+  seq:
+    image: datalust/seq:latest
+    container_name: seq
+    environment:
+      - ACCEPT_EULA=Y
+      - SEQ_FIRSTRUN_NOAUTHENTICATION=true
+    ports:
+      - "5341:80"
+    volumes:
+      - seq-data:/data
+    restart: unless-stopped
+
+volumes:
+  seq-data:
 ```
 
 #### Option 2: Windows Installation
