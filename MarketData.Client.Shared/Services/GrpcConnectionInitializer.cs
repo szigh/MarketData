@@ -6,7 +6,7 @@ namespace MarketData.Client.Shared.Services;
 
 public interface IGrpcConnectionInitializer
 {
-    Task InitializeAsync(int maxRetries = 5, int initialRetryDelayMs = 100, CancellationToken cancellationToken = default);
+    Task InitializeAsync(int maxRetries = 5, int initialRetryDelayMs = 100, CancellationToken ct = default);
 }
 
 public class GrpcConnectionInitializer : IGrpcConnectionInitializer

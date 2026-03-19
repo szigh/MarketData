@@ -199,14 +199,34 @@ public class InstrumentViewModel : ViewModelBase
             _logger.LogInformation("Price stream for instrument {Instrument} was cancelled", _instrument);
             // Stream was cancelled, this is expected on shutdown
         }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.Unavailable || ex.StatusCode == StatusCode.Internal 
+            || ex.StatusCode == StatusCode.NotFound)
+        {
+            _logger.LogError(ex, "gRPC error while streaming prices StatusCode=\"{StatusCode}\", Status=\"{Status}\". " +
+                "Instrument=\"{Instrument}\": {Message}",
+                ex.StatusCode, ex.Status, _instrument, ex.Message);
+            _dialogService.ShowError($"Stream error: {ex.StatusCode}. Check server is online, started and configured correctly.", 
+                "Streaming Error");
+        }
+        catch (RpcException ex) when (ex.StatusCode == StatusCode.Unauthenticated || ex.StatusCode == StatusCode.PermissionDenied)
+        {
+            _logger.LogError(ex, "gRPC error while streaming prices StatusCode=\"{StatusCode}\", Status=\"{Status}\". " +
+                "Instrument=\"{Instrument}\": {Message}",
+                ex.StatusCode, ex.Status, _instrument, ex.Message);
+            _dialogService.ShowError($"Stream error: {ex.StatusCode}. Check you have appropriate authorization", "Streaming Error");
+        }
+        catch (RpcException ex)
+        {
+            _logger.LogError(ex, "gRPC error while streaming prices StatusCode=\"{StatusCode}\", Status=\"{Status}\". " +
+                "Instrument=\"{Instrument}\": {Message}",
+                ex.StatusCode, ex.Status, _instrument, ex.Message);
+            _dialogService.ShowError($"Stream error: {ex.StatusCode}.", "Streaming Error");
+        }
         catch (Exception ex)
         {
             // Handle other errors
             _logger.LogError(ex, "An error occurred while streaming prices for instrument {Instrument}", _instrument);
-            await Application.Current.Dispatcher.InvokeAsync(() =>
-            {
-                Price = $"Error: {ex.Message}";
-            });
+            _dialogService.ShowError($"An error occurred while streaming: {ex.Message}", "Streaming Error");
         }
         finally
         {
