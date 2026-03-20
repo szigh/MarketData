@@ -49,5 +49,9 @@
     <ProjectReference Include="..\MarketData.Client.Shared\MarketData.Client.Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Configuration\" />
+  </ItemGroup>
+
 </Project>
 

@@ -1,5 +1,4 @@
 using MarketData.Client;
-using MarketData.Client.Configuration;
 using MarketData.Client.Shared.Configuration;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;

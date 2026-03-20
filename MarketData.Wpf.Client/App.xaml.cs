@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using MarketData.Wpf.Client.Extensions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -40,7 +41,10 @@ public partial class App : Application
             {
                 builder.ClearProviders();
                 builder.AddSerilog(dispose: true);
+                builder.AddOpenTelemetryLogging(_configuration);
             });
+
+            services.AddOpenTelemetry(_configuration);
 
             services.ConfigureServices();
 

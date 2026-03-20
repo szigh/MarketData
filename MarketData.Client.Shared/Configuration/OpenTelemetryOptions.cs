@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MarketData.Client.Configuration;
+namespace MarketData.Client.Shared.Configuration;
 
 public class OpenTelemetryOptions
 {

@@ -31,6 +31,7 @@ public static class OpenTelemetryServiceExtensions
                     };
                 })
                 .AddHttpClientInstrumentation()
+                .AddGrpcClientInstrumentation()
                 .AddEntityFrameworkCoreInstrumentation(options =>
                 {
                     options.EnrichWithIDbCommand = (activity, command) =>
@@ -89,11 +90,13 @@ public static class OpenTelemetryServiceExtensions
         return builder;
     }
 
-    private static (string ServiceName, string ServiceVersion, string OtlpEndpoint) GetOpenTelemetryServiceInfo(WebApplicationBuilder builder)
+    private static (string ServiceName, string ServiceVersion, string OtlpEndpoint) 
+        GetOpenTelemetryServiceInfo(WebApplicationBuilder builder)
     {
         var otelOptions = builder.Configuration
             .GetSection(OpenTelemetryOptions.SectionName)
             .Get<OpenTelemetryOptions>() ?? new OpenTelemetryOptions();
+
         return (otelOptions.ServiceName, otelOptions.ServiceVersion, otelOptions.OtlpEndpoint);
     }
 }
