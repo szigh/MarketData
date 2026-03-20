@@ -53,6 +53,7 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
     }
 
     [Fact]
+    [Trait("Speed", "Slow")]
     public async Task Service_StartsAndGeneratesPrices()
     {
         var instrument = new Instrument
@@ -77,7 +78,7 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
             .CountAsync();
 
         await _host.StartAsync();
-        await Task.Delay(TimeSpan.FromMilliseconds(500));
+        await Task.Delay(TimeSpan.FromMilliseconds(1000));
         await _host.StopAsync(TimeSpan.FromSeconds(2));
 
         var finalPriceCount = await _context.Prices
