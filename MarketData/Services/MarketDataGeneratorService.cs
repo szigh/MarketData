@@ -1,9 +1,10 @@
-using System.Collections.Concurrent;
 using MarketData.Data;
 using MarketData.Models;
 using MarketData.PriceSimulator;
+using MarketData.Telemetry;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Collections.Concurrent;
 
 namespace MarketData.Services;
 
@@ -11,6 +12,7 @@ public class MarketDataGeneratorService : BackgroundService
 {
     private readonly MarketDataGeneratorOptions _options;
     private readonly IServiceProvider _serviceProvider;
+    private readonly MarketDataGeneratorServiceMetrics _marketDataMetrics;
     private readonly ILogger<MarketDataGeneratorService> _logger;
     private readonly IInstrumentModelManager _modelManager;
 
@@ -26,10 +28,12 @@ public class MarketDataGeneratorService : BackgroundService
     public MarketDataGeneratorService(
         IInstrumentModelManager modelManager,
         IServiceProvider serviceProvider,
+        MarketDataGeneratorServiceMetrics marketDataMetrics,
         ILogger<MarketDataGeneratorService> logger,
         IOptions<MarketDataGeneratorOptions> options)
     {
         _serviceProvider = serviceProvider;
+        _marketDataMetrics = marketDataMetrics;
         _logger = logger;
         _modelManager = modelManager;
         _options = options.Value;
@@ -89,9 +93,11 @@ public class MarketDataGeneratorService : BackgroundService
         var missingInstruments = instrumentNames.Except(result.Keys);
         if (missingInstruments.Any())
         {
-            throw new InvalidOperationException(
+            var ex = new InvalidOperationException(
                 $"No initial prices found for instruments: {string.Join(", ", missingInstruments)}. " +
                 $"Please seed the database with initial prices.");
+            _marketDataMetrics.RecordError("Get latest prices", ex);
+            throw ex;
         }
 
         return result;
@@ -185,6 +191,7 @@ public class MarketDataGeneratorService : BackgroundService
             _logger.LogError(ex,
                 "Error during hot reload for instrument '{InstrumentName}'",
                 instrumentName);
+            _marketDataMetrics.RecordError("Hot reload", ex);
         }
     }
 
@@ -199,6 +206,7 @@ public class MarketDataGeneratorService : BackgroundService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to initialize Market Data Generator Service");
+            _marketDataMetrics.RecordError("Initialization", ex);
             throw;
         }
 
@@ -226,6 +234,7 @@ public class MarketDataGeneratorService : BackgroundService
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error generating market data");
+                _marketDataMetrics.RecordError("Generation", ex);
                 throw;
             }
         }
@@ -255,22 +264,28 @@ public class MarketDataGeneratorService : BackgroundService
         string instrumentName, 
         CancellationToken ct)
     {
-        if(!_lastPrices.TryGetValue(instrumentName, out var currentPrice) || 
-            !_priceSimulators.TryGetValue(instrumentName, out var simulator))
-            return;
-
-        var newPrice = (decimal)(await simulator.GenerateNextPrice((double)currentPrice));
-        _lastPrices.TryUpdate(instrumentName, newPrice, currentPrice);
-
-        var price = new Price
+        Price? price;
+        using(var activity = _marketDataMetrics.RecordPriceGenerationLatency(instrumentName))
         {
-            Instrument = instrumentName,
-            Value = newPrice,
-            Timestamp = DateTime.UtcNow
-        };
+            if (!_lastPrices.TryGetValue(instrumentName, out var currentPrice) ||
+                !_priceSimulators.TryGetValue(instrumentName, out var simulator))
+                return;
 
-        _logger.LogTrace("Generated price for {Instrument}: {Price} (previous: {PreviousPrice})",
-            instrumentName, newPrice, currentPrice);
+            var newPrice = (decimal)(await simulator.GenerateNextPrice((double)currentPrice));
+            _lastPrices.TryUpdate(instrumentName, newPrice, currentPrice);
+
+            price = new Price
+            {
+                Instrument = instrumentName,
+                Value = newPrice,
+                Timestamp = DateTime.UtcNow
+            };
+
+            _logger.LogTrace("Generated price for {Instrument}: {Price} (previous: {PreviousPrice})",
+                instrumentName, newPrice, currentPrice);
+        }
+
+        _marketDataMetrics.RecordPriceGenerated(instrumentName);
 
         await PersistPriceAsync(price, ct);
         await PublishPriceAsync(price, ct);
@@ -280,11 +295,16 @@ public class MarketDataGeneratorService : BackgroundService
     {
         if (!TakeActionNeeded(_lastGrpcPublish, price.Instrument!, price.Timestamp, _options.GrpcPublishMilliseconds))
             return;
-           
-        _logger.LogDebug("[{Timestamp}] Publishing price for {Instrument}: {Price}", 
+        
+        _logger.LogDebug("[{Timestamp}] Publishing price for {Instrument}: {Price}",
             price.Timestamp, price.Instrument, price.Value);
 
-        await MarketDataGrpcService.BroadcastPrice(price.Instrument!, price.Value, price.Timestamp, ct);
+        using (var recordPublishLatency = _marketDataMetrics.RecordGrpcPublishLatency(price.Instrument!))
+        {
+            await MarketDataGrpcService.BroadcastPrice(price.Instrument!, price.Value, price.Timestamp, ct);
+        }
+
+        _marketDataMetrics.RecordPricesPublished(1, price.Instrument!);
 
         if (_instruments.ContainsKey(price.Instrument!))
         {
@@ -300,10 +320,15 @@ public class MarketDataGeneratorService : BackgroundService
         _logger.LogDebug("[{Timestamp}] Persisting price for {Instrument}: {Price}", 
             price.Timestamp, price.Instrument, price.Value);
 
-        using var scope = _serviceProvider.CreateScope();
-        var dbContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
-        dbContext.Prices.Add(price);
-        await dbContext.SaveChangesAsync(ct);
+        using (var recordDbLatency = _marketDataMetrics.RecordDatabaseSaveLatency(price.Instrument!))
+        {
+            using var scope = _serviceProvider.CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
+            dbContext.Prices.Add(price);
+            await dbContext.SaveChangesAsync(ct);
+        }
+
+        _marketDataMetrics.RecordPricesSaved(1, price.Instrument!);
 
         if (_instruments.ContainsKey(price.Instrument!))
         {

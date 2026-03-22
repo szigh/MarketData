@@ -14,7 +14,7 @@ public static class ApplicationServiceExtensions
     /// </summary>
     public static WebApplicationBuilder AddCustomTelemetry(this WebApplicationBuilder builder)
     {
-        builder.Services.AddSingleton<MarketDataMetrics>();
+        builder.Services.AddSingleton<MarketDataGeneratorServiceMetrics>();
         builder.Services.AddSingleton<MarketDataActivitySource>();
 
         return builder;
