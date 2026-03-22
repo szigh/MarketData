@@ -34,7 +34,12 @@ public static class OpenTelemetryExtensions
             .WithMetrics(metrics => metrics
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
-                .AddMeter(serviceName)
+                .AddMeter(serviceName) //custom metrics
+                .AddMeter("Microsoft.EntityFrameworkCore",
+                    "Microsoft.Data.SqlClient",
+                    "System.Net.Http",
+                    "Microsoft.AspNetCore.Hosting",
+                    "Microsoft.AspNetCore.Server.Kestrel")
                 .AddOtlpExporter());
 
         return services;

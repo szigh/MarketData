@@ -21,27 +21,35 @@ public static class OpenTelemetryServiceExtensions
         builder.Services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
                 .AddService(serviceName, serviceVersion: serviceVersion))
-            .WithTracing(tracing => tracing
-                .AddAspNetCoreInstrumentation(options =>
+            .WithTracing(tracing =>
+            {
+                if (builder.Environment.IsDevelopment())
                 {
-                    options.RecordException = true;
-                    options.EnrichWithHttpRequest = (activity, request) =>
+                    tracing.SetSampler<AlwaysOnSampler>();
+                }
+
+                tracing
+                    .AddAspNetCoreInstrumentation(options =>
                     {
-                        activity.SetTag("http.scheme", request.Scheme);
-                    };
-                })
-                .AddHttpClientInstrumentation()
-                .AddGrpcClientInstrumentation()
-                .AddEntityFrameworkCoreInstrumentation(options =>
-                {
-                    options.EnrichWithIDbCommand = (activity, command) =>
+                        options.RecordException = true;
+                        options.EnrichWithHttpRequest = (activity, request) =>
+                        {
+                            activity.SetTag("http.scheme", request.Scheme);
+                        };
+                    })
+                    .AddHttpClientInstrumentation()
+                    .AddGrpcClientInstrumentation()
+                    .AddEntityFrameworkCoreInstrumentation(options =>
                     {
-                        activity.SetTag("db.name", "MarketData.db");
-                    };
-                })
-                .AddSource(serviceName)
-                //.AddConsoleExporter()
-                .AddOtlpExporter());
+                        options.EnrichWithIDbCommand = (activity, command) =>
+                        {
+                            activity.SetTag("db.name", "MarketData.db");
+                        };
+                    })
+                    .AddSource(serviceName)
+                    //.AddConsoleExporter()
+                    .AddOtlpExporter();
+            });
 
         return builder;
     }
@@ -60,7 +68,12 @@ public static class OpenTelemetryServiceExtensions
                 .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
-                .AddMeter(serviceName)
+                .AddMeter(serviceName) //custom metrics
+                .AddMeter("Microsoft.EntityFrameworkCore",
+                    "Microsoft.Data.SqlClient",
+                    "System.Net.Http",
+                    "Microsoft.AspNetCore.Hosting",
+                    "Microsoft.AspNetCore.Server.Kestrel")
                 //.AddConsoleExporter()
                 .AddOtlpExporter());
 
@@ -90,7 +103,7 @@ public static class OpenTelemetryServiceExtensions
         return builder;
     }
 
-    private static (string ServiceName, string ServiceVersion, string OtlpEndpoint) 
+    private static (string ServiceName, string ServiceVersion, string OtlpEndpoint)
         GetOpenTelemetryServiceInfo(WebApplicationBuilder builder)
     {
         var otelOptions = builder.Configuration
