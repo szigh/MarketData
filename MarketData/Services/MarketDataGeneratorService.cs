@@ -13,6 +13,7 @@ public class MarketDataGeneratorService : BackgroundService
     private readonly MarketDataGeneratorOptions _options;
     private readonly IServiceProvider _serviceProvider;
     private readonly MarketDataGeneratorServiceMetrics _marketDataMetrics;
+    private readonly MarketDataActivitySource _activitySource;
     private readonly ILogger<MarketDataGeneratorService> _logger;
     private readonly IInstrumentModelManager _modelManager;
 
@@ -29,11 +30,13 @@ public class MarketDataGeneratorService : BackgroundService
         IInstrumentModelManager modelManager,
         IServiceProvider serviceProvider,
         MarketDataGeneratorServiceMetrics marketDataMetrics,
+        MarketDataActivitySource activitySource,
         ILogger<MarketDataGeneratorService> logger,
         IOptions<MarketDataGeneratorOptions> options)
     {
         _serviceProvider = serviceProvider;
         _marketDataMetrics = marketDataMetrics;
+        _activitySource = activitySource;
         _logger = logger;
         _modelManager = modelManager;
         _options = options.Value;
@@ -264,8 +267,10 @@ public class MarketDataGeneratorService : BackgroundService
         string instrumentName, 
         CancellationToken ct)
     {
+        using var activity = _activitySource.StartPriceGenerationActivity(instrumentName);
+
         Price? price;
-        using(var activity = _marketDataMetrics.RecordPriceGenerationLatency(instrumentName))
+        using(var recordLatency = _marketDataMetrics.RecordPriceGenerationLatency(instrumentName))
         {
             if (!_lastPrices.TryGetValue(instrumentName, out var currentPrice) ||
                 !_priceSimulators.TryGetValue(instrumentName, out var simulator))
@@ -281,6 +286,9 @@ public class MarketDataGeneratorService : BackgroundService
                 Timestamp = DateTime.UtcNow
             };
 
+            activity?.SetTag("price.value", newPrice);
+            activity?.SetTag("price.previous", currentPrice);
+
             _logger.LogTrace("Generated price for {Instrument}: {Price} (previous: {PreviousPrice})",
                 instrumentName, newPrice, currentPrice);
         }
@@ -295,7 +303,11 @@ public class MarketDataGeneratorService : BackgroundService
     {
         if (!TakeActionNeeded(_lastGrpcPublish, price.Instrument!, price.Timestamp, _options.GrpcPublishMilliseconds))
             return;
-        
+
+        using var activity = _activitySource.StartGrpcPublishActivity(price.Instrument!, 1);
+        activity?.SetTag("price.value", price.Value);
+        activity?.SetTag("price.timestamp", price.Timestamp);
+
         _logger.LogDebug("[{Timestamp}] Publishing price for {Instrument}: {Price}",
             price.Timestamp, price.Instrument, price.Value);
 
@@ -316,6 +328,10 @@ public class MarketDataGeneratorService : BackgroundService
     {
         if (!TakeActionNeeded(_lastDatabaseUpdates, price.Instrument!, price.Timestamp, _options.DatabasePersistenceMilliseconds))
             return;
+
+        using var activity = _activitySource.StartDatabaseSaveActivity(price.Instrument!, 1);
+        activity?.SetTag("price.value", price.Value);
+        activity?.SetTag("price.timestamp", price.Timestamp);
 
         _logger.LogDebug("[{Timestamp}] Persisting price for {Instrument}: {Price}", 
             price.Timestamp, price.Instrument, price.Value);

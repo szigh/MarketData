@@ -4,6 +4,7 @@ using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.FancyCandlesImplementations;
 using MarketData.Wpf.Client.Services;
+using MarketData.Wpf.Client.Telemetry;
 using MarketData.Wpf.Client.Views;
 using MarketData.Wpf.Shared;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,7 @@ public class InstrumentViewModel : ViewModelBase
     private readonly MarketDataService.MarketDataServiceClient _grpcClient;
     private readonly IModelConfigService _modelConfigService;
     private readonly IDialogService _dialogService;
+    private readonly MarketDataClientActivitySource _activitySource;
 
     private readonly CandleBuilder<double> _candleBuilder;
     private CandlesSource _candles;
@@ -37,12 +39,14 @@ public class InstrumentViewModel : ViewModelBase
         MarketDataService.MarketDataServiceClient grpcClient, 
         IModelConfigService modelConfigService,
         IDialogService dialogService,
+        MarketDataClientActivitySource activitySource,
         IOptions<CandleChartSettings> candleChartConfig,
         ILoggerFactory loggerFactory)
     {
         _grpcClient = grpcClient;
         _modelConfigService = modelConfigService;
         _dialogService = dialogService;
+        _activitySource = activitySource;
         _logger = loggerFactory.CreateLogger<InstrumentViewModel>();
         _loggerFactory = loggerFactory;
         _instrument = instrumentName;
@@ -170,6 +174,8 @@ public class InstrumentViewModel : ViewModelBase
 
         IsStreaming = true;
 
+        using var subscriptionActivity = _activitySource.StartSubscriptionActivity(Instrument);
+
         try
         {
             var request = new SubscribeRequest();
@@ -180,6 +186,10 @@ public class InstrumentViewModel : ViewModelBase
 
             await foreach (var priceUpdate in call.ResponseStream.ReadAllAsync(_cancellationTokenSource.Token))
             {
+                using var priceActivity = _activitySource.StartPriceReceivedActivity(priceUpdate.Instrument);
+                priceActivity?.SetTag("price.value", priceUpdate.Value);
+                priceActivity?.SetTag("price.timestamp", priceUpdate.Timestamp);
+
                 _logger.LogTrace("Received price update for instrument {Instrument}: {Price} at {Timestamp}",
                     _instrument, priceUpdate.Value, new DateTime(priceUpdate.Timestamp));
 

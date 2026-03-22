@@ -34,9 +34,10 @@ public class MarketDataActivitySource
     /// <summary>
     /// Creates an activity for database save operations
     /// </summary>
-    public Activity? StartDatabaseSaveActivity(int priceCount)
+    public Activity? StartDatabaseSaveActivity(string instrument, int priceCount)
     {
         var activity = _source.StartActivity("DatabaseSave", ActivityKind.Internal);
+        activity?.SetTag("instrument", instrument);
         activity?.SetTag("operation", "save_prices");
         activity?.SetTag("price.count", priceCount);
         return activity;

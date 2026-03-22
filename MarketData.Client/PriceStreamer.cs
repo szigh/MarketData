@@ -1,4 +1,5 @@
 ﻿using MarketData.Client.Shared.Configuration;
+using MarketData.Client.Telemetry;
 using MarketData.Grpc;
 
 namespace MarketData.Client;
@@ -6,10 +7,12 @@ namespace MarketData.Client;
 internal class PriceStreamer : GrpcClientBase
 {
     private readonly MarketDataService.MarketDataServiceClient _client;
+    private readonly MarketDataClientActivitySource _activitySource;
 
-    public PriceStreamer(GrpcSettings settings) : base(settings)
+    public PriceStreamer(GrpcSettings settings, MarketDataClientActivitySource activitySource) : base(settings)
     {
         _client = new MarketDataService.MarketDataServiceClient(_channel);
+        _activitySource = activitySource;
     }
 
     public async Task InitializeAsync(CancellationToken ct = default)
@@ -39,6 +42,8 @@ internal class PriceStreamer : GrpcClientBase
         Console.WriteLine($"\nSubscribing to: {string.Join(", ", request.Instruments)}");
         Console.WriteLine("Waiting for price updates... (Press ESC to exit)\n");
 
+        using var subscriptionActivity = _activitySource.StartSubscriptionActivity(instruments);
+
         using var cts = new CancellationTokenSource();
         _ = Task.Run(() =>
         {
@@ -64,6 +69,11 @@ internal class PriceStreamer : GrpcClientBase
             while (await call.ResponseStream.MoveNext(cts.Token))
             {
                 var priceUpdate = call.ResponseStream.Current;
+
+                using var activity = _activitySource.StartPriceReceivedActivity(priceUpdate.Instrument);
+                activity?.SetTag("price.value", priceUpdate.Value);
+                activity?.SetTag("price.timestamp", priceUpdate.Timestamp);
+
                 var timestamp = new DateTime(priceUpdate.Timestamp);
                 Console.WriteLine($"[{timestamp:HH:mm:ss.fff}] {priceUpdate.Instrument,-10} {priceUpdate.Value:F4}");
             }

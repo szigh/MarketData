@@ -21,7 +21,7 @@ public static class OpenTelemetryExtensions
         this IServiceCollection services, 
         IConfiguration configuration)
     {
-        var (serviceName, serviceVersion, _) = GetOpenTelemetryServiceInfo(configuration);
+        var (serviceName, serviceVersion, otelEndpoint) = GetOpenTelemetryServiceInfo(configuration);
 
         services.AddOpenTelemetry()
             .ConfigureResource(resource => resource
@@ -30,7 +30,10 @@ public static class OpenTelemetryExtensions
                 .AddHttpClientInstrumentation()
                 .AddGrpcClientInstrumentation()
                 .AddSource(serviceName)
-                .AddOtlpExporter())
+                .AddOtlpExporter(otlpOptions =>
+                {
+                    otlpOptions.Endpoint = new Uri(otelEndpoint);
+                }))
             .WithMetrics(metrics => metrics
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation()
@@ -40,7 +43,10 @@ public static class OpenTelemetryExtensions
                     "System.Net.Http",
                     "Microsoft.AspNetCore.Hosting",
                     "Microsoft.AspNetCore.Server.Kestrel")
-                .AddOtlpExporter());
+                .AddOtlpExporter(otlpOptions =>
+                {
+                    otlpOptions.Endpoint = new Uri(otelEndpoint);
+                }));
 
         return services;
     }

@@ -4,6 +4,7 @@ using MarketData.Client.Shared.Services;
 using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
+using MarketData.Wpf.Client.Telemetry;
 using MarketData.Wpf.Client.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -25,6 +26,11 @@ internal static class Bootstrapper
             .ValidateDataAnnotations()
             .ValidateOnStart();
 
+        services.AddOptions<OpenTelemetryOptions>()
+            .BindConfiguration(OpenTelemetryOptions.SectionName)
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
+
         services.AddOptions<CandleChartSettings>()
             .BindConfiguration(CandleChartSettings.SectionName)
             .ValidateDataAnnotations()
@@ -33,6 +39,12 @@ internal static class Bootstrapper
         services.ConfigureGrpcClients();
 
         Logger.Information("Registering application specific services");
+        services.AddSingleton(sp =>
+        {
+            var otelOptions = sp.GetRequiredService<IOptions<OpenTelemetryOptions>>().Value;
+            return new MarketDataClientActivitySource(otelOptions.ServiceName, otelOptions.ServiceVersion);
+        });
+
         services.AddSingleton<IModelConfigService, ModelConfigService>();
         services.AddSingleton<IDialogService, DialogService>();
         services.AddTransient<InstrumentViewModelFactory>();

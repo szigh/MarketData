@@ -1,5 +1,6 @@
 using MarketData.Client;
 using MarketData.Client.Shared.Configuration;
+using MarketData.Client.Telemetry;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using OpenTelemetry;
@@ -77,8 +78,12 @@ internal class Program
             var grpcSettings = configuration.GetSection(GrpcSettings.SectionName)
                 .Get<GrpcSettings>() ?? new GrpcSettings();
 
+            var activitySource = new MarketDataClientActivitySource(
+                otelOptions.ServiceName, 
+                otelOptions.ServiceVersion);
+
             var modelConfigClient = new GrpcModelConfigClient(grpcSettings);
-            var priceStreamer = new PriceStreamer(grpcSettings);
+            var priceStreamer = new PriceStreamer(grpcSettings, activitySource);
 
             // Initialize gRPC connections to avoid race conditions
             Log.Information("Initializing gRPC connections to {ServerUrl}", grpcSettings.ServerUrl);
