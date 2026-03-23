@@ -1,5 +1,5 @@
-﻿using MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
-using MarketData.Grpc;
+﻿using MarketData.Client.Wpf.Services;
+using MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using MarketData.Wpf.Shared;
@@ -26,11 +26,11 @@ public class AddInstrumentWizardViewModel : ViewModelBase
     private string? _addedInstrument;
     private bool _isInitialized = false;
     private bool? _dialogResult;
-    private readonly ModelConfigurationService.ModelConfigurationServiceClient _modelConfigurationServiceClient;
+    private readonly IModelConfigService _modelConfigService;
     private readonly ModelConfigViewModelFactory _modelConfigViewModelFactory;
 
     public AddInstrumentWizardViewModel(
-        ModelConfigurationService.ModelConfigurationServiceClient modelConfigurationServiceClient,
+        IModelConfigService modelConfigService,
         ModelConfigViewModelFactory modelConfigViewModelFactory,
         ILoggerFactory loggerFactory,
         ILogger<AddInstrumentWizardViewModel> logger,
@@ -39,7 +39,7 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         NextCommand = new AsyncRelayCommand(ExecuteNext, CanExecuteNext);
         BackCommand = new AsyncRelayCommand(ExecuteBack, CanExecuteBack);
         CancelCommand = new AsyncRelayCommand(ExecuteCancel);
-        _modelConfigurationServiceClient = modelConfigurationServiceClient;
+        _modelConfigService = modelConfigService;
         _modelConfigViewModelFactory = modelConfigViewModelFactory;
         _loggerFactory = loggerFactory;
         _logger = logger;
@@ -53,15 +53,12 @@ public class AddInstrumentWizardViewModel : ViewModelBase
 
         try
         {
-            var availableModels = await _modelConfigurationServiceClient.GetSupportedModelsAsync(
-                new GetSupportedModelsRequest(), cancellationToken: ct);
-            var existingInstruments = await _modelConfigurationServiceClient.GetAllInstrumentsAsync(
-                new GetAllInstrumentsRequest(), cancellationToken: ct);
+            var availableModels = await _modelConfigService.GetSupportedModelsAsync(ct);
+            var existingInstruments = await _modelConfigService.GetAllInstrumentsAsync(ct);
 
             _steps =
             [
-                new NameInstrument(availableModels.SupportedModels,
-                    existingInstruments.Configurations.Select(x => x.InstrumentName)),
+                new NameInstrument(availableModels, existingInstruments),
                 new ConfigureModelParameters(null),
                 new EndScreen()
             ];
@@ -182,11 +179,7 @@ public class AddInstrumentWizardViewModel : ViewModelBase
                 await TryPublishConfigAsync(configureVm, ct);
 
                 // Reload
-                var configResponse = await _modelConfigurationServiceClient.GetConfigurationsAsync(
-                new GetConfigurationsRequest
-                {
-                    InstrumentName = _addedInstrument
-                }, cancellationToken: ct);
+                var configResponse = await _modelConfigService.GetConfigurationsAsync(_addedInstrument!, ct);
 
                 if (_steps[2] is EndScreen endScreenStep)
                 {
@@ -308,11 +301,7 @@ public class AddInstrumentWizardViewModel : ViewModelBase
     {
         try
         {
-            var configResponse = await _modelConfigurationServiceClient.GetConfigurationsAsync(
-                new GetConfigurationsRequest
-                {
-                    InstrumentName = _addedInstrument
-                }, cancellationToken: ct);
+            var configResponse = await _modelConfigService.GetConfigurationsAsync(_addedInstrument!, ct);
 
             var modelConfigViewModel = _modelConfigViewModelFactory.Create(configResponse);
             
@@ -337,13 +326,10 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         _logger.LogInformation("Removing instrument {InstrumentName} as user is navigating back from ConfigureModelParameters step",
             _addedInstrument);
         // Entity Framework (on the server) will cascade delete the associated model configuration when we remove the instrument
-        var res = await _modelConfigurationServiceClient.TryRemoveInstrumentAsync(new TryRemoveInstrumentRequest()
+        var res = await _modelConfigService.TryRemoveInstrumentAsync(_addedInstrument!, ct);
+        if (res.Response)
         {
-            InstrumentName = _addedInstrument
-        }, cancellationToken: ct);
-        if (res.Removed)
-        {
-            _logger.LogInformation("Instrument {InstrumentName} removed successfully", _addedInstrument);
+            _logger.LogInformation("Instrument {InstrumentName} removed successfully. {Message}", _addedInstrument, res.Message);
             _addedInstrument = null;
         }
         else
@@ -366,15 +352,9 @@ public class AddInstrumentWizardViewModel : ViewModelBase
             throw new Exception("Initial price must be a positive real number.");
         }
 
-        var res = await _modelConfigurationServiceClient.TryAddInstrumentAsync(new TryAddInstrumentRequest()
-        {
-            InstrumentName = instrumentName,
-            TickIntervalMs = tickIntervalMs,
-            InitialPriceValue = initialPrice,
-            InitialPriceTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()
-        }, cancellationToken: ct);
+        var res = await _modelConfigService.TryAddInstrumentAsync(instrumentName, initialPrice, tickIntervalMs, selectedModel, ct);
 
-        if (res.Added)
+        if (res.Response)
         {
             _logger.LogInformation("Instrument {InstrumentName} added successfully", instrumentName);
             _addedInstrument = instrumentName;
@@ -386,12 +366,8 @@ public class AddInstrumentWizardViewModel : ViewModelBase
             _logger.LogInformation("Setting model {ModelType} for instrument {InstrumentName}",
                 selectedModel, instrumentName);
 
-            var setModelResponse = await _modelConfigurationServiceClient.SwitchModelAsync(
-                new SwitchModelRequest
-                {
-                    InstrumentName = instrumentName,
-                    ModelType = selectedModel
-                }, cancellationToken: ct);
+            var setModelResponse = await _modelConfigService.SwitchModelAsync(instrumentName, selectedModel, ct);
+
             if (setModelResponse.NewModel == selectedModel)
             {
                 _logger.LogInformation("Model {ModelType} set successfully for instrument {InstrumentName}",

@@ -30,13 +30,13 @@ public class ModelConfigViewModel : ViewModelBase
     public ModelConfigViewModel(
         string instrument,
         ConfigurationsResponse config,
-        SupportedModelsResponse supportedModels,
+        IEnumerable<string> supportedModels,
         IModelConfigService modelConfigService,
         IDialogService dialogService,
         ILoggerFactory loggerFactory)
     {
         _instrument = instrument;
-        _supportedModels = supportedModels.SupportedModels.ToArray();
+        _supportedModels = supportedModels.ToArray();
         _configs = config;
         _activeModel = config.ActiveModel;
         _tickIntervalMs = config.TickIntervalMs;
