@@ -5,6 +5,7 @@ using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using MarketData.Wpf.Shared;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.ComponentModel.DataAnnotations;
 using System.Windows.Input;
 
@@ -65,10 +66,8 @@ public class AddInstrumentWizardViewModel : ViewModelBase
                 new EndScreen()
             ];
 
-            foreach (var step in _steps)
-            {
-                step.ValidationChanged += OnStepValidationChanged;
-            }
+            // Subscribe to ErrorsChanged from all steps (INotifyDataErrorInfo)
+            foreach (var step in _steps) step.ErrorsChanged += OnStepErrorsChanged;
 
             _currentStepIndex = 0;
             _isInitialized = true;
@@ -77,12 +76,13 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         {
             _logger.LogError(ex, "Error initializing AddInstrumentWizardViewModel");
             _dialogService.ShowError($"Failed to load instrument configurations. Please try again later. {ex.Message}");
+            DialogResult = false; // Close the dialog on initialization failure
         }
     }
 
-    private void OnStepValidationChanged(object? sender, EventArgs e)
+    private void OnStepErrorsChanged(object? sender, DataErrorsChangedEventArgs e)
     {
-        // When any step's validation changes, update the Next button's enabled state
+        // When any step's validation errors change, update the Next button's enabled state
         (NextCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
     }
 
@@ -157,36 +157,53 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         DialogResult = false; // Signals cancellation to close the window
     }
 
-    private async Task ExecuteBack()
-    {
-        try
-        {
-            await OnStepBackAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Exception during wizard step for Add Instrument");
-            _dialogService.ShowError($"An error occurred during the current step: {ex.Message}");
-            throw;
-        }
-
-        if (_currentStepIndex > 0)
-        {
-            CurrentStepIndex--;
-        }
-    }
-
     private async Task ExecuteNext()
     {
+        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)); // timeout for step execution
+        var ct = cts.Token;
         try
         {
-            await OnStepTransitionAsync();
+            if (CurrentStep is NameInstrument nameVm)
+            {
+                // Add the instrument + set the model
+                await AddInstrumentAsync(nameVm.InstrumentName, nameVm.TickIntervalMs,
+                    nameVm.InitialPrice, nameVm.SelectedModel, ct);
+
+                // Reload, with the model parameters
+                var modelConfigViewModel = await ReloadInstrumentConfiguration(ct);
+
+                // Update the ConfigureModelParameters step with the new model config view model
+                if (_steps[1] is ConfigureModelParameters configureModelParametersStep)
+                {
+                    configureModelParametersStep.ModelConfig = modelConfigViewModel;
+                }
+            }
+
+            if (CurrentStep is ConfigureModelParameters configureVm)
+            {
+                await TryPublishConfigAsync(configureVm, ct);
+
+                // Reload
+                var configResponse = await _modelConfigurationServiceClient.GetConfigurationsAsync(
+                new GetConfigurationsRequest
+                {
+                    InstrumentName = _addedInstrument
+                }, cancellationToken: ct);
+
+                if (_steps[2] is EndScreen endScreenStep)
+                {
+                    endScreenStep.SetPropertiesAndValidate(_addedInstrument, configResponse);
+                }
+            }
+
+            if (CurrentStep is EndScreen)
+            {
+                DialogResult = true; // Signals successful completion to close the window
+            }
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Exception during wizard step for Add Instrument");
-            _dialogService.ShowError($"An error occurred during the current step: {ex.Message}");
-            throw;
+            await HandleExceptionDuringStep(ex);
         }
 
         if (_currentStepIndex < _steps.Count - 1)
@@ -195,45 +212,68 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         }
     }
 
-    private async Task OnStepTransitionAsync(CancellationToken ct = default)
+    private async Task ExecuteBack()
     {
-        if (CurrentStep is NameInstrument nameVm)
+        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)); // timeout for step execution
+        var ct = cts.Token;
+
+        try
         {
-            // Add the instrument + set the model
-            await AddInstrumentAsync(nameVm.InstrumentName, nameVm.TickIntervalMs, 
-                nameVm.InitialPrice, nameVm.SelectedModel, ct);
-
-            // Reload, with the model parameters
-            var modelConfigViewModel = await ReloadInstrumentConfiguration(ct);
-
-            // Update the ConfigureModelParameters step with the new model config view model
-            if (_steps[1] is ConfigureModelParameters configureModelParametersStep)
+            if (CurrentStep is ConfigureModelParameters vm)
             {
-                configureModelParametersStep.ModelConfig = modelConfigViewModel;
+                // If we're going back from the ConfigureModelParameters step, we need to remove the instrument we added in the previous step
+                if (!string.IsNullOrEmpty(_addedInstrument))
+                    await RemoveInstrumentAsync(ct);
+
+                vm.ModelConfig = null;
+            }
+
+            if (CurrentStep is EndScreen)
+            {
+                // do not allow this
+                _dialogService.ShowError("Cannot go back from the final step. " +
+                    "Please click 'Finish' to complete the wizard, or 'Cancel' to exit and delete instrument data",
+                    "Navigation Error");
+            }
+        }
+        catch (Exception ex)
+        {
+            await HandleExceptionDuringStep(ex);
+        }
+
+        if (_currentStepIndex > 0)
+        {
+            CurrentStepIndex--;
+        }
+    }
+
+    /// <summary>
+    /// Should be called when an exception occurs during a step transition (Next or Back) to handle cleanup and error reporting
+    /// </summary>
+    /// <param name="ex">The exception that occurred during the step transition.</param>
+    /// <returns>A task representing the asynchronous operation.</returns>
+    private async Task HandleExceptionDuringStep(Exception ex)
+    {
+        _logger.LogError(ex, "Exception during wizard step for Add Instrument");
+
+        //attempt to cleanup
+        if (!string.IsNullOrEmpty(_addedInstrument))
+        {
+            try
+            {
+                await RemoveInstrumentAsync();
+                _logger.LogInformation("Cleaned up instrument {InstrumentName} after error during Back navigation", _addedInstrument);
+                _dialogService.ShowError($"An error occurred during the current step: {ex.Message}");
+            }
+            catch (Exception cleanupEx)
+            {
+                _logger.LogError(cleanupEx, "Failed to clean up instrument {InstrumentName} after error during Back navigation", _addedInstrument);
+                _dialogService.ShowError($"An error occurred during the current step: {ex.Message}.\n" +
+                    $"Cleanup was unsuccessful: {cleanupEx.Message}! Database consistency may be affected.");
             }
         }
 
-        if (CurrentStep is ConfigureModelParameters configureVm)
-        {
-            await TryPublishConfigAsync(configureVm, ct);
-
-            // Reload
-            var configResponse = await _modelConfigurationServiceClient.GetConfigurationsAsync(
-            new GetConfigurationsRequest
-            {
-                InstrumentName = _addedInstrument
-            }, cancellationToken: ct);
-
-            if (_steps[2] is EndScreen endScreenStep)
-            {
-                endScreenStep.SetPropertiesAndValidate(_addedInstrument, configResponse);
-            }
-        }
-
-        if (CurrentStep is EndScreen)
-        {
-            DialogResult = true; // Signals successful completion to close the window
-        }
+        DialogResult = false; // Close the dialog on error
     }
 
     private async Task TryPublishConfigAsync(ConfigureModelParameters configureVm, CancellationToken ct)
@@ -292,26 +332,6 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         }
     }
 
-    private async Task OnStepBackAsync(CancellationToken ct = default)
-    {
-        if (CurrentStep is ConfigureModelParameters vm)
-        {
-            // If we're going back from the ConfigureModelParameters step, we need to remove the instrument we added in the previous step
-            if (!string.IsNullOrEmpty(_addedInstrument))
-                await RemoveInstrumentAsync(ct);
-
-            vm.ModelConfig = null;
-        }
-
-        if (CurrentStep is EndScreen)
-        {
-            // do not allow this
-            _dialogService.ShowError("Cannot go back from the final step. " +
-                "Please click 'Finish' to complete the wizard, or 'Cancel' to exit and delete instrument data", 
-                "Navigation Error");
-        }
-    }
-
     private async Task RemoveInstrumentAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Removing instrument {InstrumentName} as user is navigating back from ConfigureModelParameters step",
@@ -338,6 +358,13 @@ public class AddInstrumentWizardViewModel : ViewModelBase
     {
         _logger.LogInformation("Adding instrument {InstrumentName} with tick interval {TickInterval} ms and initial price {InitialPrice}",
                         instrumentName, tickIntervalMs, initialPrice);
+
+        if (double.IsNaN(initialPrice) || double.IsInfinity(initialPrice) || initialPrice <= 0)
+        {
+            _logger.LogError("Invalid initial price {InitialPrice} for instrument {InstrumentName}. Initial price must be a positive real number.",
+                initialPrice, instrumentName);
+            throw new Exception("Initial price must be a positive real number.");
+        }
 
         var res = await _modelConfigurationServiceClient.TryAddInstrumentAsync(new TryAddInstrumentRequest()
         {
@@ -391,6 +418,6 @@ public class AddInstrumentWizardViewModel : ViewModelBase
 
     private bool CanExecuteNext()
     {
-        return CurrentStep?.IsValid ?? false;
+        return (!(CurrentStep?.HasErrors)) ?? false;
     }
 }

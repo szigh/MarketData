@@ -5,7 +5,6 @@ namespace MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
 public class NameInstrument : AddInstrumentViewModelBase
 {
     private string _instrumentName = "";
-    private string _validationMessage = "";
 
     #region Default values for new instrument
     private double _initialPrice = 100d;
@@ -48,41 +47,46 @@ public class NameInstrument : AddInstrumentViewModelBase
 
     public string[] AvailableModels => _availableModels;
 
-    public override string ValidationMessage
+    protected override void UpdateValidationErrors()
     {
-        get => _validationMessage;
-        protected set => SetProperty(ref _validationMessage, value);
-    }
+        // Clear all previous errors
+        ClearAllErrors();
 
-    protected override void UpdateValidationMessage()
-    {
         if (string.IsNullOrWhiteSpace(InstrumentName))
         {
-            ValidationMessage = "Instrument name cannot be empty.";
+            SetError(nameof(InstrumentName), "Instrument name cannot be empty.");
         }
-        else if (!Regex.IsMatch(InstrumentName, "^[a-zA-Z0-9]+$"))
+        if (!Regex.IsMatch(InstrumentName, "^[a-zA-Z0-9]+$"))
         {
-            ValidationMessage = "Instrument name must contain only alphanumeric characters.";
+            SetError(nameof(InstrumentName), "Instrument name must contain only alphanumeric characters.");
         }
-        else if (_existingInstruments.Contains(InstrumentName))
+        if (_existingInstruments.Contains(InstrumentName))
         {
-            ValidationMessage = "An instrument with this name already exists.";
+            SetError(nameof(InstrumentName), "An instrument with this name already exists.");
         }
-        else if (InitialPrice <= 0)
+        if (InitialPrice <= 0)
         {
-            ValidationMessage = "Initial price must be greater than zero.";
+            SetError(nameof(InitialPrice), "Initial price must be greater than zero.");
         }
-        else if (!_availableModels.Contains(SelectedModel))
+        if (InitialPrice > double.MaxValue)
         {
-            ValidationMessage = "Selected model is not valid.";
+            SetError(nameof(InitialPrice), $"Initial price must be less than or equal to {double.MaxValue}.");
         }
-        else if (TickIntervalMs <= 0)
+        if (!double.IsNaN(InitialPrice) && double.IsInfinity(InitialPrice))
         {
-            ValidationMessage = "Tick interval must be greater than zero.";
+            SetError(nameof(InitialPrice), "Initial price must be a finite number.");
         }
-        else
+        if (!_availableModels.Contains(SelectedModel))
         {
-            ValidationMessage = "";
+            SetError(nameof(SelectedModel), "Selected model is not valid.");
+        }
+        if (TickIntervalMs <= 0)
+        {
+            SetError(nameof(TickIntervalMs), "Tick interval must be greater than zero.");
+        }
+        if (TickIntervalMs > int.MaxValue)
+        {
+            SetError(nameof(TickIntervalMs), $"Tick interval must be less than or equal to {int.MaxValue}.");
         }
     }
 }

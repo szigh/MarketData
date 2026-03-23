@@ -1,33 +1,127 @@
 ﻿using MarketData.Wpf.Shared;
+using System.Collections;
+using System.ComponentModel;
+using System.Text;
 
 namespace MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
 
-public abstract class AddInstrumentViewModelBase : ViewModelBase
+public abstract class AddInstrumentViewModelBase : ViewModelBase, INotifyDataErrorInfo
 {
+    private readonly Dictionary<string, List<string>> _errors = new();
+
     protected AddInstrumentViewModelBase()
     {
         // Automatically re-validate whenever any property changes
         PropertyChanged += (_, e) =>
         {
-            // Don't re-validate when ValidationMessage or IsValid changes (avoid infinite loop)
-            if (e.PropertyName != nameof(ValidationMessage) && e.PropertyName != nameof(IsValid))
+            // Don't re-validate when ValidationMessage or HasErrors changes (avoid infinite loop)
+            if (e.PropertyName != nameof(ValidationMessage) && e.PropertyName != nameof(HasErrors))
             {
                 OnValidationChanged();
             }
         };
     }
 
-    public bool IsValid => string.IsNullOrEmpty(ValidationMessage);
-    public event EventHandler? ValidationChanged;
+    /// <summary>
+    /// Returns a summary of all validation errors as a single string.
+    /// </summary>
+    public string ValidationMessage
+    {
+        get
+        {
+            if (!HasErrors)
+                return string.Empty;
+
+            var sb = new StringBuilder();
+            foreach (var kvp in _errors)
+            {
+                foreach (var error in kvp.Value)
+                {
+                    if (sb.Length > 0)
+                        sb.Append(" ");
+                    sb.Append(error);
+                }
+            }
+            return sb.ToString();
+        }
+    }
+
+    #region INotifyDataErrorInfo Implementation
+
+    public bool HasErrors => _errors.Count > 0;
+    public event EventHandler<DataErrorsChangedEventArgs>? ErrorsChanged;
+
+    public IEnumerable GetErrors(string? propertyName)
+    {
+        if (string.IsNullOrEmpty(propertyName))
+        {
+            // Return all errors
+            return _errors.Values.SelectMany(e => e);
+        }
+
+        return _errors.TryGetValue(propertyName, out var errors) ? errors : Enumerable.Empty<string>();
+    }
+
+    protected void SetError(string propertyName, string? error)
+    {
+        if (string.IsNullOrEmpty(error))
+        {
+            ClearErrors(propertyName);
+        }
+        else
+        {
+            if (!_errors.ContainsKey(propertyName))
+            {
+                _errors[propertyName] = new List<string>();
+            }
+
+            _errors[propertyName].Clear();
+            _errors[propertyName].Add(error);
+            OnErrorsChanged(propertyName);
+            OnPropertyChanged(nameof(HasErrors));
+            OnPropertyChanged(nameof(ValidationMessage));
+        }
+    }
+
+    protected void ClearErrors(string propertyName)
+    {
+        if (_errors.Remove(propertyName))
+        {
+            OnErrorsChanged(propertyName);
+            OnPropertyChanged(nameof(HasErrors));
+            OnPropertyChanged(nameof(ValidationMessage));
+        }
+    }
+
+    protected void ClearAllErrors()
+    {
+        var propertyNames = _errors.Keys.ToList();
+        _errors.Clear();
+
+        foreach (var propertyName in propertyNames)
+        {
+            OnErrorsChanged(propertyName);
+        }
+
+        OnPropertyChanged(nameof(HasErrors));
+        OnPropertyChanged(nameof(ValidationMessage));
+    }
+
+    private void OnErrorsChanged(string propertyName)
+    {
+        ErrorsChanged?.Invoke(this, new DataErrorsChangedEventArgs(propertyName));
+    }
+
+    #endregion
 
     protected void OnValidationChanged()
     {
-        UpdateValidationMessage();
-        OnPropertyChanged(nameof(ValidationMessage));
-        OnPropertyChanged(nameof(IsValid));
-        ValidationChanged?.Invoke(this, EventArgs.Empty);
+        UpdateValidationErrors();
     }
 
-    protected abstract void UpdateValidationMessage();
-    public abstract string ValidationMessage { get; protected set; }
+    /// <summary>
+    /// Override this method to implement validation logic.
+    /// Use SetError() and ClearAllErrors() to set validation errors.
+    /// </summary>
+    protected abstract void UpdateValidationErrors();
 }

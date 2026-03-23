@@ -4,7 +4,6 @@ namespace MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
 
 public class ConfigureModelParameters : AddInstrumentViewModelBase
 {
-    private string _validationMessage = "";
     private ModelConfigViewModelBase? _modelConfig;
 
     public ConfigureModelParameters(ModelConfigViewModelBase? modelConfigViewModel) : base()
@@ -18,32 +17,26 @@ public class ConfigureModelParameters : AddInstrumentViewModelBase
         set => SetProperty(ref _modelConfig, value);
     }
 
-    protected override void UpdateValidationMessage()
+    protected override void UpdateValidationErrors()
     {
+        ClearAllErrors();
+
         if (ModelConfig == null)
         {
-            ValidationMessage = "Model configuration is required.";
+            SetError(nameof(ModelConfig), "Model configuration is required.");
         }
         else if (!ModelConfig.ValidateProperties())
         {
+            string errorMessage;
             if (ModelConfig is RandomAdditiveWalkConfigViewModel randomAdditiveWalkConfig)
             {
-                ValidationMessage = randomAdditiveWalkConfig.ValidationMessage;
+                errorMessage = randomAdditiveWalkConfig.ValidationMessage;
             }
             else
             {
-                ValidationMessage = "Model configuration is invalid.";
+                errorMessage = "Model configuration is invalid.";
             }
+            SetError(nameof(ModelConfig), errorMessage);
         }
-        else
-        {
-            ValidationMessage = string.Empty;
-        }
-    }
-
-    public override string ValidationMessage
-    {
-        get => _validationMessage;
-        protected set => SetProperty(ref _validationMessage, value);
     }
 }
