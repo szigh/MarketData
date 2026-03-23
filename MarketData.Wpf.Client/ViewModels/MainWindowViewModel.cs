@@ -1,3 +1,4 @@
+using MarketData.Client.Wpf.ViewModels.AddInstrument;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Shared;
@@ -10,6 +11,7 @@ namespace MarketData.Wpf.Client.ViewModels;
 public class MainWindowViewModel : ViewModelBase
 {
     private readonly ILogger<MainWindowViewModel> _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly InstrumentViewModelFactory _instrumentViewModelFactory;
     private readonly ModelConfigurationService.ModelConfigurationServiceClient _modelConfigurationServiceClient;
     private readonly IDialogService _dialogService;
@@ -22,14 +24,17 @@ public class MainWindowViewModel : ViewModelBase
         InstrumentViewModelFactory instrumentViewModelFactory,
         ModelConfigurationService.ModelConfigurationServiceClient modelConfigurationServiceClient,
         IDialogService dialogService,
-        ILogger<MainWindowViewModel> logger)
+        ILogger<MainWindowViewModel> logger,
+        ILoggerFactory loggerFactory)
     {
         _instrumentViewModelFactory = instrumentViewModelFactory;
         _modelConfigurationServiceClient = modelConfigurationServiceClient;
         _dialogService = dialogService;
         _logger = logger;
+        _loggerFactory = loggerFactory;
         _tabs = [];
 
+        AddInstrumentCommand = new AsyncRelayCommand(ExecuteAddInstrument);
         AddTabCommand = new AsyncRelayCommand(ExecuteAddTab);
         CloseTabCommand = new RelayCommand<InstrumentTabViewModel>(ExecuteCloseTab, CanExecuteCloseTab);
 
@@ -55,8 +60,30 @@ public class MainWindowViewModel : ViewModelBase
         set => SetProperty(ref _selectedTab, value);
     }
 
+    public ICommand AddInstrumentCommand { get; }
     public ICommand AddTabCommand { get; }
     public ICommand CloseTabCommand { get; }
+
+    private async Task ExecuteAddInstrument()
+    {
+        _logger.LogInformation("Executing AddInstrument");
+        try
+        {
+            var vm = new AddInstrumentWizardViewModel(_modelConfigurationServiceClient, 
+                _loggerFactory, _loggerFactory.CreateLogger<AddInstrumentWizardViewModel>(), _dialogService);
+            await vm.InitializeAsync();
+            var addedInstrument = await _dialogService.ShowAddInstrumentWizardAsync(vm);
+            if (!string.IsNullOrEmpty(addedInstrument))
+            {
+                AddTab(addedInstrument);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to fetch instrument configurations");
+            _dialogService.ShowError("Failed to fetch instrument configurations", ex.Message);
+        }
+    }
 
     private async Task ExecuteAddTab()
     {

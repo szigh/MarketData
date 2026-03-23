@@ -1,4 +1,6 @@
 using System.Windows;
+using MarketData.Client.Wpf.ViewModels.AddInstrument;
+using MarketData.Client.Wpf.Views;
 using MarketData.Wpf.Client.ViewModels;
 
 namespace MarketData.Wpf.Client.Services;
@@ -48,6 +50,16 @@ public class DialogService : IDialogService
         });
     }
 
+    public async Task ShowWindowAsync<TWindow, TViewModel>(TViewModel viewModel)
+        where TWindow : Window, new()
+    {
+        await Application.Current.Dispatcher.InvokeAsync(() =>
+        {
+            var window = new TWindow { DataContext = viewModel };
+            window.Show();
+        });
+    }
+
     public async Task<bool?> ShowDialogAsync<TWindow, TViewModel>(TViewModel viewModel) 
         where TWindow : Window, new()
     {
@@ -75,5 +87,12 @@ public class DialogService : IDialogService
             var dialog = new InstrumentSelectorWindow(instruments);
             return dialog.ShowDialog() == true ? dialog.SelectedInstrument : null;
         });
+    }
+
+    public async Task<string?> ShowAddInstrumentWizardAsync(AddInstrumentWizardViewModel viewModel)
+    {
+        await viewModel.InitializeAsync();
+        await ShowWindowAsync<AddInstrumentWizard, AddInstrumentWizardViewModel>(viewModel);
+        return viewModel.AddedInstrument;
     }
 }
