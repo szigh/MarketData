@@ -272,6 +272,11 @@ public class AddInstrumentWizardViewModel : ViewModelBase
                     $"Cleanup was unsuccessful: {cleanupEx.Message}! Database consistency may be affected.");
             }
         }
+        else
+        {
+            _logger.LogInformation("No instrument to clean up after error during navigation");
+            _dialogService.ShowError($"An error occurred during the current step: {ex.Message}");
+        }
 
         DialogResult = false; // Close the dialog on error
     }
