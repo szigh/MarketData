@@ -13,7 +13,6 @@ namespace MarketData.Client.Wpf.ViewModels.AddInstrument;
 
 public class AddInstrumentWizardViewModel : ViewModelBase
 {
-    private readonly ILoggerFactory _loggerFactory;
     private readonly ILogger<AddInstrumentWizardViewModel> _logger;
     private readonly IDialogService _dialogService;
 
@@ -32,7 +31,6 @@ public class AddInstrumentWizardViewModel : ViewModelBase
     public AddInstrumentWizardViewModel(
         IModelConfigService modelConfigService,
         ModelConfigViewModelFactory modelConfigViewModelFactory,
-        ILoggerFactory loggerFactory,
         ILogger<AddInstrumentWizardViewModel> logger,
         IDialogService dialogService)
     {
@@ -41,7 +39,6 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         CancelCommand = new AsyncRelayCommand(ExecuteCancel);
         _modelConfigService = modelConfigService;
         _modelConfigViewModelFactory = modelConfigViewModelFactory;
-        _loggerFactory = loggerFactory;
         _logger = logger;
         _dialogService = dialogService;
     }

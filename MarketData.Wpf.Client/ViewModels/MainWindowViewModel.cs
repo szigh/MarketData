@@ -75,7 +75,7 @@ public class MainWindowViewModel : ViewModelBase
         try
         {
             var vm = new AddInstrumentWizardViewModel(_modelConfigService, _modelConfigViewModelFactory,
-                _loggerFactory, _loggerFactory.CreateLogger<AddInstrumentWizardViewModel>(), _dialogService);
+                _loggerFactory.CreateLogger<AddInstrumentWizardViewModel>(), _dialogService);
             await vm.InitializeAsync();
             var addedInstrument = await _dialogService.ShowAddInstrumentWizardAsync(vm);
             if (!string.IsNullOrEmpty(addedInstrument))
