@@ -92,7 +92,17 @@ public class DialogService : IDialogService
     public async Task<string?> ShowAddInstrumentWizardAsync(AddInstrumentWizardViewModel viewModel)
     {
         await viewModel.InitializeAsync();
-        await ShowWindowAsync<AddInstrumentWizard, AddInstrumentWizardViewModel>(viewModel);
-        return viewModel.AddedInstrument;
+
+        var result = await Application.Current.Dispatcher.InvokeAsync(() =>
+        {
+            var wizard = new AddInstrumentWizard
+            {
+                DataContext = viewModel
+            };
+            return wizard.ShowDialog();
+        });
+
+        // Only return the added instrument if the wizard completed successfully (true)
+        return result == true ? viewModel.AddedInstrument : null;
     }
 }

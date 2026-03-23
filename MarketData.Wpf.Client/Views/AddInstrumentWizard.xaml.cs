@@ -1,25 +1,54 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MarketData.Client.Wpf.ViewModels.AddInstrument;
+using System.ComponentModel;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
 
-namespace MarketData.Client.Wpf.Views
+namespace MarketData.Client.Wpf.Views;
+
+/// <summary>
+/// Interaction logic for AddInstrumentWizard.xaml
+/// </summary>
+public partial class AddInstrumentWizard : Window
 {
-    /// <summary>
-    /// Interaction logic for AddInstrumentWizard.xaml
-    /// </summary>
-    public partial class AddInstrumentWizard : Window
+    public AddInstrumentWizard()
     {
-        public AddInstrumentWizard()
+        InitializeComponent();
+
+        // Wire up DialogResult property to close the window
+        DataContextChanged += OnDataContextChanged;
+
+        // Handle the X (close) button to execute Cancel logic
+        Closing += OnWindowClosing;
+    }
+
+    private void OnWindowClosing(object? sender, CancelEventArgs e)
+    {
+        if (DialogResult.HasValue)
+            return;
+
+        e.Cancel = true;
+
+        if (DataContext is AddInstrumentWizardViewModel vm && vm.CancelCommand.CanExecute(null))
         {
-            InitializeComponent();
+            vm.CancelCommand.Execute(null);
+        }
+    }
+
+    private void OnDataContextChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if (e.OldValue is AddInstrumentWizardViewModel oldVm)
+            oldVm.PropertyChanged -= OnViewModelPropertyChanged;
+
+        if (e.NewValue is AddInstrumentWizardViewModel newVm)
+            newVm.PropertyChanged += OnViewModelPropertyChanged;
+    }
+
+    private void OnViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(AddInstrumentWizardViewModel.DialogResult) 
+            && sender is AddInstrumentWizardViewModel vm 
+            && vm.DialogResult.HasValue)
+        {
+            DialogResult = vm.DialogResult;
         }
     }
 }

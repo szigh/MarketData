@@ -87,8 +87,8 @@
         </DataTemplate>
         <DataTemplate DataType="{x:Type steps:EndScreen}">
             <ScrollViewer>
-            <StackPanel>
-                <TextBlock Text="{Binding InstrumentName}"
+                <StackPanel>
+                    <TextBlock Text="{Binding InstrumentName}"
                            FontSize="16"
                            FontWeight="SemiBold"/>
                     <TextBlock Text="Instrument successfully added! Configuration summary:"

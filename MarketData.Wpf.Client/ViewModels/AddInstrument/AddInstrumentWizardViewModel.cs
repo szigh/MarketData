@@ -24,6 +24,7 @@ public class AddInstrumentWizardViewModel : ViewModelBase
     private int _currentStepIndex = -1;
     private string? _addedInstrument;
     private bool _isInitialized = false;
+    private bool? _dialogResult;
     private readonly ModelConfigurationService.ModelConfigurationServiceClient _modelConfigurationServiceClient;
     private readonly ModelConfigViewModelFactory _modelConfigViewModelFactory;
 
@@ -86,8 +87,9 @@ public class AddInstrumentWizardViewModel : ViewModelBase
             if (SetProperty(ref _currentStepIndex, value))
             {
                 OnPropertyChanged(nameof(CurrentStep));
-                NextCommand.CanExecute(null);
-                BackCommand.CanExecute(null);
+                OnPropertyChanged(nameof(NextCommandText));
+                (NextCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
+                (BackCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
             }
         }
     }
@@ -101,6 +103,12 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         get => _addedInstrument;
     }
 
+    public bool? DialogResult
+    {
+        get => _dialogResult;
+        set => SetProperty(ref _dialogResult, value);
+    }
+
     public string NextCommandText
     {
         get => _currentStepIndex < _steps.Count - 1 ? "Next >" : "Finish";
@@ -108,7 +116,33 @@ public class AddInstrumentWizardViewModel : ViewModelBase
 
     private async Task ExecuteCancel()
     {
-        throw new NotImplementedException();
+        var confirmed = _dialogService.ShowConfirmation(
+            "Any unsaved changes will be lost and the instrument will be removed. Do you want to continue?",
+            "Cancel wizard?");
+
+        if (!confirmed)
+            return;
+
+        // Check if there's unsaved work (instrument was added but wizard not completed)
+        if (!string.IsNullOrEmpty(_addedInstrument) 
+            && CurrentStepIndex != 0 // instrument should not added if in first step
+            )
+        {
+            try
+            {
+                // Clean up - remove the instrument if it was added
+                await RemoveInstrumentAsync();
+                _logger.LogInformation("Wizard cancelled - instrument {InstrumentName} was removed", _addedInstrument);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to clean up instrument {InstrumentName} during cancel", _addedInstrument);
+                _dialogService.ShowError($"Failed to clean up instrument data: {ex.Message}");
+                // Still close the window even if cleanup fails
+            }
+        }
+
+        DialogResult = false; // Signals cancellation to close the window
     }
 
     private async Task ExecuteBack()
@@ -182,6 +216,11 @@ public class AddInstrumentWizardViewModel : ViewModelBase
             {
                 endScreenStep.SetPropertiesAndValidate(_addedInstrument, configResponse);
             }
+        }
+
+        if (CurrentStep is EndScreen)
+        {
+            DialogResult = true; // Signals successful completion to close the window
         }
     }
 
@@ -261,7 +300,7 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         }
     }
 
-    private async Task RemoveInstrumentAsync(CancellationToken ct)
+    private async Task RemoveInstrumentAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Removing instrument {InstrumentName} as user is navigating back from ConfigureModelParameters step",
             _addedInstrument);
