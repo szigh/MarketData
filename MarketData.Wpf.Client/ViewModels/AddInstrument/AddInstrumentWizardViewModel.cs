@@ -126,7 +126,7 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         get => _currentStepIndex < _steps.Count - 1 ? "Next >" : "Finish";
     }
 
-    private async Task ExecuteCancel()
+    private async Task ExecuteCancel(CancellationToken ct)
     {
         var confirmed = _dialogService.ShowConfirmation(
             "Any unsaved changes will be lost and the instrument will be removed. Do you want to continue?",
@@ -143,7 +143,7 @@ public class AddInstrumentWizardViewModel : ViewModelBase
             try
             {
                 // Clean up - remove the instrument if it was added
-                await RemoveInstrumentAsync();
+                await RemoveInstrumentAsync(ct);
                 _logger.LogInformation("Wizard cancelled - instrument {InstrumentName} was removed", _addedInstrument);
             }
             catch (Exception ex)
@@ -157,10 +157,8 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         DialogResult = false; // Signals cancellation to close the window
     }
 
-    private async Task ExecuteNext()
+    private async Task ExecuteNext(CancellationToken ct)
     {
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)); // timeout for step execution
-        var ct = cts.Token;
         try
         {
             if (CurrentStep is NameInstrument nameVm)
@@ -212,11 +210,8 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         }
     }
 
-    private async Task ExecuteBack()
+    private async Task ExecuteBack(CancellationToken ct)
     {
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)); // timeout for step execution
-        var ct = cts.Token;
-
         try
         {
             if (CurrentStep is ConfigureModelParameters vm)

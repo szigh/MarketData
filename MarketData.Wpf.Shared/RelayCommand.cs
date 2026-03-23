@@ -53,11 +53,17 @@ public class RelayCommand<T> : ICommand
 
 public class AsyncRelayCommand : ICommand
 {
-    private readonly Func<Task> _execute;
+    private readonly Func<CancellationToken, Task> _execute;
     private readonly Func<bool>? _canExecute;
     private bool _isExecuting;
+    private CancellationTokenSource? _cancellationTokenSource;
 
     public AsyncRelayCommand(Func<Task> execute, Func<bool>? canExecute = null)
+        : this(ct => execute(), canExecute)
+    {
+    }
+
+    public AsyncRelayCommand(Func<CancellationToken, Task> execute, Func<bool>? canExecute = null)
     {
         _execute = execute ?? throw new ArgumentNullException(nameof(execute));
         _canExecute = canExecute;
@@ -79,18 +85,34 @@ public class AsyncRelayCommand : ICommand
         if (_isExecuting)
             return;
 
+        // Cancel any previous operation
+        _cancellationTokenSource?.Cancel();
+        _cancellationTokenSource?.Dispose();
+
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
+
         _isExecuting = true;
         RaiseCanExecuteChanged();
 
         try
         {
-            await _execute();
+            await _execute(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when operation is cancelled, don't propagate
         }
         finally
         {
             _isExecuting = false;
             RaiseCanExecuteChanged();
         }
+    }
+
+    public void Cancel()
+    {
+        _cancellationTokenSource?.Cancel();
     }
 
     public void RaiseCanExecuteChanged()
