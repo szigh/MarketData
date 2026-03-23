@@ -65,13 +65,25 @@ public class AddInstrumentWizardViewModel : ViewModelBase
                 new EndScreen()
             ];
 
+            foreach (var step in _steps)
+            {
+                step.ValidationChanged += OnStepValidationChanged;
+            }
+
             _currentStepIndex = 0;
+            _isInitialized = true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error initializing AddInstrumentWizardViewModel");
             _dialogService.ShowError($"Failed to load instrument configurations. Please try again later. {ex.Message}");
         }
+    }
+
+    private void OnStepValidationChanged(object? sender, EventArgs e)
+    {
+        // When any step's validation changes, update the Next button's enabled state
+        (NextCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
     }
 
     public AddInstrumentViewModelBase? CurrentStep
@@ -379,6 +391,6 @@ public class AddInstrumentWizardViewModel : ViewModelBase
 
     private bool CanExecuteNext()
     {
-        return CurrentStep?.IsValid() ?? false;
+        return CurrentStep?.IsValid ?? false;
     }
 }

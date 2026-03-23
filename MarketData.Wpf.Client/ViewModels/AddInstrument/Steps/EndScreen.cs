@@ -9,7 +9,7 @@ public class EndScreen : AddInstrumentViewModelBase
     private string _instrumentName = "";
     private string _configurations = "";
 
-    public EndScreen(){}
+    public EndScreen() : base() {}
 
     public void SetPropertiesAndValidate(string? instrumentName, ConfigurationsResponse configurationsResponse)
     {
@@ -66,6 +66,6 @@ public class EndScreen : AddInstrumentViewModelBase
 
     protected override void UpdateValidationMessage()
     {
-        //validation set in ctor only
+        //validation set in SetPropertiesAndValidate
     }
 }

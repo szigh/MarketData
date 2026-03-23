@@ -7,11 +7,9 @@ public class ConfigureModelParameters : AddInstrumentViewModelBase
     private string _validationMessage = "";
     private ModelConfigViewModelBase? _modelConfig;
 
-    public ConfigureModelParameters(ModelConfigViewModelBase? modelConfigViewModel)
+    public ConfigureModelParameters(ModelConfigViewModelBase? modelConfigViewModel) : base()
     {
         _modelConfig = modelConfigViewModel;
-
-        PropertyChanged += (_, __) => UpdateValidationMessage();
     }
 
     public ModelConfigViewModelBase? ModelConfig

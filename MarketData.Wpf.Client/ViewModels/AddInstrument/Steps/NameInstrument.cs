@@ -16,12 +16,10 @@ public class NameInstrument : AddInstrumentViewModelBase
     private readonly string[] _availableModels;
     private readonly HashSet<string> _existingInstruments;
 
-    public NameInstrument(IEnumerable<string> availableModels, IEnumerable<string> existingInstruments)
+    public NameInstrument(IEnumerable<string> availableModels, IEnumerable<string> existingInstruments) : base()
     {
         _availableModels = availableModels.ToArray();
         _existingInstruments = existingInstruments.ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        PropertyChanged += (_, _) => UpdateValidationMessage();
     }
 
     public string InstrumentName
