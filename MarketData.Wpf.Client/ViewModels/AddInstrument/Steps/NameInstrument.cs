@@ -19,6 +19,8 @@ public class NameInstrument : AddInstrumentViewModelBase
     {
         _availableModels = availableModels.ToArray();
         _existingInstruments = existingInstruments.ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        UpdateValidationErrors();
     }
 
     public string InstrumentName

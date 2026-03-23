@@ -17,7 +17,7 @@ public abstract class AddInstrumentViewModelBase : ViewModelBase, INotifyDataErr
             // Don't re-validate when ValidationMessage or HasErrors changes (avoid infinite loop)
             if (e.PropertyName != nameof(ValidationMessage) && e.PropertyName != nameof(HasErrors))
             {
-                OnValidationChanged();
+                UpdateValidationErrors();
             }
         };
     }
@@ -113,11 +113,6 @@ public abstract class AddInstrumentViewModelBase : ViewModelBase, INotifyDataErr
     }
 
     #endregion
-
-    protected void OnValidationChanged()
-    {
-        UpdateValidationErrors();
-    }
 
     /// <summary>
     /// Override this method to implement validation logic.
