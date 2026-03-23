@@ -7,7 +7,7 @@
         xmlns:steps="clr-namespace:MarketData.Client.Wpf.ViewModels.AddInstrument.Steps"
         mc:Ignorable="d"
         Title="Add Instrument" Height="450" Width="650">
-    
+
     <!--Wizard steps-->
     <Window.Resources>
         <DataTemplate DataType="{x:Type steps:NameInstrument}">
@@ -61,8 +61,8 @@
             </Grid>
         </DataTemplate>
     </Window.Resources>
-    
-    
+
+
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*" />
@@ -73,7 +73,7 @@
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        
+
         <!--Header-->
         <Grid Grid.ColumnSpan="2" Background="#111144" Height="50">
             <TextBlock Grid.ColumnSpan="2" 
@@ -119,7 +119,7 @@
                 Margin="10"
                 Content="{Binding CurrentStep}"/>
 
-            <!--Validation--> 
+            <!--Validation-->
             <TextBlock Grid.Row="1" 
                        Text="{Binding CurrentStep.ValidationMessage}" 
                        Foreground="#440000" 
