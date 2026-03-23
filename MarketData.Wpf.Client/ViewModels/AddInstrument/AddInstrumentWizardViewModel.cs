@@ -83,6 +83,15 @@ namespace MarketData.Client.Wpf.ViewModels.AddInstrument
             }
         }
 
+        public ICommand NextCommand { get; }
+        public ICommand BackCommand { get; }
+        public ICommand CancelCommand { get; }
+
+        public string? AddedInstrument
+        {
+            get => _addedInstrument;
+        }
+
         public string NextCommandText
         {
             get => _currentStepIndex < _steps.Count - 1 ? "Next >" : "Finish";
@@ -98,16 +107,6 @@ namespace MarketData.Client.Wpf.ViewModels.AddInstrument
             throw new NotImplementedException();
         }
 
-        private bool CanExecuteBack()
-        {
-            return _currentStepIndex > 0;
-        }
-
-        private bool CanExecuteNext()
-        {
-            return CurrentStep?.IsValid() ?? false;
-        }
-
         private async Task ExecuteNext()
         {
             if (_currentStepIndex < _steps.Count - 1)
@@ -116,13 +115,14 @@ namespace MarketData.Client.Wpf.ViewModels.AddInstrument
             }
         }
 
-        public ICommand NextCommand { get; }
-        public ICommand BackCommand { get; }
-        public ICommand CancelCommand { get; }
-
-        public string? AddedInstrument
+        private bool CanExecuteBack()
         {
-            get => _addedInstrument;
+            return _currentStepIndex > 0;
+        }
+
+        private bool CanExecuteNext()
+        {
+            return CurrentStep?.IsValid() ?? false;
         }
     }
 }
