@@ -638,7 +638,7 @@ Logs are written to the `logs/` directory:
 The solution has **comprehensive test coverage** with **220 automated tests** across critical components.
 
 #### **MarketData.PriceSimulator.Tests**
-**Frameworks:** xUnit 2.9.3, Custom `[StatisticalFact]` attribute
+**Frameworks:** xUnit v3 (3.2.2), Custom `[StatisticalFact]` attribute
 
 **Coverage:**
 - **Unit Tests**
@@ -660,7 +660,7 @@ dotnet test MarketData.PriceSimulator.Tests
 ```
 
 #### **MarketData.Tests**
-**Frameworks:** xUnit 2.9.3, Moq 4.20.72, EF Core InMemory 10.0.3, ASP.NET Testing 10.0.3
+**Frameworks:** xUnit v3 (3.2.2), Moq 4.20.72, EF Core InMemory 10.0.3, ASP.NET Testing 10.0.3
 
 **Coverage:**
 - **Controller Tests** - REST API endpoints
@@ -690,7 +690,7 @@ dotnet test MarketData.Tests
 
 | Library | Version | Purpose | Used In |
 |---------|---------|---------|---------|
-| **xUnit** | 2.9.3 | Test framework | All test projects |
+| **xUnit** | 3.2.2 | Test framework | All test projects |
 | **Moq** | 4.20.72 | Mocking framework | MarketData.Tests |
 | **EF Core InMemory** | 10.0.3 | Database testing | MarketData.Tests |
 | **ASP.NET Testing** | 10.0.3 | Integration/API tests | MarketData.Tests |

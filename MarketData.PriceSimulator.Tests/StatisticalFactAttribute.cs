@@ -1,9 +1,7 @@
-using Xunit.Sdk;
-
 namespace MarketData.PriceSimulator.Tests
 {
     /// <summary>
-    /// Marks a test as a statistical test that uses SkippableFact for runtime skip logic.
+    /// Marks a test as a statistical test that may be skipped at runtime.
     /// Statistical tests are skipped by default unless RUN_STATISTICAL_TESTS=true environment variable is set.
     /// </summary>
     /// <remarks>
@@ -13,12 +11,12 @@ namespace MarketData.PriceSimulator.Tests
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     [Trait("Category", "Statistical")]
     [Trait("Speed", "Slow")]
-    public sealed class StatisticalFactAttribute : SkippableFactAttribute
+    public sealed class StatisticalFactAttribute : FactAttribute
     {
     }
 
     /// <summary>
-    /// Marks a parameterized test as a statistical test that uses SkippableTheory for runtime skip logic.
+    /// Marks a parameterized test as a statistical test that may be skipped at runtime.
     /// Statistical tests are skipped by default unless RUN_STATISTICAL_TESTS=true environment variable is set.
     /// </summary>
     /// <remarks>
@@ -28,7 +26,7 @@ namespace MarketData.PriceSimulator.Tests
     [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
     [Trait("Category", "Statistical")]
     [Trait("Speed", "Slow")]
-    public sealed class StatisticalTheoryAttribute : SkippableTheoryAttribute
+    public sealed class StatisticalTheoryAttribute : TheoryAttribute
     {
     }
 
@@ -45,7 +43,7 @@ namespace MarketData.PriceSimulator.Tests
         /// </summary>
         public static void EnsureEnabled()
         {
-            Skip.IfNot(IsEnabled(), SkipMessage);
+            Assert.SkipUnless(IsEnabled(), SkipMessage);
         }
 
         /// <summary>
