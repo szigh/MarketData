@@ -1,17 +1,16 @@
 ﻿using MarketData.Wpf.Shared;
 
-namespace MarketData.Client.Wpf.ViewModels.AddInstrument.Steps
+namespace MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
+
+public abstract class AddInstrumentViewModelBase : ViewModelBase
 {
-    public abstract class AddInstrumentViewModelBase : ViewModelBase
+
+    public bool IsValid()
     {
-
-        public bool IsValid()
-        {
-            UpdateValidationMessage();
-            return ValidationMessage == "";
-        }
-
-        protected abstract void UpdateValidationMessage();
-        public abstract string ValidationMessage { get; protected set; }
+        UpdateValidationMessage();
+        return ValidationMessage == "";
     }
+
+    protected abstract void UpdateValidationMessage();
+    public abstract string ValidationMessage { get; protected set; }
 }
