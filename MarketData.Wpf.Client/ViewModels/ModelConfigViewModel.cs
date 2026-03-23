@@ -43,7 +43,7 @@ public class ModelConfigViewModel : ViewModelBase
         _modelConfigService = modelConfigService;
         _dialogService = dialogService;
         _logger = loggerFactory.CreateLogger<ModelConfigViewModel>();
-        _viewModelFactory = new ModelConfigViewModelFactory(instrument, modelConfigService, dialogService, loggerFactory);
+        _viewModelFactory = new ModelConfigViewModelFactory(modelConfigService, dialogService, loggerFactory);
 
         // Create the appropriate child ViewModel based on active model
         UpdateActiveConfigViewModel();

@@ -59,5 +59,5 @@ public abstract class ModelConfigViewModelBase : ViewModelBase
     }
 
     protected abstract Task<bool> TryExecutePublishConfigChangesAsync(CancellationToken ct = default);
-    protected abstract bool ValidateProperties();
+    public abstract bool ValidateProperties();
 }

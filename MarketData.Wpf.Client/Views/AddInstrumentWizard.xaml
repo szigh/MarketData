@@ -5,6 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MarketData.Client.Wpf.Views"
         xmlns:steps="clr-namespace:MarketData.Client.Wpf.ViewModels.AddInstrument.Steps"
+        xmlns:modelVms="clr-namespace:MarketData.Wpf.Client.ViewModels.ModelConfigs"
+        xmlns:modelViews="clr-namespace:MarketData.Wpf.Client.Views.ModelConfigs"
         mc:Ignorable="d"
         Title="Add Instrument" Height="450" Width="650">
 
@@ -59,6 +61,45 @@
                          Text="{Binding TickIntervalMs, UpdateSourceTrigger=PropertyChanged}"
                          Margin="5"/>
             </Grid>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type steps:ConfigureModelParameters}">
+            <DataTemplate.Resources>
+                <DataTemplate DataType="{x:Type modelVms:RandomMultiplicativeConfigViewModel}">
+                    <modelViews:RandomMultiplicativeConfigView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type modelVms:MeanRevertingConfigViewModel}">
+                    <modelViews:MeanRevertingConfigView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type modelVms:FlatConfigViewModel}">
+                    <modelViews:FlatConfigView/>
+                </DataTemplate>
+                <DataTemplate DataType="{x:Type modelVms:RandomAdditiveWalkConfigViewModel}">
+                    <ScrollViewer>
+                        <modelViews:RandomAdditiveWalkConfigView/>
+                    </ScrollViewer>
+                </DataTemplate>
+            </DataTemplate.Resources>
+            <Grid Background="#555555">
+                <ContentControl Margin="5" Content="{Binding ModelConfig}"/>
+
+            </Grid>
+            
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type steps:EndScreen}">
+            <ScrollViewer>
+            <StackPanel>
+                <TextBlock Text="{Binding InstrumentName}"
+                           FontSize="16"
+                           FontWeight="SemiBold"/>
+                    <TextBlock Text="Instrument successfully added! Configuration summary:"
+                           FontSize="14"
+                           Margin="0,5,0,0"/>
+                    <TextBox Text="{Binding Configurations, Mode=OneWay}"
+                         Margin="10"
+                         IsReadOnly="True"
+                         TextWrapping="Wrap"/>
+                </StackPanel>
+            </ScrollViewer>
         </DataTemplate>
     </Window.Resources>
 
@@ -138,7 +179,7 @@
                         Width="80" 
                         Height="30" 
                         Margin="5"
-                        Command="{Binding PreviousCommand}"/>
+                        Command="{Binding BackCommand}"/>
                 <Button Content="{Binding NextCommandText, FallbackValue='Next &gt;'}" 
                         Width="80" 
                         Height="30" 

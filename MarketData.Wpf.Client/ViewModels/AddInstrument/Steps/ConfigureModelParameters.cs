@@ -1,24 +1,51 @@
-﻿using MarketData.Wpf.Shared;
-using System;
-using System.Collections.Generic;
-using System.Text;
+﻿using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 
-namespace MarketData.Client.Wpf.ViewModels.AddInstrument.Steps
+namespace MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
+
+public class ConfigureModelParameters : AddInstrumentViewModelBase
 {
-    public class ConfigureModelParameters : AddInstrumentViewModelBase
+    private string _validationMessage = "";
+    private ModelConfigViewModelBase? _modelConfig;
+
+    public ConfigureModelParameters(ModelConfigViewModelBase? modelConfigViewModel)
     {
-        private string _validationMessage;
+        _modelConfig = modelConfigViewModel;
 
-        protected override void UpdateValidationMessage()
+        PropertyChanged += (_, __) => UpdateValidationMessage();
+    }
+
+    public ModelConfigViewModelBase? ModelConfig
+    {
+        get => _modelConfig;
+        set => SetProperty(ref _modelConfig, value);
+    }
+
+    protected override void UpdateValidationMessage()
+    {
+        if (ModelConfig == null)
         {
-            throw new NotImplementedException();
+            ValidationMessage = "Model configuration is required.";
         }
-
-
-        public override string ValidationMessage
+        else if (!ModelConfig.ValidateProperties())
         {
-            get => _validationMessage;
-            protected set => SetProperty(ref _validationMessage, value);
+            if (ModelConfig is RandomAdditiveWalkConfigViewModel randomAdditiveWalkConfig)
+            {
+                ValidationMessage = randomAdditiveWalkConfig.ValidationMessage;
+            }
+            else
+            {
+                ValidationMessage = "Model configuration is invalid.";
+            }
         }
+        else
+        {
+            ValidationMessage = string.Empty;
+        }
+    }
+
+    public override string ValidationMessage
+    {
+        get => _validationMessage;
+        protected set => SetProperty(ref _validationMessage, value);
     }
 }
