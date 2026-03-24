@@ -30,20 +30,20 @@ public class ModelConfigViewModel : ViewModelBase
     public ModelConfigViewModel(
         string instrument,
         ConfigurationsResponse config,
-        SupportedModelsResponse supportedModels,
+        IEnumerable<string> supportedModels,
         IModelConfigService modelConfigService,
         IDialogService dialogService,
         ILoggerFactory loggerFactory)
     {
         _instrument = instrument;
-        _supportedModels = supportedModels.SupportedModels.ToArray();
+        _supportedModels = supportedModels.ToArray();
         _configs = config;
         _activeModel = config.ActiveModel;
         _tickIntervalMs = config.TickIntervalMs;
         _modelConfigService = modelConfigService;
         _dialogService = dialogService;
         _logger = loggerFactory.CreateLogger<ModelConfigViewModel>();
-        _viewModelFactory = new ModelConfigViewModelFactory(instrument, modelConfigService, dialogService, loggerFactory);
+        _viewModelFactory = new ModelConfigViewModelFactory(modelConfigService, dialogService, loggerFactory);
 
         // Create the appropriate child ViewModel based on active model
         UpdateActiveConfigViewModel();

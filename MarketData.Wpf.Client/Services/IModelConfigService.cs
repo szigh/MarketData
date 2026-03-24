@@ -10,7 +10,13 @@ public interface IModelConfigService : IDisposable
     /// <summary>
     /// Gets the list of supported model types
     /// </summary>
-    Task<SupportedModelsResponse> GetSupportedModelsAsync(CancellationToken ct);
+    Task<IEnumerable<string>> GetSupportedModelsAsync(CancellationToken ct);
+
+
+    /// <summary>
+    /// Asynchronously retrieves a collection of all available instrument names.
+    /// </summary>
+    Task<IEnumerable<string>> GetAllInstrumentsAsync(CancellationToken ct);
 
     /// <summary>
     /// Gets all configurations for a specific instrument
@@ -54,4 +60,16 @@ public interface IModelConfigService : IDisposable
         string instrumentName,
         IEnumerable<(double probability, double stepValue)> walkSteps,
         CancellationToken ct);
+
+    /// <summary>
+    /// Attempts to remove the specified instrument asynchronously and returns the result of the operation.
+    /// </summary>
+    /// <remarks>This method may throw exceptions if the operation is canceled or if an error occurs during
+    /// the removal process.</remarks>
+    /// <param name="instrumentName">The name of the instrument to remove. This parameter cannot be null or empty.</param>
+    /// <param name="ct">A cancellation token that can be used to cancel the operation.</param>
+    /// <returns>A tuple containing a boolean value that indicates whether the removal was successful, and a message providing
+    /// additional information about the operation.</returns>
+    Task<(bool Response, string Message)> TryRemoveInstrumentAsync(string instrumentName, CancellationToken ct);
+    Task<(bool Response, string Message)> TryAddInstrumentAsync(string instrumentName, double initialValue, int tickIntervalMs, string modelType = "Flat", CancellationToken ct = default);
 }

@@ -94,7 +94,7 @@ public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
         return true;
     }
 
-    protected override bool ValidateProperties()
+    public override bool ValidateProperties()
     {
         ValidateProbabilities();
         return string.IsNullOrEmpty(ValidationMessage);

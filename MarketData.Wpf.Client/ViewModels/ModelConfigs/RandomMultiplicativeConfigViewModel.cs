@@ -51,7 +51,7 @@ public class RandomMultiplicativeConfigViewModel : ModelConfigViewModelBase
         return true;
     }
 
-    protected override bool ValidateProperties()
+    public override bool ValidateProperties()
     {
         return StandardDeviation > 0;
     }

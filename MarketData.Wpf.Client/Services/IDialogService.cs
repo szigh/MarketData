@@ -1,3 +1,4 @@
+using MarketData.Client.Wpf.ViewModels.AddInstrument;
 using System.Windows;
 
 namespace MarketData.Wpf.Client.Services;
@@ -13,4 +14,5 @@ public interface IDialogService
     Task<bool?> ShowDialogAsync<TWindow, TViewModel>(TViewModel viewModel) where TWindow : Window, new();
     Task<bool?> ShowDialogAsync<TWindow>() where TWindow : Window, new();
     Task<string?> ShowInstrumentSelectorAsync(IEnumerable<string> instruments);
+    Task<string?> ShowAddInstrumentWizardAsync(AddInstrumentWizardViewModel viewModel);
 }
