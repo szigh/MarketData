@@ -63,7 +63,7 @@ public class AddInstrumentWizardViewModel : ViewModelBase
             // Subscribe to ErrorsChanged from all steps (INotifyDataErrorInfo)
             foreach (var step in _steps) step.ErrorsChanged += OnStepErrorsChanged;
 
-            _currentStepIndex = 0;
+            CurrentStepIndex = 0;
             _isInitialized = true;
         }
         catch (Exception ex)
