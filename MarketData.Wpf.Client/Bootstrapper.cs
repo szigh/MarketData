@@ -2,6 +2,7 @@
 using MarketData.Client.Shared.Configuration;
 using MarketData.Client.Shared.Services;
 using MarketData.Client.Wpf.Services;
+using MarketData.Client.Wpf.ViewModels.AddInstrument;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.ViewModels;
@@ -38,6 +39,17 @@ internal static class Bootstrapper
         services.AddSingleton<IDialogService, DialogService>();
         services.AddTransient<InstrumentViewModelFactory>();
         services.AddTransient<ModelConfigViewModelFactory>();
+
+        Logger.Information("Registering ViewModel factories");
+        services.AddTransient<Func<AddInstrumentWizardViewModel>>(sp =>
+            () => new AddInstrumentWizardViewModel(
+                sp.GetRequiredService<IModelConfigService>(),
+                sp.GetRequiredService<ModelConfigViewModelFactory>(),
+                sp.GetRequiredService<ILogger<AddInstrumentWizardViewModel>>(),
+                sp.GetRequiredService<IDialogService>()));
+
+        services.AddTransient<Func<InstrumentViewModel, InstrumentTabViewModel>>(sp =>
+            instrumentVM => new InstrumentTabViewModel(instrumentVM));
 
         services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
