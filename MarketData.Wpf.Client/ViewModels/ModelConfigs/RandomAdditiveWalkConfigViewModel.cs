@@ -9,7 +9,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 
-public class RandomAdditiveWalkConfigViewModel : ModelConfigViewModelBase
+public class RandomAdditiveWalkConfigViewModel : ModelConfigParamsViewModelBase
 {
     private readonly IModelConfigService _modelConfigService;
     private string _validationMessage = string.Empty;

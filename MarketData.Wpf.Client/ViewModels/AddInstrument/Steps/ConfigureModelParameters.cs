@@ -4,14 +4,14 @@ namespace MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
 
 public class ConfigureModelParameters : AddInstrumentViewModelBase
 {
-    private ModelConfigViewModelBase? _modelConfig;
+    private ModelConfigParamsViewModelBase? _modelConfig;
 
-    public ConfigureModelParameters(ModelConfigViewModelBase? modelConfigViewModel) : base()
+    public ConfigureModelParameters(ModelConfigParamsViewModelBase? modelConfigViewModel) : base()
     {
         _modelConfig = modelConfigViewModel;
     }
 
-    public ModelConfigViewModelBase? ModelConfig
+    public ModelConfigParamsViewModelBase? ModelConfig
     {
         get => _modelConfig;
         set => SetProperty(ref _modelConfig, value);

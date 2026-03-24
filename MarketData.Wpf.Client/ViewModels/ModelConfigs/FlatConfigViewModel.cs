@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 
-public class FlatConfigViewModel : ModelConfigViewModelBase
+public class FlatConfigViewModel : ModelConfigParamsViewModelBase
 {
     public FlatConfigViewModel(string instrumentName, IDialogService dialogService, ILogger<FlatConfigViewModel> logger)
         : base(instrumentName, dialogService, logger)

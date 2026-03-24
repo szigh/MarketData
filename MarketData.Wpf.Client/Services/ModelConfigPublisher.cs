@@ -110,7 +110,7 @@ public class ModelConfigPublisher : IDisposable, IModelConfigPublisher
         }
     }
 
-    public async Task<bool> TryPublishModelParams(ModelConfigViewModelBase activeConfigVm, CancellationToken ct = default)
+    public async Task<bool> TryPublishModelParams(ModelConfigParamsViewModelBase activeConfigVm, CancellationToken ct = default)
     {
         try
         {

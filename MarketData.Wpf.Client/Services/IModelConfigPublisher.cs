@@ -8,7 +8,7 @@ namespace MarketData.Wpf.Client.Services
         void Dispose();
         void LogPublishResultsSummary();
         Task<bool> PublishTickInterval(int tickIntervalMs, CancellationToken ct = default);
-        Task<bool> TryPublishModelParams(ModelConfigViewModelBase activeConfigVm, CancellationToken ct = default);
+        Task<bool> TryPublishModelParams(ModelConfigParamsViewModelBase activeConfigVm, CancellationToken ct = default);
         Task<(bool success, ConfigurationsResponse? configs)> TrySwitchModel(CancellationToken ct = default);
     }
 }

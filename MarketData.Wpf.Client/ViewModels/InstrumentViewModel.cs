@@ -1,5 +1,6 @@
 using FancyCandles;
 using Grpc.Core;
+using MarketData.Client.Wpf.Bootstrapper;
 using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.FancyCandlesImplementations;
@@ -17,12 +18,11 @@ namespace MarketData.Wpf.Client.ViewModels;
 public class InstrumentViewModel : ViewModelBase
 {
     private readonly ILogger _logger;
-    private readonly ILoggerFactory _loggerFactory;
     private CancellationTokenSource? _cancellationTokenSource;
     private readonly MarketDataService.MarketDataServiceClient _grpcClient;
     private readonly IModelConfigService _modelConfigService;
     private readonly IDialogService _dialogService;
-
+    private readonly CreateModelConfigViewModel _modelConfigViewModelFactory;
     private readonly CandleBuilder<double> _candleBuilder;
     private CandlesSource _candles;
     private int _loadHistoryOnStartMinutes = 1440;
@@ -36,15 +36,16 @@ public class InstrumentViewModel : ViewModelBase
     public InstrumentViewModel(string instrumentName,
         MarketDataService.MarketDataServiceClient grpcClient, 
         IModelConfigService modelConfigService,
-        IDialogService dialogService,
         IOptions<CandleChartSettings> candleChartConfig,
-        ILoggerFactory loggerFactory)
+        CreateModelConfigViewModel modelConfigViewModelFactory,
+        IDialogService dialogService,
+        ILogger<InstrumentViewModel> logger)
     {
         _grpcClient = grpcClient;
         _modelConfigService = modelConfigService;
         _dialogService = dialogService;
-        _logger = loggerFactory.CreateLogger<InstrumentViewModel>();
-        _loggerFactory = loggerFactory;
+        _modelConfigViewModelFactory = modelConfigViewModelFactory;
+        _logger = logger;
         _instrument = instrumentName;
         _price = "#.##";
         _timestamp = string.Empty;
@@ -89,8 +90,7 @@ public class InstrumentViewModel : ViewModelBase
 
             var config = await _modelConfigService.GetConfigurationsAsync(_instrument, cts.Token);
             var supportedModels = await _modelConfigService.GetSupportedModelsAsync(cts.Token);
-            var vm = new ModelConfigViewModel(
-                _instrument, config, supportedModels, _modelConfigService, _dialogService, _loggerFactory);
+            var vm = _modelConfigViewModelFactory(_instrument, config, supportedModels);
 
             _logger.LogInformation("Model configuration loaded successfully for instrument {Instrument}, " +
                 "opening configuration window", _instrument);

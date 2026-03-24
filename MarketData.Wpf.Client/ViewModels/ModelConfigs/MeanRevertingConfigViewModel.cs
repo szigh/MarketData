@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 
-public class MeanRevertingConfigViewModel : ModelConfigViewModelBase
+public class MeanRevertingConfigViewModel : ModelConfigParamsViewModelBase
 {
     private readonly IModelConfigService _modelConfigService;
 

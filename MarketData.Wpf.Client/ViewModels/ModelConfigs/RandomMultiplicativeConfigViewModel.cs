@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 
-public class RandomMultiplicativeConfigViewModel : ModelConfigViewModelBase
+public class RandomMultiplicativeConfigViewModel : ModelConfigParamsViewModelBase
 {
     private readonly IModelConfigService _modelConfigService;
     private double _standardDeviation;

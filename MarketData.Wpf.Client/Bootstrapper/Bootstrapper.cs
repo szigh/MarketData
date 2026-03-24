@@ -2,17 +2,15 @@
 using MarketData.Client.Shared.Configuration;
 using MarketData.Client.Shared.Services;
 using MarketData.Client.Wpf.Services;
-using MarketData.Client.Wpf.ViewModels.AddInstrument;
 using MarketData.Grpc;
+using MarketData.Wpf.Client;
 using MarketData.Wpf.Client.Services;
-using MarketData.Wpf.Client.ViewModels;
-using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Serilog;
 
-namespace MarketData.Wpf.Client;
+namespace MarketData.Client.Wpf.Bootstrapper;
 
 internal static class Bootstrapper
 {
@@ -37,24 +35,33 @@ internal static class Bootstrapper
         Logger.Information("Registering application specific services");
         services.AddSingleton<IModelConfigService, ModelConfigService>();
         services.AddSingleton<IDialogService, DialogService>();
-        services.AddTransient<InstrumentViewModelFactory>();
-        services.AddTransient<ModelConfigViewModelFactory>();
 
         Logger.Information("Registering ViewModel factories");
-        services.AddTransient<Func<AddInstrumentWizardViewModel>>(sp =>
-            () => new AddInstrumentWizardViewModel(
-                sp.GetRequiredService<IModelConfigService>(),
-                sp.GetRequiredService<ModelConfigViewModelFactory>(),
-                sp.GetRequiredService<ILogger<AddInstrumentWizardViewModel>>(),
-                sp.GetRequiredService<IDialogService>()));
+        services.RegisterViewModelFactories();
 
-        services.AddTransient<Func<InstrumentViewModel, InstrumentTabViewModel>>(sp =>
-            instrumentVM => new InstrumentTabViewModel(instrumentVM));
-
-        services.AddSingleton<MainWindowViewModel>();
+        Logger.Information("Registering MainWindow");
+        services.AddSingleton<MarketData.Wpf.Client.ViewModels.MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
 
         return services;
+    }
+
+    private static void RegisterViewModelFactories(this IServiceCollection services)
+    {
+        services.AddTransient<CreateModelConfigParamsViewModel>(sp =>
+            config => sp.CreateModelConfigParamsViewModel(config));
+
+        services.AddTransient<CreateModelConfigViewModel>(sp =>
+            (instrument, config, models) => sp.CreateModelConfigViewModel(instrument, config, models));
+
+        services.AddTransient<CreateInstrumentViewModel>(sp =>
+            instrumentName => sp.CreateInstrumentViewModel(instrumentName));
+
+        services.AddTransient<CreateAddInstrumentWizardViewModel>(sp =>
+            () => sp.CreateAddInstrumentViewModel());
+
+        services.AddTransient<CreateInstrumentTabViewModel>(sp =>
+            instrumentVm => sp.CreateInstrumentTabViewModel(instrumentVm));
     }
 
     internal static IServiceCollection ConfigureGrpcClients(this IServiceCollection services)
@@ -77,7 +84,8 @@ internal static class Bootstrapper
         return services;
     }
 
-    internal static string GetGrpcServerUrl(this IServiceProvider sp) => sp.GetRequiredService<IOptions<GrpcSettings>>().Value.ServerUrl;
+    private static string GetGrpcServerUrl(this IServiceProvider sp) => 
+        sp.GetRequiredService<IOptions<GrpcSettings>>().Value.ServerUrl;
 
     internal static void InitializeGrpcConnections(IServiceProvider serviceProvider)
     {

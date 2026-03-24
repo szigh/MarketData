@@ -1,4 +1,5 @@
-﻿using MarketData.Client.Wpf.Services;
+﻿using MarketData.Client.Wpf.Bootstrapper;
+using MarketData.Client.Wpf.Services;
 using MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Client.ViewModels.ModelConfigs;
@@ -26,11 +27,11 @@ public class AddInstrumentWizardViewModel : ViewModelBase
     private bool _isInitialized = false;
     private bool? _dialogResult;
     private readonly IModelConfigService _modelConfigService;
-    private readonly ModelConfigViewModelFactory _modelConfigViewModelFactory;
+    private readonly CreateModelConfigParamsViewModel _modelConfigViewModelFactory;
 
     public AddInstrumentWizardViewModel(
         IModelConfigService modelConfigService,
-        ModelConfigViewModelFactory modelConfigViewModelFactory,
+        CreateModelConfigParamsViewModel modelConfigViewModelFactory,
         ILogger<AddInstrumentWizardViewModel> logger,
         IDialogService dialogService)
     {
@@ -298,13 +299,13 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         }
     }
 
-    private async Task<ModelConfigViewModelBase> ReloadInstrumentConfiguration(CancellationToken ct)
+    private async Task<ModelConfigParamsViewModelBase> ReloadInstrumentConfiguration(CancellationToken ct)
     {
         try
         {
             var configResponse = await _modelConfigService.GetConfigurationsAsync(_addedInstrument!, ct);
 
-            var modelConfigViewModel = _modelConfigViewModelFactory.Create(configResponse);
+            var modelConfigViewModel = _modelConfigViewModelFactory(configResponse);
             
             if (modelConfigViewModel == null)
             {

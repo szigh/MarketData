@@ -8,14 +8,14 @@ namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
 /// <summary>
 /// Base class for model-specific configuration ViewModels
 /// </summary>
-public abstract class ModelConfigViewModelBase : ViewModelBase
+public abstract class ModelConfigParamsViewModelBase : ViewModelBase
 {
     protected string _instrumentName;
     protected bool _isModified = false;
     protected readonly IDialogService _dialogService;
-    protected readonly ILogger<ModelConfigViewModelBase> _logger;
+    protected readonly ILogger<ModelConfigParamsViewModelBase> _logger;
 
-    protected ModelConfigViewModelBase(string instrumentName, IDialogService dialogService, ILogger<ModelConfigViewModelBase> logger)
+    protected ModelConfigParamsViewModelBase(string instrumentName, IDialogService dialogService, ILogger<ModelConfigParamsViewModelBase> logger)
     {
         _instrumentName = instrumentName;
         _dialogService = dialogService;

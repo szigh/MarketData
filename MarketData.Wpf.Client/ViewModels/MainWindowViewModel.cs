@@ -1,5 +1,5 @@
+using MarketData.Client.Wpf.Bootstrapper;
 using MarketData.Client.Wpf.Services;
-using MarketData.Client.Wpf.ViewModels.AddInstrument;
 using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Shared;
 using Microsoft.Extensions.Logging;
@@ -11,22 +11,22 @@ namespace MarketData.Wpf.Client.ViewModels;
 public class MainWindowViewModel : ViewModelBase
 {
     private readonly ILogger<MainWindowViewModel> _logger;
-    private readonly InstrumentViewModelFactory _instrumentViewModelFactory;
+    private readonly CreateInstrumentViewModel _instrumentViewModelFactory;
     private readonly IModelConfigService _modelConfigService;
     private readonly IDialogService _dialogService;
-    private readonly Func<AddInstrumentWizardViewModel> _addInstrumentWizardFactory;
-    private readonly Func<InstrumentViewModel, InstrumentTabViewModel> _tabViewModelFactory;
+    private readonly CreateAddInstrumentWizardViewModel _addInstrumentWizardFactory;
+    private readonly CreateInstrumentTabViewModel _tabViewModelFactory;
 
     private string _title = "Market Data Client";
     private ObservableCollection<InstrumentTabViewModel> _tabs;
     private InstrumentTabViewModel? _selectedTab;
 
     public MainWindowViewModel(
-        InstrumentViewModelFactory instrumentViewModelFactory,
+        CreateInstrumentViewModel instrumentViewModelFactory,
         IModelConfigService modelConfigService,
         IDialogService dialogService,
-        Func<AddInstrumentWizardViewModel> addInstrumentWizardFactory,
-        Func<InstrumentViewModel, InstrumentTabViewModel> tabViewModelFactory,
+        CreateAddInstrumentWizardViewModel addInstrumentWizardFactory,
+        CreateInstrumentTabViewModel tabViewModelFactory,
         ILogger<MainWindowViewModel> logger)
     {
         _instrumentViewModelFactory = instrumentViewModelFactory;
@@ -115,7 +115,7 @@ public class MainWindowViewModel : ViewModelBase
     {
         _logger.LogInformation("Adding tab for instrument: {Instrument}", instrumentName);
 
-        var instrumentViewModel = _instrumentViewModelFactory.Create(instrumentName);
+        var instrumentViewModel = _instrumentViewModelFactory(instrumentName);
         var tabViewModel = _tabViewModelFactory(instrumentViewModel);
         Tabs.Add(tabViewModel);
         SelectedTab = tabViewModel;
