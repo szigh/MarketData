@@ -85,15 +85,12 @@ public class AsyncRelayCommand : ICommand
         if (_isExecuting)
             return;
 
-        // Cancel any previous operation
-        _cancellationTokenSource?.Cancel();
-        _cancellationTokenSource?.Dispose();
-
-        _cancellationTokenSource = new CancellationTokenSource();
-        var cancellationToken = _cancellationTokenSource.Token;
-
         _isExecuting = true;
         RaiseCanExecuteChanged();
+
+        // Create a new CTS for this execution
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
 
         try
         {
@@ -106,6 +103,11 @@ public class AsyncRelayCommand : ICommand
         finally
         {
             _isExecuting = false;
+
+            // Dispose the CTS immediately after execution completes to avoid leaks
+            _cancellationTokenSource?.Dispose();
+            _cancellationTokenSource = null;
+
             RaiseCanExecuteChanged();
         }
     }

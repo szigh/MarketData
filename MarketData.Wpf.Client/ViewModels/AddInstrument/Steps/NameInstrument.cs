@@ -74,7 +74,7 @@ public class NameInstrument : AddInstrumentViewModelBase
         {
             SetError(nameof(InitialPrice), $"Initial price must be less than or equal to {double.MaxValue}.");
         }
-        if (!double.IsNaN(InitialPrice) && double.IsInfinity(InitialPrice))
+        if (double.IsNaN(InitialPrice) || double.IsInfinity(InitialPrice))
         {
             SetError(nameof(InitialPrice), "Initial price must be a finite number.");
         }

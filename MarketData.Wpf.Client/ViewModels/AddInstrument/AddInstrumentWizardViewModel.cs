@@ -192,6 +192,7 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         catch (Exception ex)
         {
             await HandleExceptionDuringStep(ex);
+            return;
         }
 
         if (_currentStepIndex < _steps.Count - 1)
@@ -219,11 +220,14 @@ public class AddInstrumentWizardViewModel : ViewModelBase
                 _dialogService.ShowError("Cannot go back from the final step. " +
                     "Please click 'Finish' to complete the wizard, or 'Cancel' to exit and delete instrument data",
                     "Navigation Error");
+
+                return;
             }
         }
         catch (Exception ex)
         {
             await HandleExceptionDuringStep(ex);
+            return;
         }
 
         if (_currentStepIndex > 0)

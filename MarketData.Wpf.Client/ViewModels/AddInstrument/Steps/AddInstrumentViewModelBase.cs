@@ -75,7 +75,6 @@ public abstract class AddInstrumentViewModelBase : ViewModelBase, INotifyDataErr
                 _errors[propertyName] = new List<string>();
             }
 
-            _errors[propertyName].Clear();
             _errors[propertyName].Add(error);
             OnErrorsChanged(propertyName);
             OnPropertyChanged(nameof(HasErrors));

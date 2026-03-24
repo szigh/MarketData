@@ -93,6 +93,9 @@ public class DialogService : IDialogService
     {
         await viewModel.InitializeAsync();
 
+        if (viewModel.DialogResult == false)
+            return null;
+
         var result = await Application.Current.Dispatcher.InvokeAsync(() =>
         {
             var wizard = new AddInstrumentWizard

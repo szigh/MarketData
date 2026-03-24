@@ -86,7 +86,7 @@ public class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Exception during add instrument");
-            _dialogService.ShowError("Exception during add instrument", ex.Message);
+            _dialogService.ShowError(ex.Message, "Exception during add instrument");
         }
     }
 
@@ -110,7 +110,7 @@ public class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch instrument configurations");
-            _dialogService.ShowError("Failed to fetch instrument configurations", ex.Message);
+            _dialogService.ShowError(ex.Message, "Failed to fetch instrument configurations");
         }
     }
 
