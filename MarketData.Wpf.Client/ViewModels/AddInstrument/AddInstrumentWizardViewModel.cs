@@ -253,12 +253,12 @@ public class AddInstrumentWizardViewModel : ViewModelBase
             try
             {
                 await RemoveInstrumentAsync();
-                _logger.LogInformation("Cleaned up instrument {InstrumentName} after error during Back navigation", _addedInstrument);
+                _logger.LogInformation("Cleaned up instrument {InstrumentName} after error during navigation", _addedInstrument);
                 _dialogService.ShowError($"An error occurred during the current step: {ex.Message}");
             }
             catch (Exception cleanupEx)
             {
-                _logger.LogError(cleanupEx, "Failed to clean up instrument {InstrumentName} after error during Back navigation", _addedInstrument);
+                _logger.LogError(cleanupEx, "Failed to clean up instrument {InstrumentName} after error during navigation", _addedInstrument);
                 _dialogService.ShowError($"An error occurred during the current step: {ex.Message}.\n" +
                     $"Cleanup was unsuccessful: {cleanupEx.Message}! Database consistency may be affected.");
             }
