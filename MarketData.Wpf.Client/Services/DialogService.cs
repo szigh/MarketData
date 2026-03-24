@@ -1,9 +1,9 @@
 using System.Windows;
 using MarketData.Client.Wpf.ViewModels.AddInstrument;
 using MarketData.Client.Wpf.Views;
-using MarketData.Wpf.Client.ViewModels;
+using MarketData.Client.Wpf.ViewModels;
 
-namespace MarketData.Wpf.Client.Services;
+namespace MarketData.Client.Wpf.Services;
 
 public class DialogService : IDialogService
 {

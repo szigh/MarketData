@@ -2,9 +2,8 @@
 using MarketData.Client.Shared.Configuration;
 using MarketData.Client.Shared.Services;
 using MarketData.Client.Wpf.Services;
+using MarketData.Client.Wpf.ViewModels;
 using MarketData.Grpc;
-using MarketData.Wpf.Client;
-using MarketData.Wpf.Client.Services;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -40,7 +39,7 @@ internal static class Bootstrapper
         services.RegisterViewModelFactories();
 
         Logger.Information("Registering MainWindow");
-        services.AddSingleton<MarketData.Wpf.Client.ViewModels.MainWindowViewModel>();
+        services.AddSingleton<MainWindowViewModel>();
         services.AddSingleton<MainWindow>();
 
         return services;

@@ -1,6 +1,6 @@
 ﻿using FancyCandles;
 
-namespace MarketData.Wpf.Client.FancyCandlesImplementations;
+namespace MarketData.Client.Wpf.FancyCandlesImplementations;
 
 internal static class TimeFrameToTimeSpanConverter
 {

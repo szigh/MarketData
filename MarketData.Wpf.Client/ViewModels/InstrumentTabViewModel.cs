@@ -1,6 +1,6 @@
 using MarketData.Wpf.Shared;
 
-namespace MarketData.Wpf.Client.ViewModels;
+namespace MarketData.Client.Wpf.ViewModels;
 
 public class InstrumentTabViewModel : ViewModelBase
 {

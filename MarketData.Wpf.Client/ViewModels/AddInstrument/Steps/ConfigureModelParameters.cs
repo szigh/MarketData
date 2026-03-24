@@ -1,4 +1,4 @@
-﻿using MarketData.Wpf.Client.ViewModels.ModelConfigs;
+﻿using MarketData.Client.Wpf.ViewModels.ModelConfigs;
 
 namespace MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
 

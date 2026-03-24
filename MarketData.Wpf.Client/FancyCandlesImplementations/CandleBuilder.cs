@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using System.Numerics;
 
-namespace MarketData.Wpf.Client.FancyCandlesImplementations;
+namespace MarketData.Client.Wpf.FancyCandlesImplementations;
 
 /// <param name="timeSpan">The "width" (in time) of the candles</param>
 /// <param name="logger">The logger instance for logging</param>

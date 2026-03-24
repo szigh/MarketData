@@ -1,14 +1,13 @@
-﻿using MarketData.Grpc;
-using MarketData.Wpf.Client.ViewModels.ModelConfigs;
+﻿using MarketData.Client.Wpf.ViewModels.ModelConfigs;
+using MarketData.Grpc;
 
-namespace MarketData.Wpf.Client.Services
+namespace MarketData.Client.Wpf.Services;
+
+public interface IModelConfigPublisher
 {
-    public interface IModelConfigPublisher
-    {
-        void Dispose();
-        void LogPublishResultsSummary();
-        Task<bool> PublishTickInterval(int tickIntervalMs, CancellationToken ct = default);
-        Task<bool> TryPublishModelParams(ModelConfigParamsViewModelBase activeConfigVm, CancellationToken ct = default);
-        Task<(bool success, ConfigurationsResponse? configs)> TrySwitchModel(CancellationToken ct = default);
-    }
+    void Dispose();
+    void LogPublishResultsSummary();
+    Task<bool> PublishTickInterval(int tickIntervalMs, CancellationToken ct = default);
+    Task<bool> TryPublishModelParams(ModelConfigParamsViewModelBase activeConfigVm, CancellationToken ct = default);
+    Task<(bool success, ConfigurationsResponse? configs)> TrySwitchModel(CancellationToken ct = default);
 }

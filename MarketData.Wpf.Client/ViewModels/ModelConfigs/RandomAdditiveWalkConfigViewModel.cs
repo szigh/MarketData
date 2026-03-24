@@ -1,13 +1,12 @@
 using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
-using MarketData.Wpf.Client.Services;
 using MarketData.Wpf.Shared;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.ComponentModel.DataAnnotations;
 
-namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
+namespace MarketData.Client.Wpf.ViewModels.ModelConfigs;
 
 public class RandomAdditiveWalkConfigViewModel : ModelConfigParamsViewModelBase
 {

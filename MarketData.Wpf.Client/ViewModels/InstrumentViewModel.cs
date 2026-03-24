@@ -3,9 +3,8 @@ using Grpc.Core;
 using MarketData.Client.Wpf.Bootstrapper;
 using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
-using MarketData.Wpf.Client.FancyCandlesImplementations;
-using MarketData.Wpf.Client.Services;
-using MarketData.Wpf.Client.Views;
+using MarketData.Client.Wpf.FancyCandlesImplementations;
+using MarketData.Client.Wpf.Views;
 using MarketData.Wpf.Shared;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,7 +12,7 @@ using Serilog.Context;
 using System.Windows;
 using System.Windows.Input;
 
-namespace MarketData.Wpf.Client.ViewModels;
+namespace MarketData.Client.Wpf.ViewModels;
 
 public class InstrumentViewModel : ViewModelBase
 {

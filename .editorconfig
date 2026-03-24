@@ -1,0 +1,10 @@
+﻿[*.cs]
+
+# IDE0130: Namespace does not match folder structure
+dotnet_diagnostic.IDE0130.severity = warning
+
+# CA2016: Forward the 'CancellationToken' parameter to methods
+dotnet_diagnostic.CA2016.severity = warning
+
+# IDE0005: Using directive is unnecessary.
+dotnet_diagnostic.IDE0005.severity = warning

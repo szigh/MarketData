@@ -1,8 +1,7 @@
 ﻿using MarketData.Client.Wpf.Bootstrapper;
 using MarketData.Client.Wpf.Services;
 using MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
-using MarketData.Wpf.Client.Services;
-using MarketData.Wpf.Client.ViewModels.ModelConfigs;
+using MarketData.Client.Wpf.ViewModels.ModelConfigs;
 using MarketData.Wpf.Shared;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;

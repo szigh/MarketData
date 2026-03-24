@@ -1,6 +1,5 @@
+using MarketData.Client.Wpf.ViewModels.ModelConfigs;
 using MarketData.Grpc;
-using MarketData.Wpf.Client.Services;
-using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
 

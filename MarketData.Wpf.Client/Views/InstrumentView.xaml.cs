@@ -1,6 +1,6 @@
 using System.Windows.Controls;
 
-namespace MarketData.Wpf.Client.Views;
+namespace MarketData.Client.Wpf.Views;
 
 public partial class InstrumentView : UserControl
 {

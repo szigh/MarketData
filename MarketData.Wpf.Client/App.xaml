@@ -1,7 +1,7 @@
-﻿<Application x:Class="MarketData.Wpf.Client.App"
+﻿<Application x:Class="MarketData.Client.Wpf.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:local="clr-namespace:MarketData.Wpf.Client">
+             xmlns:local="clr-namespace:MarketData.Client.Wpf">
     <Application.Resources>
 
         <!-- Base Button Style -->

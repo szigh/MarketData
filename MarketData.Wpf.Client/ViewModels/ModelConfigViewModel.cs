@@ -1,14 +1,13 @@
 using MarketData.Client.Wpf.Bootstrapper;
 using MarketData.Client.Wpf.Services;
+using MarketData.Client.Wpf.ViewModels.ModelConfigs;
 using MarketData.Grpc;
-using MarketData.Wpf.Client.Services;
-using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using MarketData.Wpf.Shared;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel;
 using System.Windows.Input;
 
-namespace MarketData.Wpf.Client.ViewModels;
+namespace MarketData.Client.Wpf.ViewModels;
 
 public class ModelConfigViewModel : ViewModelBase
 {

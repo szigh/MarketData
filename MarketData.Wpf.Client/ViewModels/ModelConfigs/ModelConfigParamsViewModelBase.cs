@@ -1,9 +1,9 @@
-using MarketData.Wpf.Client.Services;
+using MarketData.Client.Wpf.Services;
 using MarketData.Wpf.Shared;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
 
-namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
+namespace MarketData.Client.Wpf.ViewModels.ModelConfigs;
 
 /// <summary>
 /// Base class for model-specific configuration ViewModels

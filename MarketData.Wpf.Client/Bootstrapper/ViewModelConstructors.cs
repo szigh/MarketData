@@ -1,10 +1,8 @@
 ﻿using MarketData.Client.Wpf.Services;
+using MarketData.Client.Wpf.ViewModels;
 using MarketData.Client.Wpf.ViewModels.AddInstrument;
+using MarketData.Client.Wpf.ViewModels.ModelConfigs;
 using MarketData.Grpc;
-using MarketData.Wpf.Client;
-using MarketData.Wpf.Client.Services;
-using MarketData.Wpf.Client.ViewModels;
-using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
