@@ -7,7 +7,7 @@ public class EndScreen : AddInstrumentViewModelBase
 {
     private string _instrumentName = "";
     private string _configurations = "";
-    private ConfigurationsResponse _configurationsResponse;
+    private ConfigurationsResponse _configurationsResponse = new();
 
     public EndScreen() : base() {}
 
