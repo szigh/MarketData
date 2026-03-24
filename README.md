@@ -650,15 +650,6 @@ The solution has **comprehensive test coverage** with **220 automated tests** ac
   - Mean/variance convergence
   - Long-term statistical properties
 
-**Execution:**
-```bash
-# Fast tests only
-dotnet test --settings test.runsettings
-
-# All tests including statistical
-dotnet test MarketData.PriceSimulator.Tests
-```
-
 #### **MarketData.Tests**
 **Frameworks:** xUnit 2.9.3, Moq 4.20.72, EF Core InMemory 10.0.3, ASP.NET Testing 10.0.3
 
@@ -679,11 +670,6 @@ dotnet test MarketData.PriceSimulator.Tests
   - Service startup/shutdown
   - Real-time tick interval verification
 
-**Execution:**
-```bash
-dotnet test MarketData.Tests
-```
-
 ---
 
 ### **Testing Libraries**
@@ -700,18 +686,16 @@ dotnet test MarketData.Tests
 
 ### **Test Execution**
 
-#### **Run All Tests:**
 ```bash
-dotnet test
-```
+# Fast tests only
+dotnet test --environment RUN_STATISTICAL_TESTS=False
 
-#### **Fast Tests Only (CI Pipeline):**
-```bash
-dotnet test --settings test.runsettings
+# All tests including slower statistical
+dotnet test --environment RUN_STATISTICAL_TESTS=True
 ```
-(excludes slow statistical tests)
 
 #### **By Project:**
+
 ```bash
 dotnet test MarketData.PriceSimulator.Tests
 dotnet test MarketData.Tests
