@@ -72,7 +72,7 @@ public class MeanRevertingConfigViewModel : ModelConfigViewModelBase
         return true;
     }
 
-    protected override bool ValidateProperties()
+    public override bool ValidateProperties()
     {
         return Sigma > 0 && Dt >= 0 && Kappa >= 0;
     }

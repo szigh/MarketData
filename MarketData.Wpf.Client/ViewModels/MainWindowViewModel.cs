@@ -1,5 +1,8 @@
+using MarketData.Client.Wpf.Services;
+using MarketData.Client.Wpf.ViewModels.AddInstrument;
 using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
+using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using MarketData.Wpf.Shared;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
@@ -10,8 +13,10 @@ namespace MarketData.Wpf.Client.ViewModels;
 public class MainWindowViewModel : ViewModelBase
 {
     private readonly ILogger<MainWindowViewModel> _logger;
+    private readonly ILoggerFactory _loggerFactory;
     private readonly InstrumentViewModelFactory _instrumentViewModelFactory;
-    private readonly ModelConfigurationService.ModelConfigurationServiceClient _modelConfigurationServiceClient;
+    private readonly IModelConfigService _modelConfigService;
+    private readonly ModelConfigViewModelFactory _modelConfigViewModelFactory;
     private readonly IDialogService _dialogService;
 
     private string _title = "Market Data Client";
@@ -20,16 +25,21 @@ public class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel(
         InstrumentViewModelFactory instrumentViewModelFactory,
-        ModelConfigurationService.ModelConfigurationServiceClient modelConfigurationServiceClient,
+        IModelConfigService modelConfigService,
+        ModelConfigViewModelFactory modelConfigViewModelFactory,
         IDialogService dialogService,
-        ILogger<MainWindowViewModel> logger)
+        ILogger<MainWindowViewModel> logger,
+        ILoggerFactory loggerFactory)
     {
         _instrumentViewModelFactory = instrumentViewModelFactory;
-        _modelConfigurationServiceClient = modelConfigurationServiceClient;
+        _modelConfigService = modelConfigService;
+        _modelConfigViewModelFactory = modelConfigViewModelFactory;
         _dialogService = dialogService;
         _logger = logger;
+        _loggerFactory = loggerFactory;
         _tabs = [];
 
+        AddInstrumentCommand = new AsyncRelayCommand(ExecuteAddInstrument);
         AddTabCommand = new AsyncRelayCommand(ExecuteAddTab);
         CloseTabCommand = new RelayCommand<InstrumentTabViewModel>(ExecuteCloseTab, CanExecuteCloseTab);
 
@@ -55,18 +65,38 @@ public class MainWindowViewModel : ViewModelBase
         set => SetProperty(ref _selectedTab, value);
     }
 
+    public ICommand AddInstrumentCommand { get; }
     public ICommand AddTabCommand { get; }
     public ICommand CloseTabCommand { get; }
 
-    private async Task ExecuteAddTab()
+    private async Task ExecuteAddInstrument()
+    {
+        _logger.LogInformation("Executing AddInstrument");
+        try
+        {
+            var vm = new AddInstrumentWizardViewModel(_modelConfigService, _modelConfigViewModelFactory,
+                _loggerFactory.CreateLogger<AddInstrumentWizardViewModel>(), _dialogService);
+            await vm.InitializeAsync();
+            var addedInstrument = await _dialogService.ShowAddInstrumentWizardAsync(vm);
+            if (!string.IsNullOrEmpty(addedInstrument))
+            {
+                AddTab(addedInstrument);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Exception during add instrument");
+            _dialogService.ShowError(ex.Message, "Exception during add instrument");
+        }
+    }
+
+    private async Task ExecuteAddTab(CancellationToken ct)
     {
         _logger.LogInformation("Executing AddTabCommand");
         try
         {
             _logger.LogInformation("Fetching instrument configurations from gRPC service");
-            var response = await _modelConfigurationServiceClient
-                .GetAllInstrumentsAsync(new GetAllInstrumentsRequest());
-            var instrumentNames = response.Configurations.Select(c => c.InstrumentName);
+            var instrumentNames = await _modelConfigService.GetAllInstrumentsAsync(ct);
             _logger.LogInformation("Received {Count} instrument configurations", instrumentNames.Count());
 
             var selectedInstrument = await _dialogService.ShowInstrumentSelectorAsync(instrumentNames);
@@ -80,7 +110,7 @@ public class MainWindowViewModel : ViewModelBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to fetch instrument configurations");
-            _dialogService.ShowError("Failed to fetch instrument configurations", ex.Message);
+            _dialogService.ShowError(ex.Message, "Failed to fetch instrument configurations");
         }
     }
 

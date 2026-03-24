@@ -53,11 +53,17 @@ public class RelayCommand<T> : ICommand
 
 public class AsyncRelayCommand : ICommand
 {
-    private readonly Func<Task> _execute;
+    private readonly Func<CancellationToken, Task> _execute;
     private readonly Func<bool>? _canExecute;
     private bool _isExecuting;
+    private CancellationTokenSource? _cancellationTokenSource;
 
     public AsyncRelayCommand(Func<Task> execute, Func<bool>? canExecute = null)
+        : this(ct => execute(), canExecute)
+    {
+    }
+
+    public AsyncRelayCommand(Func<CancellationToken, Task> execute, Func<bool>? canExecute = null)
     {
         _execute = execute ?? throw new ArgumentNullException(nameof(execute));
         _canExecute = canExecute;
@@ -82,14 +88,43 @@ public class AsyncRelayCommand : ICommand
         _isExecuting = true;
         RaiseCanExecuteChanged();
 
+        // Create a new CTS for this execution
+        _cancellationTokenSource = new CancellationTokenSource();
+        var cancellationToken = _cancellationTokenSource.Token;
+
         try
         {
-            await _execute();
+            await _execute(cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            // Expected when operation is cancelled, don't propagate
         }
         finally
         {
             _isExecuting = false;
+
+            // Atomically swap out the CTS before disposing to prevent Cancel() from
+            // calling Cancel() on a disposed CTS on another thread.
+            var cts = Interlocked.Exchange(ref _cancellationTokenSource, null);
+            cts?.Dispose();
+
             RaiseCanExecuteChanged();
+        }
+    }
+
+    public void Cancel()
+    {
+        // Capture to local to avoid a race where another thread disposes the CTS
+        // between the null-check and the Cancel() call.
+        var cts = _cancellationTokenSource;
+        try
+        {
+            cts?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // CTS was disposed concurrently; cancellation is no longer needed.
         }
     }
 

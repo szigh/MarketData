@@ -30,11 +30,21 @@
                        Margin="10"
                        Foreground="White"/>
 
-            <Button Grid.Column="1"
-                    Content="+ New Tab"
+            <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="10" MaxHeight="30">
+                <!--TODO needs to be more clear that "Add instrument" button is a write option creating an instrument in DB
+                It should be moved into a separate section or dialog-->
+                <Button
+                    Content="Add instrument"
+                    Style="{StaticResource PrimaryButton}"
+                    Command="{Binding AddInstrumentCommand}"
+                    VerticalAlignment="Center"/>
+                <Button
+                    Content="New Tab"
                     Style="{StaticResource PrimaryButton}"
                     Command="{Binding AddTabCommand}"
-                    Margin="10"/>
+                    Margin="5,0,0,0"
+                    VerticalAlignment="Center"/>
+            </StackPanel>
         </Grid>
 
         <TabControl Grid.Row="1"

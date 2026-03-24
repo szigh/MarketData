@@ -22,11 +22,11 @@ public class ModelConfigService : IModelConfigService, IDisposable
         _client = new ModelConfigurationService.ModelConfigurationServiceClient(_channel);
     }
 
-    public async Task<SupportedModelsResponse> GetSupportedModelsAsync(CancellationToken ct = default)
+    public async Task<IEnumerable<string>> GetSupportedModelsAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Requesting supported models from gRPC service.");
-        return await _client.GetSupportedModelsAsync(
-            new GetSupportedModelsRequest(), cancellationToken: ct);
+        return (await _client.GetSupportedModelsAsync(
+            new GetSupportedModelsRequest(), cancellationToken: ct)).SupportedModels;
     }
 
     public async Task<ConfigurationsResponse> GetConfigurationsAsync(string instrumentName, CancellationToken ct = default)
@@ -119,6 +119,61 @@ public class ModelConfigService : IModelConfigService, IDisposable
         _logger.LogInformation("Requesting Random Additive Walk config update for instrument {Instrument} with {StepCount} steps from gRPC service.", 
             instrumentName, request.WalkSteps.Count);
         await _client.UpdateRandomAdditiveWalkConfigAsync(request, cancellationToken: ct);
+    }
+
+    public async Task<IEnumerable<string>> GetAllInstrumentsAsync(CancellationToken ct)
+    {
+        var request = new GetAllInstrumentsRequest();
+        _logger.LogInformation("Requesting list of all instruments from gRPC service.");
+
+
+        var response = await _client.GetAllInstrumentsAsync(request, cancellationToken: ct);
+        return response.Configurations.Select(x => x.InstrumentName);
+    }
+
+    public async Task<(bool Response, string Message)> TryRemoveInstrumentAsync(string instrumentName, CancellationToken ct)
+    {
+        var request = new TryRemoveInstrumentRequest { InstrumentName = instrumentName };
+        _logger.LogInformation("Requesting removal of instrument {Instrument} from gRPC service.", instrumentName);
+
+        var response = await _client.TryRemoveInstrumentAsync(request, cancellationToken: ct);
+        if (response.Removed)
+        {
+            _logger.LogInformation("Instrument {Instrument} successfully removed.", instrumentName);
+        }
+        else
+        {
+            _logger.LogWarning("Failed to remove instrument {Instrument}. It may not exist.", instrumentName);
+        }
+
+        return (response.Removed, response.Message);
+    }
+
+    public async Task<(bool Response, string Message)> TryAddInstrumentAsync(string instrumentName, 
+        double initialValue,
+        int tickIntervalMs,
+        string modelType = "Flat",
+        CancellationToken ct = default)
+    {
+        var request = new TryAddInstrumentRequest
+        { 
+            InstrumentName = instrumentName,
+            ModelType = modelType,
+            InitialPriceValue = initialValue,
+            InitialPriceTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds(),
+            TickIntervalMs = tickIntervalMs
+        };
+        _logger.LogInformation("Requesting addition of instrument {Instrument} from gRPC service.", instrumentName);
+        var response = await _client.TryAddInstrumentAsync(request, cancellationToken: ct);
+        if (response.Added)
+        {
+            _logger.LogInformation("Instrument {Instrument} successfully added.", instrumentName);
+        }
+        else
+        {
+            _logger.LogWarning("Failed to add instrument {Instrument}. Reason: {Reason}.", instrumentName, response.Message);
+        }
+        return (response.Added, response.Message);
     }
 
     public void Dispose()
