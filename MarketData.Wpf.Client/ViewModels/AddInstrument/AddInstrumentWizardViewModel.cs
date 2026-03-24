@@ -324,8 +324,7 @@ public class AddInstrumentWizardViewModel : ViewModelBase
 
     private async Task RemoveInstrumentAsync(CancellationToken ct = default)
     {
-        _logger.LogInformation("Removing instrument {InstrumentName} as user is navigating back from ConfigureModelParameters step",
-            _addedInstrument);
+        _logger.LogInformation("Removing instrument {InstrumentName}", _addedInstrument);
         // Entity Framework (on the server) will cascade delete the associated model configuration when we remove the instrument
         var res = await _modelConfigService.TryRemoveInstrumentAsync(_addedInstrument!, ct);
         if (res.Response)
