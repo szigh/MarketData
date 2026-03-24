@@ -45,7 +45,7 @@ public class EndScreen : AddInstrumentViewModelBase
 
         if (string.IsNullOrEmpty(_configurationsResponse.ActiveModel))
         {
-            SetError(nameof(_configurationsResponse), "Error: Active model type is not specified in configurations.");
+            SetError(nameof(Configurations), "Error: Active model type is not specified in configurations.");
         }
         if (_configurationsResponse.InstrumentName != InstrumentName)
         {
@@ -54,7 +54,7 @@ public class EndScreen : AddInstrumentViewModelBase
         if (_configurationsResponse.RandomMultiplicative == null && _configurationsResponse.MeanReverting == null &&
             _configurationsResponse.FlatConfigured == false && _configurationsResponse.RandomAdditiveWalk == null)
         {
-            SetError(nameof(_configurationsResponse), "Error: No model configuration data found in configurations.");
+            SetError(nameof(Configurations), "Error: No model configuration data found in configurations.");
         }
     }
 }
