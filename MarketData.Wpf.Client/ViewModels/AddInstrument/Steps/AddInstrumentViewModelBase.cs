@@ -5,7 +5,7 @@ using System.Text;
 
 namespace MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
 
-public abstract class AddInstrumentViewModelBase : ViewModelBase, INotifyDataErrorInfo
+public abstract class AddInstrumentViewModelBase : ViewModelBase, IEditableDataErrorInfo
 {
     private readonly Dictionary<string, List<string>> _errors = new();
 
@@ -38,7 +38,7 @@ public abstract class AddInstrumentViewModelBase : ViewModelBase, INotifyDataErr
                 foreach (var error in kvp.Value)
                 {
                     if (sb.Length > 0)
-                        sb.Append(" ");
+                        sb.AppendLine();
                     sb.Append(error);
                 }
             }
@@ -62,27 +62,29 @@ public abstract class AddInstrumentViewModelBase : ViewModelBase, INotifyDataErr
         return _errors.TryGetValue(propertyName, out var errors) ? errors : Enumerable.Empty<string>();
     }
 
-    protected void SetError(string propertyName, string? error)
+    public void AddError(string propertyName, string? error)
     {
         if (string.IsNullOrEmpty(error))
-        {
-            ClearErrors(propertyName);
-        }
-        else
-        {
-            if (!_errors.ContainsKey(propertyName))
-            {
-                _errors[propertyName] = new List<string>();
-            }
+            return;
 
-            _errors[propertyName].Add(error);
-            OnErrorsChanged(propertyName);
-            OnPropertyChanged(nameof(HasErrors));
-            OnPropertyChanged(nameof(ValidationMessage));
+        if (!_errors.ContainsKey(propertyName))
+        {
+            _errors[propertyName] = new List<string>();
         }
+
+        if (_errors.TryGetValue(propertyName, out var errors) && errors.Contains(error))
+        {
+            // Avoid adding duplicate errors for the same property
+            return;
+        }
+
+        _errors[propertyName].Add(error);
+        OnErrorsChanged(propertyName);
+        OnPropertyChanged(nameof(HasErrors));
+        OnPropertyChanged(nameof(ValidationMessage));
     }
 
-    protected void ClearErrors(string propertyName)
+    public void ClearErrors(string propertyName)
     {
         if (_errors.Remove(propertyName))
         {
@@ -115,7 +117,7 @@ public abstract class AddInstrumentViewModelBase : ViewModelBase, INotifyDataErr
 
     /// <summary>
     /// Override this method to implement validation logic.
-    /// Use SetError() and ClearAllErrors() to set validation errors.
+    /// Use AddError() and ClearAllErrors() to set validation errors.
     /// </summary>
     protected abstract void UpdateValidationErrors();
 }

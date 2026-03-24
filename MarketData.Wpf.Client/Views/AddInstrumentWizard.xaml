@@ -7,11 +7,25 @@
         xmlns:steps="clr-namespace:MarketData.Client.Wpf.ViewModels.AddInstrument.Steps"
         xmlns:modelVms="clr-namespace:MarketData.Wpf.Client.ViewModels.ModelConfigs"
         xmlns:modelViews="clr-namespace:MarketData.Wpf.Client.Views.ModelConfigs"
+        xmlns:behaviours="clr-namespace:MarketData.Wpf.Shared.Behaviours;assembly=MarketData.Wpf.Shared"
         mc:Ignorable="d"
         Title="Add Instrument" Height="450" Width="650">
 
     <!--Wizard steps-->
     <Window.Resources>
+        <!-- Error template for validation feedback -->
+        <Style TargetType="TextBox">
+            <Style.Triggers>
+                <Trigger Property="Validation.HasError" Value="True">
+                    <Setter Property="BorderBrush" Value="Red"/>
+                    <Setter Property="BorderThickness" Value="2"/>
+                    <Setter Property="ToolTip" 
+                            Value="{Binding RelativeSource={RelativeSource Self}, 
+                                   Path=(Validation.Errors)[0].ErrorContent}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <DataTemplate DataType="{x:Type steps:NameInstrument}">
             <Grid Background="#999999" Margin="10">
                 <Grid.ColumnDefinitions>
@@ -30,7 +44,11 @@
                                Margin="5"/>
 
                 <TextBox Grid.Row="0" Grid.Column="1" 
-                         Text="{Binding InstrumentName, UpdateSourceTrigger=PropertyChanged}" 
+                         Text="{Binding InstrumentName, 
+                                UpdateSourceTrigger=PropertyChanged, 
+                                ValidatesOnNotifyDataErrors=True,
+                                NotifyOnValidationError=True}"
+                         behaviours:SyncValidationErrorsBehavior.EnableSync="True"
                          Margin="5"/>
 
                 <TextBlock Text="Selected model"
@@ -49,7 +67,11 @@
                            FontSize="16"
                            Margin="5"/>
                 <TextBox Grid.Row="2" Grid.Column="1"
-                         Text="{Binding InitialPrice, StringFormat='{}{0:F2}'}"
+                         Text="{Binding InitialPrice, 
+                                ValidatesOnExceptions=True,
+                                ValidatesOnNotifyDataErrors=True,
+                                NotifyOnValidationError=True}"
+                         behaviours:SyncValidationErrorsBehavior.EnableSync="True"
                          Margin="5"/>
 
                 <TextBlock Text="Tick interval (ms)"
@@ -58,8 +80,13 @@
                            FontSize="16"
                            Margin="5"/>
                 <TextBox Grid.Row="3" Grid.Column="1"
-                         Text="{Binding TickIntervalMs, UpdateSourceTrigger=PropertyChanged}"
-                         Margin="5"/>
+                         Text="{Binding TickIntervalMs, 
+                                UpdateSourceTrigger=PropertyChanged,
+                                ValidatesOnExceptions=True,
+                                ValidatesOnNotifyDataErrors=True,
+                                NotifyOnValidationError=True}"
+                         behaviours:SyncValidationErrorsBehavior.EnableSync="True"
+                         Margin="5" />
             </Grid>
         </DataTemplate>
         <DataTemplate DataType="{x:Type steps:ConfigureModelParameters}">
@@ -132,20 +159,53 @@
         <Grid Grid.Column="0" Grid.Row="1" Grid.RowSpan="2"
               Background="#444444">
             <StackPanel Margin="10">
-                <TextBlock Text="Step 1: Select Instrument Type" 
-                           Foreground="#dddddd" 
+                <TextBlock Text="Step 1: Define instrument" 
                            FontSize="12" 
                            TextWrapping="Wrap"
-                           Margin="0,0,0,10"/>
+                           Margin="0,0,0,10">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#888888"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CurrentStepIndex}" Value="0">
+                                    <Setter Property="Foreground" Value="LightGreen"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
                 <TextBlock Text="Step 2: Configure Details" 
-                           Foreground="#888888" 
                            FontSize="12" 
                            TextWrapping="Wrap"
-                           Margin="0,0,0,10"/>
+                           Margin="0,0,0,10">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#888888"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CurrentStepIndex}" Value="1">
+                                    <Setter Property="Foreground" Value="LightGreen"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
                 <TextBlock Text="Step 3: Review and Confirm" 
-                           Foreground="#888888" 
                            FontSize="12" 
-                           TextWrapping="Wrap"/>
+                           TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="#888888"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CurrentStepIndex}" Value="2">
+                                    <Setter Property="Foreground" Value="LightGreen"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
             </StackPanel>
         </Grid>
 
@@ -165,7 +225,8 @@
                        Text="{Binding CurrentStep.ValidationMessage}" 
                        Foreground="#440000" 
                        FontSize="16" 
-                       FontWeight="Bold"
+                       FontWeight="SemiBold"
+                       TextWrapping="Wrap"
                        Margin="10,0,0,10"/>
         </Grid>
 

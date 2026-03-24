@@ -23,7 +23,7 @@ public class ConfigureModelParameters : AddInstrumentViewModelBase
 
         if (ModelConfig == null)
         {
-            SetError(nameof(ModelConfig), "Model configuration is required.");
+            AddError(nameof(ModelConfig), "Model configuration is required.");
         }
         else if (!ModelConfig.ValidateProperties())
         {
@@ -36,7 +36,7 @@ public class ConfigureModelParameters : AddInstrumentViewModelBase
             {
                 errorMessage = "Model configuration is invalid.";
             }
-            SetError(nameof(ModelConfig), errorMessage);
+            AddError(nameof(ModelConfig), errorMessage);
         }
     }
 }

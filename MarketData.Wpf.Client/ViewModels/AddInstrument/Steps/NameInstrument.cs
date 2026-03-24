@@ -2,7 +2,7 @@
 
 namespace MarketData.Client.Wpf.ViewModels.AddInstrument.Steps;
 
-public class NameInstrument : AddInstrumentViewModelBase
+public partial class NameInstrument : AddInstrumentViewModelBase
 {
     private string _instrumentName = "";
 
@@ -56,35 +56,38 @@ public class NameInstrument : AddInstrumentViewModelBase
 
         if (string.IsNullOrWhiteSpace(InstrumentName))
         {
-            SetError(nameof(InstrumentName), "Instrument name cannot be empty.");
+            AddError(nameof(InstrumentName), "Instrument name cannot be empty.");
         }
-        if (!Regex.IsMatch(InstrumentName, "^[a-zA-Z0-9]+$"))
+        else if (!InstrumentNameRegex().IsMatch(InstrumentName))
         {
-            SetError(nameof(InstrumentName), "Instrument name must contain only alphanumeric characters.");
+            AddError(nameof(InstrumentName), "Instrument name must contain only alphanumeric characters.");
         }
         if (_existingInstruments.Contains(InstrumentName))
         {
-            SetError(nameof(InstrumentName), "An instrument with this name already exists.");
+            AddError(nameof(InstrumentName), "An instrument with this name already exists.");
         }
         if (InitialPrice <= 0)
         {
-            SetError(nameof(InitialPrice), "Initial price must be greater than zero.");
+            AddError(nameof(InitialPrice), "Initial price must be greater than zero.");
         }
         if (InitialPrice > double.MaxValue)
         {
-            SetError(nameof(InitialPrice), $"Initial price must be less than or equal to {double.MaxValue}.");
+            AddError(nameof(InitialPrice), $"Initial price must be less than or equal to {double.MaxValue}.");
         }
         if (double.IsNaN(InitialPrice) || double.IsInfinity(InitialPrice))
         {
-            SetError(nameof(InitialPrice), "Initial price must be a finite number.");
+            AddError(nameof(InitialPrice), "Initial price must be a finite number.");
         }
         if (!_availableModels.Contains(SelectedModel))
         {
-            SetError(nameof(SelectedModel), "Selected model is not valid.");
+            AddError(nameof(SelectedModel), "Selected model is not valid.");
         }
         if (TickIntervalMs <= 0)
         {
-            SetError(nameof(TickIntervalMs), "Tick interval must be greater than zero.");
+            AddError(nameof(TickIntervalMs), "Tick interval must be greater than zero.");
         }
     }
+
+    [GeneratedRegex("^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?$")]
+    private static partial Regex InstrumentNameRegex();
 }

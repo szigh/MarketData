@@ -40,21 +40,21 @@ public class EndScreen : AddInstrumentViewModelBase
 
         if (string.IsNullOrEmpty(InstrumentName))
         {
-            SetError(nameof(InstrumentName), "Error: Instrument name is null or empty.");
+            AddError(nameof(InstrumentName), "Error: Instrument name is null or empty.");
         }
 
         if (string.IsNullOrEmpty(_configurationsResponse.ActiveModel))
         {
-            SetError(nameof(Configurations), "Error: Active model type is not specified in configurations.");
+            AddError(nameof(Configurations), "Error: Active model type is not specified in configurations.");
         }
         if (_configurationsResponse.InstrumentName != InstrumentName)
         {
-            SetError(nameof(InstrumentName), "Error: Instrument name in configurations does not match the provided instrument name.");
+            AddError(nameof(InstrumentName), "Error: Instrument name in configurations does not match the provided instrument name.");
         }
         if (_configurationsResponse.RandomMultiplicative == null && _configurationsResponse.MeanReverting == null &&
             _configurationsResponse.FlatConfigured == false && _configurationsResponse.RandomAdditiveWalk == null)
         {
-            SetError(nameof(Configurations), "Error: No model configuration data found in configurations.");
+            AddError(nameof(Configurations), "Error: No model configuration data found in configurations.");
         }
     }
 }

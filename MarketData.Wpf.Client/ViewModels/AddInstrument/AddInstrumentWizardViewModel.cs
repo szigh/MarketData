@@ -157,6 +157,8 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         {
             if (CurrentStep is NameInstrument nameVm)
             {
+                nameVm.InstrumentName = nameVm.InstrumentName.ToUpperInvariant();
+
                 // Add the instrument + set the model
                 await AddInstrumentAsync(nameVm.InstrumentName, nameVm.TickIntervalMs,
                     nameVm.InitialPrice, nameVm.SelectedModel, ct);
@@ -287,14 +289,12 @@ public class AddInstrumentWizardViewModel : ViewModelBase
             _logger.LogWarning(vex, "Validation error when publishing model configuration changes for instrument {InstrumentName}",
                 configureVm.ModelConfig!.InstrumentName);
             _dialogService.ShowError($"Validation error: {vex.Message}");
-            throw;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unexpected error when publishing model configuration changes for instrument {InstrumentName}",
                 configureVm.ModelConfig!.InstrumentName);
             _dialogService.ShowError($"An unexpected error occurred: {ex.Message}");
-            throw;
         }
     }
 
