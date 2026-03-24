@@ -86,9 +86,5 @@ public class NameInstrument : AddInstrumentViewModelBase
         {
             SetError(nameof(TickIntervalMs), "Tick interval must be greater than zero.");
         }
-        if (TickIntervalMs > int.MaxValue)
-        {
-            SetError(nameof(TickIntervalMs), $"Tick interval must be less than or equal to {int.MaxValue}.");
-        }
     }
 }
