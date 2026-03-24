@@ -58,11 +58,11 @@ public class NameInstrument : AddInstrumentViewModelBase
         {
             SetError(nameof(InstrumentName), "Instrument name cannot be empty.");
         }
-        if (!Regex.IsMatch(InstrumentName, "^[a-zA-Z0-9]+$"))
+        else if (!Regex.IsMatch(InstrumentName, "^[a-zA-Z0-9]+$"))
         {
             SetError(nameof(InstrumentName), "Instrument name must contain only alphanumeric characters.");
         }
-        if (_existingInstruments.Contains(InstrumentName))
+        else if (_existingInstruments.Contains(InstrumentName))
         {
             SetError(nameof(InstrumentName), "An instrument with this name already exists.");
         }
