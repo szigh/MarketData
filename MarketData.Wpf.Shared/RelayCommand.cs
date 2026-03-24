@@ -104,9 +104,10 @@ public class AsyncRelayCommand : ICommand
         {
             _isExecuting = false;
 
-            // Dispose the CTS immediately after execution completes to avoid leaks
-            _cancellationTokenSource?.Dispose();
-            _cancellationTokenSource = null;
+            // Atomically swap out the CTS before disposing to prevent Cancel() from
+            // calling Cancel() on a disposed CTS on another thread.
+            var cts = Interlocked.Exchange(ref _cancellationTokenSource, null);
+            cts?.Dispose();
 
             RaiseCanExecuteChanged();
         }
@@ -114,7 +115,17 @@ public class AsyncRelayCommand : ICommand
 
     public void Cancel()
     {
-        _cancellationTokenSource?.Cancel();
+        // Capture to local to avoid a race where another thread disposes the CTS
+        // between the null-check and the Cancel() call.
+        var cts = _cancellationTokenSource;
+        try
+        {
+            cts?.Cancel();
+        }
+        catch (ObjectDisposedException)
+        {
+            // CTS was disposed concurrently; cancellation is no longer needed.
+        }
     }
 
     public void RaiseCanExecuteChanged()
