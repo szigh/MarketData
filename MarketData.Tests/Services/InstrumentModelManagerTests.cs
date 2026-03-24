@@ -48,9 +48,9 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var result = await _manager.GetInstrumentWithConfigurationsAsync("AAPL");
+        var result = await _manager.GetInstrumentWithConfigurationsAsync("AAPL", TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
         Assert.Equal("AAPL", result.Name);
@@ -60,7 +60,7 @@ public class InstrumentModelManagerTests : IDisposable
     [Fact]
     public async Task GetInstrumentWithConfigurationsAsync_WithNonExistentInstrument_ReturnsNull()
     {
-        var result = await _manager.GetInstrumentWithConfigurationsAsync("NONEXISTENT");
+        var result = await _manager.GetInstrumentWithConfigurationsAsync("NONEXISTENT", TestContext.Current.CancellationToken);
 
         Assert.Null(result);
     }
@@ -74,9 +74,9 @@ public class InstrumentModelManagerTests : IDisposable
             ModelType = "RandomMultiplicative",
             TickIntervalMillieconds = 1000
         });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var previousModel = await _manager.SwitchModelAsync("AAPL", "Flat");
+        var previousModel = await _manager.SwitchModelAsync("AAPL", "Flat", TestContext.Current.CancellationToken);
 
         Assert.Equal("RandomMultiplicative", previousModel);
     }
@@ -91,10 +91,10 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => _manager.SwitchModelAsync("AAPL", "InvalidModel"));
+            () => _manager.SwitchModelAsync("AAPL", "InvalidModel", TestContext.Current.CancellationToken));
 
         Assert.Contains("Invalid model type", ex.Message);
         Assert.Contains("InvalidModel", ex.Message);
@@ -104,7 +104,7 @@ public class InstrumentModelManagerTests : IDisposable
     public async Task SwitchModelAsync_WithNonExistentInstrument_ThrowsInvalidOperationException()
     {
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _manager.SwitchModelAsync("NONEXISTENT", "Flat"));
+            () => _manager.SwitchModelAsync("NONEXISTENT", "Flat", TestContext.Current.CancellationToken));
 
         Assert.Contains("not found", ex.Message);
     }
@@ -119,12 +119,12 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         ModelConfigurationChangedEventArgs? eventArgs = null;
         _manager.ModelSwitched += (sender, args) => eventArgs = args;
 
-        await _manager.SwitchModelAsync("AAPL", "MeanReverting");
+        await _manager.SwitchModelAsync("AAPL", "MeanReverting", TestContext.Current.CancellationToken);
 
         Assert.NotNull(eventArgs);
         Assert.Equal("AAPL", eventArgs.InstrumentName);
@@ -141,12 +141,12 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         ModelConfigurationChangedEventArgs? eventArgs = null;
         _manager.InstrumentRemoved += (sender, args) => eventArgs = args;
 
-        await _manager.TryRemoveInstrumentAsync("AAPL");
+        await _manager.TryRemoveInstrumentAsync("AAPL", TestContext.Current.CancellationToken);
 
         Assert.NotNull(eventArgs);
         Assert.Equal("AAPL", eventArgs.InstrumentName);
@@ -162,12 +162,12 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         ModelConfigurationChangedEventArgs? eventArgs = null;
         _manager.TickIntervalChanged += (sender, args) => eventArgs = args;
 
-        await _manager.UpdateTickIntervalAsync("AAPL", 2000);
+        await _manager.UpdateTickIntervalAsync("AAPL", 2000, TestContext.Current.CancellationToken);
 
         Assert.NotNull(eventArgs);
         Assert.Equal("AAPL", eventArgs.InstrumentName);
@@ -184,9 +184,9 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var config = await _manager.UpdateRandomMultiplicativeConfigAsync("AAPL", 0.03, 0.0002);
+        var config = await _manager.UpdateRandomMultiplicativeConfigAsync("AAPL", 0.03, 0.0002, TestContext.Current.CancellationToken);
 
         Assert.NotNull(config);
         Assert.Equal(0.03, config.StandardDeviation);
@@ -209,9 +209,9 @@ public class InstrumentModelManagerTests : IDisposable
             }
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var config = await _manager.UpdateRandomMultiplicativeConfigAsync("AAPL", 0.05, 0.0005);
+        var config = await _manager.UpdateRandomMultiplicativeConfigAsync("AAPL", 0.05, 0.0005, TestContext.Current.CancellationToken);
 
         Assert.Equal(0.05, config.StandardDeviation);
         Assert.Equal(0.0005, config.Mean);
@@ -227,10 +227,10 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => _manager.UpdateRandomMultiplicativeConfigAsync("AAPL", -0.01, 0.0));
+            () => _manager.UpdateRandomMultiplicativeConfigAsync("AAPL", -0.01, 0.0, TestContext.Current.CancellationToken));
 
         Assert.Contains("Standard deviation must be positive", ex.Message);
     }
@@ -245,10 +245,10 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => _manager.UpdateRandomMultiplicativeConfigAsync("AAPL", 0.0, 0.0));
+            () => _manager.UpdateRandomMultiplicativeConfigAsync("AAPL", 0.0, 0.0, TestContext.Current.CancellationToken));
 
         Assert.Contains("Standard deviation must be positive", ex.Message);
     }
@@ -263,12 +263,12 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         ModelConfigurationChangedEventArgs? eventArgs = null;
         _manager.ConfigurationChanged += (sender, args) => eventArgs = args;
 
-        await _manager.UpdateRandomMultiplicativeConfigAsync("AAPL", 0.02, 0.0);
+        await _manager.UpdateRandomMultiplicativeConfigAsync("AAPL", 0.02, 0.0, TestContext.Current.CancellationToken);
 
         Assert.NotNull(eventArgs);
         Assert.Equal("AAPL", eventArgs.InstrumentName);
@@ -284,9 +284,9 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var config = await _manager.UpdateMeanRevertingConfigAsync("AAPL", 150.0, 0.8, 3.0, 1.5);
+        var config = await _manager.UpdateMeanRevertingConfigAsync("AAPL", 150.0, 0.8, 3.0, 1.5, TestContext.Current.CancellationToken);
 
         Assert.NotNull(config);
         Assert.Equal(150.0, config.Mean);
@@ -312,9 +312,9 @@ public class InstrumentModelManagerTests : IDisposable
             }
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var config = await _manager.UpdateMeanRevertingConfigAsync("AAPL", 200.0, 0.9, 4.0, 2.0);
+        var config = await _manager.UpdateMeanRevertingConfigAsync("AAPL", 200.0, 0.9, 4.0, 2.0, TestContext.Current.CancellationToken);
 
         Assert.Equal(200.0, config.Mean);
         Assert.Equal(0.9, config.Kappa);
@@ -332,10 +332,10 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => _manager.UpdateMeanRevertingConfigAsync("AAPL", 100.0, -0.5, 2.0, 1.0));
+            () => _manager.UpdateMeanRevertingConfigAsync("AAPL", 100.0, -0.5, 2.0, 1.0, TestContext.Current.CancellationToken));
 
         Assert.Contains("Kappa", ex.Message);
         Assert.Contains("must be positive", ex.Message);
@@ -351,10 +351,10 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => _manager.UpdateMeanRevertingConfigAsync("AAPL", 100.0, 0.5, -2.0, 1.0));
+            () => _manager.UpdateMeanRevertingConfigAsync("AAPL", 100.0, 0.5, -2.0, 1.0, TestContext.Current.CancellationToken));
 
         Assert.Contains("Sigma", ex.Message);
         Assert.Contains("cannot be negative", ex.Message);
@@ -370,10 +370,10 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => _manager.UpdateMeanRevertingConfigAsync("AAPL", 100.0, 0.5, 2.0, -1.0));
+            () => _manager.UpdateMeanRevertingConfigAsync("AAPL", 100.0, 0.5, 2.0, -1.0, TestContext.Current.CancellationToken));
 
         Assert.Contains("Dt", ex.Message);
         Assert.Contains("must be positive", ex.Message);
@@ -389,12 +389,12 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         ModelConfigurationChangedEventArgs? eventArgs = null;
         _manager.ConfigurationChanged += (sender, args) => eventArgs = args;
 
-        await _manager.UpdateMeanRevertingConfigAsync("AAPL", 150.0, 0.8, 3.0, 1.5);
+        await _manager.UpdateMeanRevertingConfigAsync("AAPL", 150.0, 0.8, 3.0, 1.5, TestContext.Current.CancellationToken);
 
         Assert.NotNull(eventArgs);
         Assert.Equal("AAPL", eventArgs.InstrumentName);
@@ -410,7 +410,7 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var walkStepsJson = """
             [
@@ -419,7 +419,7 @@ public class InstrumentModelManagerTests : IDisposable
             ]
             """;
 
-        var config = await _manager.UpdateRandomAdditiveWalkConfigAsync("AAPL", walkStepsJson);
+        var config = await _manager.UpdateRandomAdditiveWalkConfigAsync("AAPL", walkStepsJson, TestContext.Current.CancellationToken);
 
         Assert.NotNull(config);
         Assert.NotNull(config.WalkStepsJson);
@@ -435,10 +435,10 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => _manager.UpdateRandomAdditiveWalkConfigAsync("AAPL", "not valid json"));
+            () => _manager.UpdateRandomAdditiveWalkConfigAsync("AAPL", "not valid json", TestContext.Current.CancellationToken));
 
         Assert.Contains("Invalid walk steps JSON", ex.Message);
     }
@@ -453,10 +453,10 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => _manager.UpdateRandomAdditiveWalkConfigAsync("AAPL", "[]"));
+            () => _manager.UpdateRandomAdditiveWalkConfigAsync("AAPL", "[]", TestContext.Current.CancellationToken));
 
         Assert.Contains("cannot be empty", ex.Message);
     }
@@ -471,7 +471,7 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var walkStepsJson = """
             [
@@ -481,7 +481,7 @@ public class InstrumentModelManagerTests : IDisposable
             """;
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => _manager.UpdateRandomAdditiveWalkConfigAsync("AAPL", walkStepsJson));
+            () => _manager.UpdateRandomAdditiveWalkConfigAsync("AAPL", walkStepsJson, TestContext.Current.CancellationToken));
 
         Assert.Contains("walkStepsJson", ex.ParamName);
     }
@@ -496,7 +496,7 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         ModelConfigurationChangedEventArgs? eventArgs = null;
         _manager.ConfigurationChanged += (sender, args) => eventArgs = args;
@@ -508,7 +508,7 @@ public class InstrumentModelManagerTests : IDisposable
             ]
             """;
 
-        await _manager.UpdateRandomAdditiveWalkConfigAsync("AAPL", walkStepsJson);
+        await _manager.UpdateRandomAdditiveWalkConfigAsync("AAPL", walkStepsJson, TestContext.Current.CancellationToken);
 
         Assert.NotNull(eventArgs);
         Assert.Equal("AAPL", eventArgs.InstrumentName);
@@ -555,11 +555,11 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         scopedContext.Instruments.Add(instrument);
-        await scopedContext.SaveChangesAsync();
+        await scopedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         instrument.ModelType = null!;
 
-        var changed = await _manager.EnsureModelTypeAsync(instrument, scopedContext);
+        var changed = await _manager.EnsureModelTypeAsync(instrument, scopedContext, TestContext.Current.CancellationToken);
 
         Assert.True(changed);
         Assert.Equal("Flat", instrument.ModelType);
@@ -578,11 +578,11 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         scopedContext.Instruments.Add(instrument);
-        await scopedContext.SaveChangesAsync();
+        await scopedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         instrument.ModelType = "";
 
-        var changed = await _manager.EnsureModelTypeAsync(instrument, scopedContext);
+        var changed = await _manager.EnsureModelTypeAsync(instrument, scopedContext, TestContext.Current.CancellationToken);
 
         Assert.True(changed);
         Assert.Equal("Flat", instrument.ModelType);
@@ -601,9 +601,9 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         scopedContext.Instruments.Add(instrument);
-        await scopedContext.SaveChangesAsync();
+        await scopedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var changed = await _manager.EnsureModelTypeAsync(instrument, scopedContext);
+        var changed = await _manager.EnsureModelTypeAsync(instrument, scopedContext, TestContext.Current.CancellationToken);
 
         Assert.False(changed);
         Assert.Equal("RandomMultiplicative", instrument.ModelType);
@@ -617,9 +617,9 @@ public class InstrumentModelManagerTests : IDisposable
             new Instrument { Name = "GOOGL", ModelType = "RandomMultiplicative", TickIntervalMillieconds = 2000 },
             new Instrument { Name = "MSFT", ModelType = "MeanReverting", TickIntervalMillieconds = 1500 }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var instruments = await _manager.LoadAndInitializeAllInstrumentsAsync();
+        var instruments = await _manager.LoadAndInitializeAllInstrumentsAsync(TestContext.Current.CancellationToken);
 
         Assert.Equal(3, instruments.Count);
         Assert.True(instruments.ContainsKey("AAPL"));
@@ -639,14 +639,14 @@ public class InstrumentModelManagerTests : IDisposable
             ModelType = "Flat",
             TickIntervalMillieconds = 1000
         });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var result = await _manager.UpdateTickIntervalAsync("AAPL", 2500);
+        var result = await _manager.UpdateTickIntervalAsync("AAPL", 2500, TestContext.Current.CancellationToken);
 
         Assert.Equal(2500, result);
 
         //reload
-        var instruments = await _manager.LoadAndInitializeAllInstrumentsAsync();
+        var instruments = await _manager.LoadAndInitializeAllInstrumentsAsync(TestContext.Current.CancellationToken);
         Assert.True(instruments.ContainsKey("AAPL"));
         Assert.NotNull(instruments["AAPL"]);
         Assert.Equal(2500, instruments["AAPL"].TickIntervalMillieconds);
@@ -656,7 +656,7 @@ public class InstrumentModelManagerTests : IDisposable
     public async Task UpdateTickIntervalAsync_WithNonExistentInstrument_ThrowsInvalidOperationException()
     {
         var ex = await Assert.ThrowsAsync<InvalidOperationException>(
-            () => _manager.UpdateTickIntervalAsync("NONEXISTENT", 1000));
+            () => _manager.UpdateTickIntervalAsync("NONEXISTENT", 1000, TestContext.Current.CancellationToken));
 
         Assert.Contains("not found", ex.Message);
     }
@@ -671,10 +671,10 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var ex = await Assert.ThrowsAsync<ArgumentException>(
-            () => _manager.UpdateTickIntervalAsync("AAPL", -500));
+            () => _manager.UpdateTickIntervalAsync("AAPL", -500, TestContext.Current.CancellationToken));
 
         Assert.Contains("Tick interval must be a positive integer", ex.Message);
     }
@@ -692,14 +692,14 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         scopedContext.Instruments.Add(instrument);
-        await scopedContext.SaveChangesAsync();
+        await scopedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext);
+        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext, TestContext.Current.CancellationToken);
 
-        await scopedContext.Entry(instrument).ReloadAsync();
+        await scopedContext.Entry(instrument).ReloadAsync(TestContext.Current.CancellationToken);
         await scopedContext.Entry(instrument)
             .Reference(i => i.RandomMultiplicativeConfig)
-            .LoadAsync();
+            .LoadAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(instrument.RandomMultiplicativeConfig);
         Assert.Equal(instrument.Id, instrument.RandomMultiplicativeConfig.InstrumentId);
@@ -719,14 +719,14 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         scopedContext.Instruments.Add(instrument);
-        await scopedContext.SaveChangesAsync();
+        await scopedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext);
+        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext, TestContext.Current.CancellationToken);
 
-        await scopedContext.Entry(instrument).ReloadAsync();
+        await scopedContext.Entry(instrument).ReloadAsync(TestContext.Current.CancellationToken);
         await scopedContext.Entry(instrument)
             .Reference(i => i.MeanRevertingConfig)
-            .LoadAsync();
+            .LoadAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(instrument.MeanRevertingConfig);
         Assert.Equal(instrument.Id, instrument.MeanRevertingConfig.InstrumentId);
@@ -747,14 +747,14 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         scopedContext.Instruments.Add(instrument);
-        await scopedContext.SaveChangesAsync();
+        await scopedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext);
+        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext, TestContext.Current.CancellationToken);
 
-        await scopedContext.Entry(instrument).ReloadAsync();
+        await scopedContext.Entry(instrument).ReloadAsync(TestContext.Current.CancellationToken);
         await scopedContext.Entry(instrument)
             .Reference(i => i.FlatConfig)
-            .LoadAsync();
+            .LoadAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(instrument.FlatConfig);
         Assert.Equal(instrument.Id, instrument.FlatConfig.InstrumentId);
@@ -773,14 +773,14 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         scopedContext.Instruments.Add(instrument);
-        await scopedContext.SaveChangesAsync();
+        await scopedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext);
+        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext, TestContext.Current.CancellationToken);
 
-        await scopedContext.Entry(instrument).ReloadAsync();
+        await scopedContext.Entry(instrument).ReloadAsync(TestContext.Current.CancellationToken);
         await scopedContext.Entry(instrument)
             .Reference(i => i.RandomAdditiveWalkConfig)
-            .LoadAsync();
+            .LoadAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(instrument.RandomAdditiveWalkConfig);
         Assert.Equal(instrument.Id, instrument.RandomAdditiveWalkConfig.InstrumentId);
@@ -807,15 +807,15 @@ public class InstrumentModelManagerTests : IDisposable
             RandomMultiplicativeConfig = config
         };
         scopedContext.Instruments.Add(instrument);
-        await scopedContext.SaveChangesAsync();
+        await scopedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var originalConfigId = config.Id;
 
-        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext);
+        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext, TestContext.Current.CancellationToken);
 
         await scopedContext.Entry(instrument)
             .Reference(i => i.RandomMultiplicativeConfig)
-            .LoadAsync();
+            .LoadAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(instrument.RandomMultiplicativeConfig);
         Assert.Equal(originalConfigId, instrument.RandomMultiplicativeConfig.Id);
@@ -836,7 +836,7 @@ public class InstrumentModelManagerTests : IDisposable
             TickIntervalMillieconds = 1000
         };
         scopedContext.Instruments.Add(instrument);
-        await scopedContext.SaveChangesAsync();
+        await scopedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         scopedContext.Prices.Add(new Price
         {
@@ -844,13 +844,13 @@ public class InstrumentModelManagerTests : IDisposable
             Value = 175.50m,
             Timestamp = DateTime.UtcNow
         });
-        await scopedContext.SaveChangesAsync();
+        await scopedContext.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext);
+        await _manager.EnsureModelConfigurationAsync(instrument, scopedContext, TestContext.Current.CancellationToken);
 
         await scopedContext.Entry(instrument)
             .Reference(i => i.MeanRevertingConfig)
-            .LoadAsync();
+            .LoadAsync(TestContext.Current.CancellationToken);
 
         Assert.NotNull(instrument.MeanRevertingConfig);
         Assert.Equal(175.50, instrument.MeanRevertingConfig.Mean);
@@ -859,7 +859,7 @@ public class InstrumentModelManagerTests : IDisposable
     [Fact]
     public async Task GetOrCreateInstrumentAsync_WithNewInstrument_CreatesInstrument()
     {
-        var (instrument, created) = await _manager.GetOrCreateInstrumentAsync("TSLA", 1000, 250.0m, DateTime.UtcNow);
+        var (instrument, created) = await _manager.GetOrCreateInstrumentAsync("TSLA", 1000, 250.0m, DateTime.UtcNow, ct: TestContext.Current.CancellationToken);
 
         Assert.True(created);
         Assert.NotNull(instrument);
@@ -871,14 +871,14 @@ public class InstrumentModelManagerTests : IDisposable
     [Fact]
     public async Task GetOrCreateInstrumentAsync_WithNewInstrument_CreatesDefaultConfiguration()
     {
-        var result = await _manager.GetOrCreateInstrumentAsync("TSLA", 1000, 250.0m, DateTime.UtcNow);
+        var result = await _manager.GetOrCreateInstrumentAsync("TSLA", 1000, 250.0m, DateTime.UtcNow, ct: TestContext.Current.CancellationToken);
 
         using var scope = _serviceProvider.CreateScope();
         var scopedContext = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
 
         var instrument = await scopedContext.Instruments
             .Include(i => i.FlatConfig)
-            .FirstOrDefaultAsync(i => i.Name == "TSLA");
+            .FirstOrDefaultAsync(i => i.Name == "TSLA", TestContext.Current.CancellationToken);
 
         Assert.NotNull(instrument);
         Assert.NotNull(instrument.FlatConfig);
@@ -893,9 +893,9 @@ public class InstrumentModelManagerTests : IDisposable
             ModelType = "RandomMultiplicative",
             TickIntervalMillieconds = 1500
         });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var (instrument, created) = await _manager.GetOrCreateInstrumentAsync("AAPL", 1000, 150.0m, DateTime.UtcNow);
+        var (instrument, created) = await _manager.GetOrCreateInstrumentAsync("AAPL", 1000, 150.0m, DateTime.UtcNow, ct: TestContext.Current.CancellationToken);
 
         Assert.False(created);
         Assert.NotNull(instrument);
@@ -910,7 +910,7 @@ public class InstrumentModelManagerTests : IDisposable
         ModelConfigurationChangedEventArgs? eventArgs = null;
         _manager.InstrumentAdded += (_, args) => eventArgs = args;
 
-        await _manager.GetOrCreateInstrumentAsync("NVDA", 1000, 500.0m, DateTime.UtcNow);
+        await _manager.GetOrCreateInstrumentAsync("NVDA", 1000, 500.0m, DateTime.UtcNow, ct: TestContext.Current.CancellationToken);
 
         Assert.NotNull(eventArgs);
         Assert.Equal("NVDA", eventArgs.InstrumentName);
@@ -925,12 +925,12 @@ public class InstrumentModelManagerTests : IDisposable
             ModelType = "Flat",
             TickIntervalMillieconds = 1000
         });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         ModelConfigurationChangedEventArgs? eventArgs = null;
         _manager.InstrumentAdded += (_, args) => eventArgs = args;
 
-        var (instrument, _) = await _manager.GetOrCreateInstrumentAsync("AAPL", 1000, 150.0m, DateTime.UtcNow);
+        var (instrument, _) = await _manager.GetOrCreateInstrumentAsync("AAPL", 1000, 150.0m, DateTime.UtcNow, ct: TestContext.Current.CancellationToken);
 
         Assert.Null(eventArgs);
         Assert.Equal("AAPL", instrument.Name);
@@ -939,7 +939,7 @@ public class InstrumentModelManagerTests : IDisposable
     [Fact]
     public async Task GetOrCreateInstrumentAsync_WithCustomModelType_CreatesWithSpecifiedModel()
     {
-        var (instrument, created) = await _manager.GetOrCreateInstrumentAsync("AMZN", 2000, 180.0m, DateTime.UtcNow, "RandomMultiplicative");
+        var (instrument, created) = await _manager.GetOrCreateInstrumentAsync("AMZN", 2000, 180.0m, DateTime.UtcNow, "RandomMultiplicative", TestContext.Current.CancellationToken);
 
         Assert.True(created);
         Assert.NotNull(instrument);
@@ -950,8 +950,8 @@ public class InstrumentModelManagerTests : IDisposable
     [Fact]
     public async Task GetOrCreateInstrumentAsync_LoadsConfigurations()
     {
-        var result1 = await _manager.GetOrCreateInstrumentAsync("META", 1000, 350.0m, DateTime.UtcNow);
-        var result2 = await _manager.GetOrCreateInstrumentAsync("AMZN", 1000, 350.0m, DateTime.UtcNow, "RandomMultiplicative");
+        var result1 = await _manager.GetOrCreateInstrumentAsync("META", 1000, 350.0m, DateTime.UtcNow, ct: TestContext.Current.CancellationToken);
+        var result2 = await _manager.GetOrCreateInstrumentAsync("AMZN", 1000, 350.0m, DateTime.UtcNow, "RandomMultiplicative", TestContext.Current.CancellationToken);
 
         Assert.True(result1.created);
         Assert.NotNull(result1.instrument);
@@ -966,13 +966,13 @@ public class InstrumentModelManagerTests : IDisposable
             .Include(i => i.MeanRevertingConfig)
             .Include(i => i.FlatConfig)
             .Include(i => i.RandomAdditiveWalkConfig)
-            .FirstOrDefaultAsync(i => i.Name == "META");
+            .FirstOrDefaultAsync(i => i.Name == "META", TestContext.Current.CancellationToken);
         var amzn = await scopedContext.Instruments
             .Include(i => i.RandomMultiplicativeConfig)
             .Include(i => i.MeanRevertingConfig)
             .Include(i => i.FlatConfig)
             .Include(i => i.RandomAdditiveWalkConfig)
-            .FirstOrDefaultAsync(i => i.Name == "AMZN");
+            .FirstOrDefaultAsync(i => i.Name == "AMZN", TestContext.Current.CancellationToken);
 
         Assert.NotNull(meta);
         Assert.NotNull(meta.FlatConfig);
@@ -990,7 +990,7 @@ public class InstrumentModelManagerTests : IDisposable
     [Fact]
     public async Task GetOrCreateInstrumentAsync_WithInvalidModelType_DefaultsToFlat()
     {
-        var (instrument, created) = await _manager.GetOrCreateInstrumentAsync("NFLX", 1000, 300.0m, DateTime.UtcNow, "InvalidModel");
+        var (instrument, created) = await _manager.GetOrCreateInstrumentAsync("NFLX", 1000, 300.0m, DateTime.UtcNow, "InvalidModel", TestContext.Current.CancellationToken);
         Assert.True(created);
         Assert.NotNull(instrument);
         Assert.Equal("NFLX", instrument.Name);
@@ -1010,7 +1010,7 @@ public class InstrumentModelManagerTests : IDisposable
             ModelType = "Flat",
             TickIntervalMillieconds = 1000
         });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         using var cts = new CancellationTokenSource();
         cts.Cancel();
@@ -1028,7 +1028,7 @@ public class InstrumentModelManagerTests : IDisposable
             ModelType = "RandomMultiplicative",
             TickIntervalMillieconds = 1000
         });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         using var cts = new CancellationTokenSource();
         cts.Cancel();

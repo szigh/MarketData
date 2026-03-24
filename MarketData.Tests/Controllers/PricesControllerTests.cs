@@ -30,7 +30,7 @@ public class PricesControllerTests : IDisposable
             new Price { Instrument = "AAPL", Value = 151.50m, Timestamp = now.AddMinutes(-5) },
             new Price { Instrument = "AAPL", Value = 152.75m, Timestamp = now }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await _controller.GetLatestPrice("AAPL");
 
@@ -48,7 +48,7 @@ public class PricesControllerTests : IDisposable
         _context.Prices.Add(
             new Price { Instrument = "MSFT", Value = 380.25m, Timestamp = timestamp }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await _controller.GetLatestPrice("MSFT");
 
@@ -76,7 +76,7 @@ public class PricesControllerTests : IDisposable
             new Price { Instrument = "GOOGL", Value = 2800.00m, Timestamp = now },
             new Price { Instrument = "TSLA", Value = 245.50m, Timestamp = now }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await _controller.GetLatestPrice("GOOGL");
 
@@ -95,7 +95,7 @@ public class PricesControllerTests : IDisposable
             new Price { Instrument = "NVDA", Value = 510.00m, Timestamp = baseTime.AddMinutes(-5) },
             new Price { Instrument = "NVDA", Value = 505.00m, Timestamp = baseTime.AddMinutes(-10) }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await _controller.GetLatestPrice("NVDA");
 
