@@ -8,6 +8,11 @@
 
   <ItemGroup>
     <PackageReference Include="Grpc.AspNetCore" Version="2.76.0" />
+    <!-- Pinned to Grpc.Tools 2.80.0-pre1 for required ARM64/Docker gRPC tooling fixes; update to a stable Grpc.Tools >= 2.80.0 when it includes this fix and remove this comment. -->
+    <PackageReference Include="Grpc.Tools" Version="2.80.0-pre1">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.5">
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
