@@ -4,6 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
+    <!-- Use system-installed protoc in Docker/Linux environments for cross-architecture compatibility -->
+    <Protobuf_ProtocFullPath Condition="Exists('/usr/bin/protoc')">/usr/bin/protoc</Protobuf_ProtocFullPath>
   </PropertyGroup>
 
   <ItemGroup>
