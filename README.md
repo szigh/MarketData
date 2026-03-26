@@ -344,6 +344,12 @@ service ModelConfigurationService {
    ```
      Server runs on `https://localhost:7264` (default)
 
+     Optionally add `--seed-data` to seed database with a sample instrument and model config (e.g. for first-time setup)
+
+     ```bash
+     dotnet run --project MarketData --seed-data
+     ```
+
 3. **Start WPF Client:**
    ```bash
    dotnet run --project MarketData.Wpf.Client
@@ -432,335 +438,29 @@ Note: Migrations are automatically applied in development environment. In produc
 
 ---
 
-## Logging Setup - Serilog & Seq
+## Logging
 
-### Overview
-
-The MarketData service is configured with **Serilog** for structured logging with multiple sinks:
-- **Console**: Real-time logging in the terminal
-- **File**: Persistent logs in the `logs/` directory
-- **Seq**: Centralized structured logging for querying and analysis
-
-### Installed Packages
-
-The following NuGet packages have been added to the MarketData project:
-
-```xml
-<PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />    
-<PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
-<PackageReference Include="Serilog.Enrichers.Process" Version="3.0.0" />
-<PackageReference Include="Serilog.Enrichers.Span" Version="3.1.0" />
-<PackageReference Include="Serilog.Enrichers.Thread" Version="4.0.0" />
-<PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
-<PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
-<PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-<PackageReference Include="Serilog.Sinks.Seq" Version="9.0.0" />
-```
-
-### Configuration
-
-#### appsettings.json
-
-Serilog is configured in `appsettings.json` with the following settings:
-
-- **Minimum Log Level**: Information (Warning for ASP.NET Core and Entity Framework)
-- **Console Sink**: Outputs formatted logs to the console
-- **File Sink**: 
-  - Location: `logs/marketdata-{Date}.log`
-  - Rolling: Daily
-  - Size Limit: 10 MB per file
-  - Retention: 7 days
-- **Seq Sink**: Sends structured logs to Seq at `http://localhost:5341`
-
-#### appsettings.Development.json
-
-Development environment overrides:
-- **Minimum Log Level**: Debug for MarketData namespace
-- **ASP.NET Core**: Information level
-- **Entity Framework**: Information level
-
-### Setting Up Seq
-
-#### Option 1: Docker (Recommended)
-
-Run Seq in a Docker container:
-
-##### Option 1: Set Admin Password (Recommended for Production)
-
-**Docker Run:**
-```bash
-docker run -d \
-  --name seq \
-  -e ACCEPT_EULA=Y \
-  -e SEQ_FIRSTRUN_ADMINPASSWORD=YourSecurePassword123! \
-  -p 5341:80 \
-  -v seq-data:/data \
-  datalust/seq:latest
-```
-
-**Docker Compose:**
-```yaml
-version: '3.8'
-services:
-  seq:
-    image: datalust/seq:latest
-    container_name: seq
-    environment:
-      - ACCEPT_EULA=Y
-      - SEQ_FIRSTRUN_ADMINPASSWORD=YourSecurePassword123!
-    ports:
-      - "5341:80"
-    volumes:
-      - seq-data:/data
-    restart: unless-stopped
-
-volumes:
-  seq-data:
-```
-
-##### Option 2: Disable Authentication (Development Only)
-
-**Docker Run:**
-```bash
-docker run -d \
-  --name seq \
-  -e ACCEPT_EULA=Y \
-  -e SEQ_FIRSTRUN_NOAUTHENTICATION=true \
-  -p 5341:80 \
-  -v seq-data:/data \
-  datalust/seq:latest
-```
-
-**Docker Compose:**
-```yaml
-version: '3.8'
-services:
-  seq:
-    image: datalust/seq:latest
-    container_name: seq
-    environment:
-      - ACCEPT_EULA=Y
-      - SEQ_FIRSTRUN_NOAUTHENTICATION=true
-    ports:
-      - "5341:80"
-    volumes:
-      - seq-data:/data
-    restart: unless-stopped
-
-volumes:
-  seq-data:
-```
-
-#### Option 2: Windows Installation
-
-1. Download Seq from: https://datalust.co/download
-2. Run the installer
-3. Seq will be available at `http://localhost:5341`
-
-#### Accessing Seq
-
-Once running, open your browser to:
-- **UI**: http://localhost:5341
-- **API**: http://localhost:5341/api
-
-Default credentials (if authentication enabled):
-- Username: `admin`
-- Password: (set during installation)
-
-### Usage Examples
-
-#### Viewing Logs in Seq
-
-1. Start the MarketData service
-2. Open http://localhost:5341 in your browser
-3. Use the search bar to filter logs:
-   - `@Level = 'Error'` - Show only errors
-   - `SourceContext like '%PriceSimulator%'` - Show simulator logs
-   - `@Message like '%instrument%'` - Search for specific text
-   - `RequestPath = '/api/instruments'` - Filter by HTTP endpoint
-
-
-### Request Logging
-
-HTTP requests are automatically logged with the following information:
-- Request method and path
-- Response status code
-- Response time
-- Request host
-- User agent
-
-Example log entry:
-```
-HTTP GET /api/instruments responded 200 in 45.2 ms
-```
-
-### File Logging
-
-Logs are written to the `logs/` directory:
-- **File pattern**: `marketdata-YYYY-MM-DD.log`
-- **Retention**: 7 days
-- **Max size**: 10 MB per file (then rolls to new file)
-
-### Troubleshooting
-
-#### Seq Not Receiving Logs
-
-1. **Check Seq is running**:
-   ```bash
-   docker ps | grep seq
-   ```
-
-2. **Verify connection**:
-   ```bash
-   curl http://localhost:5341/api
-   ```
-
-3. **Check configuration**: Ensure `appsettings.json` has correct Seq URL
-
-#### Performance Considerations
-
-- **Trace logging**: Use sparingly in production (high volume)
-- **Async logging**: Serilog buffers logs asynchronously by default
-- **Seq ingestion limits**: Free version has 30-day retention
-
-### Additional Resources
-
-- [Serilog Documentation](https://serilog.net/)
-- [Seq Documentation](https://docs.datalust.co/docs)
-- [Serilog Best Practices](https://github.com/serilog/serilog/wiki/Best-Practices)
+See [LOGGING.md](LOGGING.md)
 
 ---
 
-## Testing Strategy
+## Testing
 
-### **Test Projects Overview**
-
-The solution has **comprehensive test coverage** with **220 automated tests** across critical components.
-
-#### **MarketData.PriceSimulator.Tests**
-**Frameworks:** xUnit v3 (3.2.2), Custom `[StatisticalFact]` attribute
-
-**Coverage:**
-- **Unit Tests**
-  - Parameter validation
-  - Edge case handling
-  - Model correctness
-- **Statistical Tests** - Stochastic validation (slower)
-  - Chi-squared distribution tests
-  - Mean/variance convergence
-  - Long-term statistical properties
-
-#### **MarketData.Tests**
-**Frameworks:** xUnit v3 (3.2.2), Moq 4.20.72, EF Core InMemory 10.0.3, ASP.NET Testing 10.0.3
-
-**Coverage:**
-- **Controller Tests** - REST API endpoints
-  - `InstrumentsController` - CRUD operations
-  - `PricesController` - Price queries  
-  - `ModelConfigurationsController` - Configuration management
-- **gRPC Contract Tests** - Proto message structure stability
-  - Compile-time breaking change detection
-  - Message field validation
-  - Backward compatibility protection
-- **Service Unit Tests** - Business logic
-  - `InstrumentModelManager` - Configuration CRUD, model switching, instrument management
-  - Parameter validation
-  - Event notifications
-- **Integration Tests** - Background service lifecycle
-  - Service startup/shutdown
-  - Real-time tick interval verification
-
----
-
-### **Testing Libraries**
-
-| Library | Version | Purpose | Used In |
-|---------|---------|---------|---------|
-| **xUnit** | 3.2.2 | Test framework | All test projects |
-| **Moq** | 4.20.72 | Mocking framework | MarketData.Tests |
-| **EF Core InMemory** | 10.0.3 | Database testing | MarketData.Tests |
-| **ASP.NET Testing** | 10.0.3 | Integration/API tests | MarketData.Tests |
-| **coverlet.collector** | 6.0.4 | Code coverage | All test projects |
-
----
-
-### **Test Execution**
-
-```bash
-# Fast tests only
-dotnet test --environment RUN_STATISTICAL_TESTS=False
-
-# All tests including slower statistical
-dotnet test --environment RUN_STATISTICAL_TESTS=True
-```
-
-#### **By Project:**
-
-```bash
-dotnet test MarketData.PriceSimulator.Tests
-dotnet test MarketData.Tests
-```
-
----
-
-### **Testing Approaches by Component**
-
-#### ** Unit Tests** (Business Logic)
-- Price models, service layer, configuration management
-- Fast, isolated tests with mocked dependencies
-- **Tools:** xUnit, Moq, InMemory database
-
-#### ** Statistical Tests** (Mathematical Correctness)
-- Distribution properties, mean/variance, convergence
-- Generate 10,000+ samples, apply Chi-squared tests
-- **Tools:** Custom `[StatisticalFact]` attribute, xUnit
-
-#### ** Contract Tests** (API Stability)
-- gRPC message structure, field presence
-- Compile-time validation, structural assertions
-- **Tools:** xUnit, Proto-generated classes
-
-#### ** Integration Tests** (Lifecycle & Timing)
-- Background service, real-time behavior
-- Real service host with InMemory database
-- **Tools:** xUnit, Microsoft.Extensions.Hosting
-
-#### ** Manual Testing** (UI & End-to-End)
-- WPF client, console client, user workflows
-- Manual verification during development
-- **Tools:** Visual Studio debugging, production WPF app
-
----
-
-### **Untested Projects (By Design)**
-
-#### **MarketData.Wpf.Client**
-- Low ROI compared to manual testing
-- Backend APIs already comprehensively tested
-- Manual UI testing during development
-- ViewModels could be unit tested (future enhancement)
-
-#### **MarketData.Client**, **FastSimulate**
-- Simple console application with no business logic
-
-#### **MarketData.Wpf.Shared**
-- Simple utility classes
-
-#### **MarketData.Client.Shared**
-- Contains only configuration POCOs (`GrpcSettings`)
+See [TESTING.md](TESTING.md)
 
 ---
 
 ## Future Enhancements
 
 - Authentication and authorization
+- Performance metrics and monitoring*
+- Docker containerization
+- Cloud deployment (Azure, AWS)
 - Trade execution simulation
 - Multi-user support with isolated workspaces
 - More sophisticated simulation models (volatility clustering, jump processes)
-- Technical indicators and analytics
-- Performance metrics and monitoring
-- Docker containerization
-- Cloud deployment (Azure, AWS)
+
+\* *Part implemented with Serilog and Seq, OpenTelemetry is WIP: https://github.com/szigh/MarketData/tree/13-add-opentelemetry-for-metrics-and-monitoring*
 
 ---
 
@@ -807,7 +507,6 @@ MarketData.PriceSimulator.Tests
 Resources:
 - [FancyCandles 2.7.1](https://github.com/gellerda/FancyCandles)
 - [Serilog Documentation](https://serilog.net/)
-- Icon: <a href="https://iconscout.com/icons/forex-chart" class="text-underline font-size-sm" target="_blank">Forex Chart</a> by <a href="https://iconscout.com/contributors/promotion-king" class="text-underline font-size-sm">Rank Sol</a> on <a href="https://iconscout.com" class="text-underline font-size-sm">IconScout</a>
 
 ---
 

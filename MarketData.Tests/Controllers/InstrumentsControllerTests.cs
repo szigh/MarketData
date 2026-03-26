@@ -36,7 +36,7 @@ public class InstrumentsControllerTests : IDisposable
         Assert.Equal("FTSE", instrument.Name);
         Assert.Equal(1000, instrument.TickIntervalMillieconds);
 
-        var price = await _context.Prices.FirstOrDefaultAsync(p => p.Instrument == "FTSE");
+        var price = await _context.Prices.FirstOrDefaultAsync(p => p.Instrument == "FTSE", TestContext.Current.CancellationToken);
         Assert.NotNull(price);
         Assert.Equal(10050.50m, price.Value);
     }
@@ -46,7 +46,7 @@ public class InstrumentsControllerTests : IDisposable
     {
         var existing = new Instrument { Name = "AAPL", TickIntervalMillieconds = 500 };
         _context.Instruments.Add(existing);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var request = new CreateInstrumentRequest("AAPL", 150.00m, 1000);
 
@@ -74,7 +74,7 @@ public class InstrumentsControllerTests : IDisposable
             new Instrument { Name = "GOOGL", TickIntervalMillieconds = 2000 },
             new Instrument { Name = "MSFT", TickIntervalMillieconds = 1500 }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await _controller.GetInstruments(CancellationToken.None);
 
@@ -88,7 +88,7 @@ public class InstrumentsControllerTests : IDisposable
     {
         var instrument = new Instrument { Name = "TSLA", TickIntervalMillieconds = 800 };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await _controller.GetInstrument("TSLA", CancellationToken.None);
 
@@ -112,7 +112,7 @@ public class InstrumentsControllerTests : IDisposable
     {
         var instrument = new Instrument { Name = "NVDA", TickIntervalMillieconds = 1000 };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var request = new UpdateFrequencyRequest(2500);
 
@@ -122,7 +122,7 @@ public class InstrumentsControllerTests : IDisposable
         var updatedInstrument = Assert.IsType<Instrument>(okResult.Value);
         Assert.Equal(2500, updatedInstrument.TickIntervalMillieconds);
 
-        var dbInstrument = await _context.Instruments.FirstOrDefaultAsync(i => i.Name == "NVDA");
+        var dbInstrument = await _context.Instruments.FirstOrDefaultAsync(i => i.Name == "NVDA", TestContext.Current.CancellationToken);
         Assert.NotNull(dbInstrument);
         Assert.Equal(2500, dbInstrument.TickIntervalMillieconds);
     }
@@ -143,13 +143,13 @@ public class InstrumentsControllerTests : IDisposable
     {
         var instrument = new Instrument { Name = "AMD", TickIntervalMillieconds = 1200 };
         _context.Instruments.Add(instrument);
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var result = await _controller.DeleteInstrument("AMD", CancellationToken.None);
 
         Assert.IsType<NoContentResult>(result);
 
-        var deletedInstrument = await _context.Instruments.FirstOrDefaultAsync(i => i.Name == "AMD");
+        var deletedInstrument = await _context.Instruments.FirstOrDefaultAsync(i => i.Name == "AMD", TestContext.Current.CancellationToken);
         Assert.Null(deletedInstrument);
     }
 
