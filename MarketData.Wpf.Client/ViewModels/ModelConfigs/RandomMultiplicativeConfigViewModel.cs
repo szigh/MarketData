@@ -1,12 +1,11 @@
 using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
-using MarketData.Wpf.Client.Services;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
 
-namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
+namespace MarketData.Client.Wpf.ViewModels.ModelConfigs;
 
-public class RandomMultiplicativeConfigViewModel : ModelConfigViewModelBase
+public class RandomMultiplicativeConfigViewModel : ModelConfigParamsViewModelBase
 {
     private readonly IModelConfigService _modelConfigService;
     private double _standardDeviation;

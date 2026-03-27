@@ -1,7 +1,7 @@
 using MarketData.Client.Wpf.ViewModels.AddInstrument;
 using System.Windows;
 
-namespace MarketData.Wpf.Client.Services;
+namespace MarketData.Client.Wpf.Services;
 
 public interface IDialogService
 {

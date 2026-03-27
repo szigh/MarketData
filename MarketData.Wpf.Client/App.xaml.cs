@@ -1,10 +1,11 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using MarketData.Client.Wpf.Bootstrapper;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using System.Windows;
 
-namespace MarketData.Wpf.Client;
+namespace MarketData.Client.Wpf;
 
 public partial class App : Application
 {
@@ -28,7 +29,7 @@ public partial class App : Application
 
         try
         {
-            Bootstrapper.LogBanner();
+            Bootstrapper.Bootstrapper.LogBanner();
             Log.Information($"");
             Log.Information("Starting WPF Market Data Client");
 
@@ -46,7 +47,7 @@ public partial class App : Application
 
             _serviceProvider = services.BuildServiceProvider();
 
-            Bootstrapper.InitializeGrpcConnections(_serviceProvider);
+            Bootstrapper.Bootstrapper.InitializeGrpcConnections(_serviceProvider);
 
             var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
             mainWindow.Show();

@@ -1,42 +1,39 @@
+using MarketData.Client.Wpf.Bootstrapper;
 using MarketData.Client.Wpf.Services;
-using MarketData.Client.Wpf.ViewModels.AddInstrument;
-using MarketData.Grpc;
-using MarketData.Wpf.Client.Services;
-using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using MarketData.Wpf.Shared;
 using Microsoft.Extensions.Logging;
 using System.Collections.ObjectModel;
 using System.Windows.Input;
 
-namespace MarketData.Wpf.Client.ViewModels;
+namespace MarketData.Client.Wpf.ViewModels;
 
 public class MainWindowViewModel : ViewModelBase
 {
     private readonly ILogger<MainWindowViewModel> _logger;
-    private readonly ILoggerFactory _loggerFactory;
-    private readonly InstrumentViewModelFactory _instrumentViewModelFactory;
+    private readonly CreateInstrumentViewModel _instrumentViewModelFactory;
     private readonly IModelConfigService _modelConfigService;
-    private readonly ModelConfigViewModelFactory _modelConfigViewModelFactory;
     private readonly IDialogService _dialogService;
+    private readonly CreateAddInstrumentWizardViewModel _addInstrumentWizardFactory;
+    private readonly CreateInstrumentTabViewModel _tabViewModelFactory;
 
     private string _title = "Market Data Client";
     private ObservableCollection<InstrumentTabViewModel> _tabs;
     private InstrumentTabViewModel? _selectedTab;
 
     public MainWindowViewModel(
-        InstrumentViewModelFactory instrumentViewModelFactory,
+        CreateInstrumentViewModel instrumentViewModelFactory,
         IModelConfigService modelConfigService,
-        ModelConfigViewModelFactory modelConfigViewModelFactory,
         IDialogService dialogService,
-        ILogger<MainWindowViewModel> logger,
-        ILoggerFactory loggerFactory)
+        CreateAddInstrumentWizardViewModel addInstrumentWizardFactory,
+        CreateInstrumentTabViewModel tabViewModelFactory,
+        ILogger<MainWindowViewModel> logger)
     {
         _instrumentViewModelFactory = instrumentViewModelFactory;
         _modelConfigService = modelConfigService;
-        _modelConfigViewModelFactory = modelConfigViewModelFactory;
         _dialogService = dialogService;
+        _addInstrumentWizardFactory = addInstrumentWizardFactory;
+        _tabViewModelFactory = tabViewModelFactory;
         _logger = logger;
-        _loggerFactory = loggerFactory;
         _tabs = [];
 
         AddInstrumentCommand = new AsyncRelayCommand(ExecuteAddInstrument);
@@ -74,8 +71,7 @@ public class MainWindowViewModel : ViewModelBase
         _logger.LogInformation("Executing AddInstrument");
         try
         {
-            var vm = new AddInstrumentWizardViewModel(_modelConfigService, _modelConfigViewModelFactory,
-                _loggerFactory.CreateLogger<AddInstrumentWizardViewModel>(), _dialogService);
+            var vm = _addInstrumentWizardFactory();
             await vm.InitializeAsync();
             var addedInstrument = await _dialogService.ShowAddInstrumentWizardAsync(vm);
             if (!string.IsNullOrEmpty(addedInstrument))
@@ -118,8 +114,8 @@ public class MainWindowViewModel : ViewModelBase
     {
         _logger.LogInformation("Adding tab for instrument: {Instrument}", instrumentName);
 
-        var instrumentViewModel = _instrumentViewModelFactory.Create(instrumentName);
-        var tabViewModel = new InstrumentTabViewModel(instrumentViewModel);
+        var instrumentViewModel = _instrumentViewModelFactory(instrumentName);
+        var tabViewModel = _tabViewModelFactory(instrumentViewModel);
         Tabs.Add(tabViewModel);
         SelectedTab = tabViewModel;
 

@@ -1,6 +1,5 @@
+using MarketData.Client.Wpf.ViewModels.ModelConfigs;
 using MarketData.Grpc;
-using MarketData.Wpf.Client.Services;
-using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
 
@@ -110,7 +109,7 @@ public class ModelConfigPublisher : IDisposable, IModelConfigPublisher
         }
     }
 
-    public async Task<bool> TryPublishModelParams(ModelConfigViewModelBase activeConfigVm, CancellationToken ct = default)
+    public async Task<bool> TryPublishModelParams(ModelConfigParamsViewModelBase activeConfigVm, CancellationToken ct = default)
     {
         try
         {

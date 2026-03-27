@@ -1,20 +1,20 @@
+using MarketData.Client.Wpf.Bootstrapper;
 using MarketData.Client.Wpf.Services;
+using MarketData.Client.Wpf.ViewModels.ModelConfigs;
 using MarketData.Grpc;
-using MarketData.Wpf.Client.Services;
-using MarketData.Wpf.Client.ViewModels.ModelConfigs;
 using MarketData.Wpf.Shared;
 using Microsoft.Extensions.Logging;
 using System.ComponentModel;
 using System.Windows.Input;
 
-namespace MarketData.Wpf.Client.ViewModels;
+namespace MarketData.Client.Wpf.ViewModels;
 
 public class ModelConfigViewModel : ViewModelBase
 {
     private readonly ILogger<ModelConfigViewModel> _logger;
     private readonly IModelConfigService _modelConfigService;
     private readonly IDialogService _dialogService;
-    private readonly ModelConfigViewModelFactory _viewModelFactory;
+    private readonly CreateModelConfigParamsViewModel _viewModelFactory;
     private readonly string _instrument;
     private readonly string[] _supportedModels;
 
@@ -25,15 +25,16 @@ public class ModelConfigViewModel : ViewModelBase
     private bool _isSwitchingModel;
     private bool _activeModelChanged = false;
     private bool _tickIntervalChanged = false;
-    private ModelConfigViewModelBase? _activeConfigViewModel;
+    private ModelConfigParamsViewModelBase? _activeConfigViewModel;
 
     public ModelConfigViewModel(
         string instrument,
         ConfigurationsResponse config,
         IEnumerable<string> supportedModels,
         IModelConfigService modelConfigService,
+        CreateModelConfigParamsViewModel viewModelFactory,
         IDialogService dialogService,
-        ILoggerFactory loggerFactory)
+        ILogger<ModelConfigViewModel> logger)
     {
         _instrument = instrument;
         _supportedModels = supportedModels.ToArray();
@@ -42,8 +43,8 @@ public class ModelConfigViewModel : ViewModelBase
         _tickIntervalMs = config.TickIntervalMs;
         _modelConfigService = modelConfigService;
         _dialogService = dialogService;
-        _logger = loggerFactory.CreateLogger<ModelConfigViewModel>();
-        _viewModelFactory = new ModelConfigViewModelFactory(modelConfigService, dialogService, loggerFactory);
+        _logger = logger;
+        _viewModelFactory = viewModelFactory;
 
         // Create the appropriate child ViewModel based on active model
         UpdateActiveConfigViewModel();
@@ -100,7 +101,7 @@ public class ModelConfigViewModel : ViewModelBase
     /// <summary>
     /// The ViewModel for the currently active model's configuration
     /// </summary>
-    public ModelConfigViewModelBase? ActiveConfigViewModel
+    public ModelConfigParamsViewModelBase? ActiveConfigViewModel
     {
         get => _activeConfigViewModel;
         private set
@@ -117,7 +118,7 @@ public class ModelConfigViewModel : ViewModelBase
 
     private void OnActiveConfigViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
-        if (e.PropertyName == nameof(ModelConfigViewModelBase.IsModified))
+        if (e.PropertyName == nameof(ModelConfigParamsViewModelBase.IsModified))
             OnPropertyChanged(nameof(HasModifications));
     }
 
@@ -167,6 +168,21 @@ public class ModelConfigViewModel : ViewModelBase
     private void UpdateActiveConfigViewModel()
     {
         _logger.LogInformation("Updating ActiveConfigViewModel for instrument {Instrument} with active model {ActiveModel}", _instrument, _activeModel);
-        ActiveConfigViewModel = _viewModelFactory.Create(_activeModel, _configs);
+
+        ActiveConfigViewModel = _viewModelFactory(_activeModel, _configs);
+        OnPropertyChanged(nameof(ActiveModel));
+        OnPropertyChanged(nameof(ActiveConfigViewModel));
+
+        //if (_configs.ActiveModel != _activeModel)
+        //{
+        //    _logger.LogWarning(
+        //        "Active model in configs ({ConfigsActiveModel}) does not match expected active model ({ActiveModel}). " +
+        //        "This may indicate that the configs are out of sync with the selected active model.",
+        //        _configs.ActiveModel, _activeModel);
+
+        //    _dialogService.ShowWarning(
+        //        $"Active model in configs ({_configs.ActiveModel}) does not match expected active model ({_activeModel}). " +
+        //        "This may indicate that the configs are out of sync with the selected active model.");
+        //}
     }
 }

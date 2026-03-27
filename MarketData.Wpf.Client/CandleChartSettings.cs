@@ -1,7 +1,7 @@
 ﻿using FancyCandles;
 using System.ComponentModel.DataAnnotations;
 
-namespace MarketData.Wpf.Client;
+namespace MarketData.Client.Wpf;
 
 public class CandleChartSettings
 {

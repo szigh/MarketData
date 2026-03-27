@@ -1,9 +1,9 @@
-using MarketData.Wpf.Client.Services;
+using MarketData.Client.Wpf.Services;
 using Microsoft.Extensions.Logging;
 
-namespace MarketData.Wpf.Client.ViewModels.ModelConfigs;
+namespace MarketData.Client.Wpf.ViewModels.ModelConfigs;
 
-public class FlatConfigViewModel : ModelConfigViewModelBase
+public class FlatConfigViewModel : ModelConfigParamsViewModelBase
 {
     public FlatConfigViewModel(string instrumentName, IDialogService dialogService, ILogger<FlatConfigViewModel> logger)
         : base(instrumentName, dialogService, logger)

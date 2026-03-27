@@ -1,4 +1,4 @@
-<Window x:Class="MarketData.Wpf.Client.ViewModels.InstrumentSelectorWindow"
+<Window x:Class="MarketData.Client.Wpf.Views.InstrumentSelectorWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Select Instrument" 

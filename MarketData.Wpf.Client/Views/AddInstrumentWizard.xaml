@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MarketData.Client.Wpf.Views"
         xmlns:steps="clr-namespace:MarketData.Client.Wpf.ViewModels.AddInstrument.Steps"
-        xmlns:modelVms="clr-namespace:MarketData.Wpf.Client.ViewModels.ModelConfigs"
-        xmlns:modelViews="clr-namespace:MarketData.Wpf.Client.Views.ModelConfigs"
+        xmlns:modelVms="clr-namespace:MarketData.Client.Wpf.ViewModels.ModelConfigs"
+        xmlns:modelViews="clr-namespace:MarketData.Client.Wpf.Views.ModelConfigs"
         xmlns:behaviours="clr-namespace:MarketData.Wpf.Shared.Behaviours;assembly=MarketData.Wpf.Shared"
         mc:Ignorable="d"
         Title="Add Instrument" Height="450" Width="650">

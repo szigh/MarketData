@@ -1,21 +1,20 @@
-﻿using MarketData.Wpf.Client.ViewModels;
+﻿using MarketData.Client.Wpf.ViewModels;
 using System.Windows;
 
-namespace MarketData.Wpf.Client.Views
-{
-    /// <summary>
-    /// Interaction logic for ModelConfigWindow.xaml
-    /// </summary>
-    public partial class ModelConfigWindow : Window
-    {
-        public ModelConfigWindow()
-        {
-            InitializeComponent();
-        }
+namespace MarketData.Client.Wpf.Views;
 
-        public ModelConfigWindow(ModelConfigViewModel vm) : this()
-        {
-            DataContext = vm;
-        }
+/// <summary>
+/// Interaction logic for ModelConfigWindow.xaml
+/// </summary>
+public partial class ModelConfigWindow : Window
+{
+    public ModelConfigWindow()
+    {
+        InitializeComponent();
+    }
+
+    public ModelConfigWindow(ModelConfigViewModel vm) : this()
+    {
+        DataContext = vm;
     }
 }

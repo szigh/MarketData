@@ -1,11 +1,10 @@
 ﻿using Grpc.Net.Client;
 using MarketData.Client.Shared.Configuration;
-using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace MarketData.Wpf.Client.Services;
+namespace MarketData.Client.Wpf.Services;
 
 public class ModelConfigService : IModelConfigService, IDisposable
 {
