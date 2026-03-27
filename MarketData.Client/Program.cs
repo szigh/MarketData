@@ -1,5 +1,5 @@
 using MarketData.Client;
-using MarketData.Client.Shared.Configuration;
+using MarketData.Client.Grpc.Configuration;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 

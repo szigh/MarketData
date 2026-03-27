@@ -53,7 +53,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MarketData.Client.Shared\MarketData.Client.Shared.csproj" />
+    <ProjectReference Include="..\MarketData.Client.Shared\MarketData.Client.Grpc.csproj" />
     <ProjectReference Include="..\MarketData.Wpf.Shared\MarketData.Wpf.Shared.csproj" />
   </ItemGroup>
 </Project>

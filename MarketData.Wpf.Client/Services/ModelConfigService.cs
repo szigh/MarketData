@@ -1,5 +1,5 @@
 ﻿using Grpc.Net.Client;
-using MarketData.Client.Shared.Configuration;
+using MarketData.Client.Grpc.Configuration;
 using MarketData.Client.Wpf.Services;
 using MarketData.Grpc;
 using Microsoft.Extensions.Logging;

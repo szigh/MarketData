@@ -1,4 +1,4 @@
-﻿using MarketData.Client.Shared.Configuration;
+﻿using MarketData.Client.Grpc.Configuration;
 using MarketData.Grpc;
 using System.Text.Json;
 

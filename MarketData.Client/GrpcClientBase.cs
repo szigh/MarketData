@@ -1,6 +1,6 @@
 ﻿using Grpc.Net.Client;
-using MarketData.Client.Shared.Configuration;
-using MarketData.Client.Shared.Services;
+using MarketData.Client.Grpc.Configuration;
+using MarketData.Client.Grpc.Services;
 
 namespace MarketData.Client;
 
