@@ -24,7 +24,7 @@ public class PriceStreamer
 
         var instrument = input.Trim();
 
-        Console.WriteLine($"\nSubscribing to: {string.Join(", ", instrument)}");
+        Console.WriteLine($"\nSubscribing to: {instrument}");
         Console.WriteLine("Waiting for price updates... (Press ESC to exit)\n");
 
         using var cts = new CancellationTokenSource();

@@ -21,6 +21,13 @@ public class ModelConfigService : IModelConfigService, IDisposable
         _client = new ModelConfigurationService.ModelConfigurationServiceClient(_channel);
     }
 
+    public ModelConfigService(GrpcChannel channel, ILogger<ModelConfigService> logger)
+    {
+        _logger = logger;
+        _channel = channel;
+        _client = new ModelConfigurationService.ModelConfigurationServiceClient(_channel);
+    }
+
     public async Task<GetAllInstrumentsResponse> GetAllInstrumentsAsync(CancellationToken ct = default)
     {
         _logger.LogInformation("Requesting instruments from gRPC service.");

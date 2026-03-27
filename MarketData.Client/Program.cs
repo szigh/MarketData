@@ -2,11 +2,11 @@ using MarketData.Client.Grpc.Services;
 using MarketData.Client.Grpc.Configuration;
 using Microsoft.Extensions.Configuration;
 using Serilog;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using MarketData.Client;
 using MarketData.Client.Grpc;
 using System.Text.Json;
+using Grpc.Net.Client;
 
 internal class Program
 {
@@ -26,17 +26,19 @@ internal class Program
             LogBanner();
             Log.Information("Starting Console Market Data Client");
             
-            var grpcOptions = Options.Create(configuration.GetSection(GrpcSettings.SectionName)
-                .Get<GrpcSettings>() ?? new GrpcSettings());
+            var grpcSettings = configuration.GetSection(GrpcSettings.SectionName)
+                .Get<GrpcSettings>() ?? new GrpcSettings();
 
-            var modelConfigService = new ModelConfigService(grpcOptions, new LoggerFactory().CreateLogger<ModelConfigService>());
-            var priceService = new PriceService(grpcOptions, new LoggerFactory().CreateLogger<PriceService>());
+            using var loggerFactory = new LoggerFactory();
+            using var grpcChannel = GrpcChannel.ForAddress(grpcSettings.ServerUrl);
+            using var modelConfigService = new ModelConfigService(grpcChannel, loggerFactory.CreateLogger<ModelConfigService>());
+            using var priceService = new PriceService(grpcChannel, loggerFactory.CreateLogger<PriceService>());
 
             var priceStreamer = new PriceStreamer(priceService);
 
             // Initialize gRPC connections to avoid race conditions
-            Log.Information("Initializing gRPC connections to {ServerUrl}", grpcOptions.Value.ServerUrl);
-            var grpcConnectionInitializer = new GrpcConnectionInitializer(grpcOptions);
+            Log.Information("Initializing gRPC connections to {ServerUrl}", grpcSettings.ServerUrl);
+            var grpcConnectionInitializer = new GrpcConnectionInitializer(grpcChannel);
             await grpcConnectionInitializer.InitializeAsync();
             Log.Information("gRPC connections ready");
 

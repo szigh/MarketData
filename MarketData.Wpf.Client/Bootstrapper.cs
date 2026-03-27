@@ -33,8 +33,6 @@ internal static class Bootstrapper
         services.ConfigureGrpcClients();
 
         Logger.Information("Registering application specific services");
-        services.AddSingleton<IModelConfigService, ModelConfigService>();
-        services.AddSingleton<IPriceService, PriceService>();
         services.AddSingleton<IDialogService, DialogService>();
         services.AddTransient<InstrumentViewModelFactory>();
 
@@ -55,13 +53,21 @@ internal static class Bootstrapper
                 sp.GetRequiredService<GrpcChannel>(),
                 sp.GetRequiredService<ILogger<GrpcConnectionInitializer>>()));
 
-        services.AddSingleton<ModelConfigurationService.ModelConfigurationServiceClient>(sp =>
-            new ModelConfigurationService.ModelConfigurationServiceClient(sp.GetRequiredService<GrpcChannel>()));
+        services.AddSingleton<IPriceService, PriceService>(sp => 
+            new PriceService(
+                sp.GetRequiredService<GrpcChannel>(),
+                sp.GetRequiredService<ILogger<PriceService>>()));
+
+        services.AddSingleton<IModelConfigService, ModelConfigService>(sp =>
+            new ModelConfigService(
+                sp.GetRequiredService<GrpcChannel>(),
+                sp.GetRequiredService<ILogger<ModelConfigService>>()));
 
         return services;
     }
 
-    internal static string GetGrpcServerUrl(this IServiceProvider sp) => sp.GetRequiredService<IOptions<GrpcSettings>>().Value.ServerUrl;
+    internal static string GetGrpcServerUrl(this IServiceProvider sp) => 
+        sp.GetRequiredService<IOptions<GrpcSettings>>().Value.ServerUrl;
 
     internal static void InitializeGrpcConnections(IServiceProvider serviceProvider)
     {
