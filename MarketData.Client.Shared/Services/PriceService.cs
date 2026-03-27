@@ -33,7 +33,7 @@ public class PriceService : IPriceService, IDisposable
         string instrument, long startTimestamp, long endTimestamp, CancellationToken ct = default)
     {
         _logger.LogInformation("Requesting historical data for instrument {Instrument} from {Start} to {End}",
-            instrument, new DateTime(startTimestamp), new DateTime(endTimestamp));
+            instrument, new DateTime(startTimestamp, DateTimeKind.Utc), new DateTime(endTimestamp, DateTimeKind.Utc));
 
         return await _client.GetHistoricalDataAsync(new HistoricalDataRequest
         {
