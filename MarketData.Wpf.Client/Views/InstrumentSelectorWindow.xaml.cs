@@ -1,7 +1,7 @@
 using System.Windows;
 using System.Windows.Controls;
 
-namespace MarketData.Client.Wpf.ViewModels;
+namespace MarketData.Client.Wpf.Views;
 
 public partial class InstrumentSelectorWindow : Window
 {
