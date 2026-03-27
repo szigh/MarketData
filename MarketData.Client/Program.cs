@@ -29,10 +29,10 @@ internal class Program
             var grpcSettings = configuration.GetSection(GrpcSettings.SectionName)
                 .Get<GrpcSettings>() ?? new GrpcSettings();
 
-            var grpcChannel = GrpcChannel.ForAddress(grpcSettings.ServerUrl);
-
-            var modelConfigService = new ModelConfigService(grpcChannel, new LoggerFactory().CreateLogger<ModelConfigService>());
-            var priceService = new PriceService(grpcChannel, new LoggerFactory().CreateLogger<PriceService>());
+            using var loggerFactory = new LoggerFactory();
+            using var grpcChannel = GrpcChannel.ForAddress(grpcSettings.ServerUrl);
+            using var modelConfigService = new ModelConfigService(grpcChannel, loggerFactory.CreateLogger<ModelConfigService>());
+            using var priceService = new PriceService(grpcChannel, loggerFactory.CreateLogger<PriceService>());
 
             var priceStreamer = new PriceStreamer(priceService);
 
