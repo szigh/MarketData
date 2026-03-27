@@ -304,7 +304,7 @@ public class AddInstrumentWizardViewModel : ViewModelBase
         {
             var configResponse = await _modelConfigService.GetConfigurationsAsync(_addedInstrument!, ct);
 
-            var modelConfigViewModel = _modelConfigViewModelFactory(configResponse);
+            var modelConfigViewModel = _modelConfigViewModelFactory(configResponse.ActiveModel, configResponse);
             
             if (modelConfigViewModel == null)
             {

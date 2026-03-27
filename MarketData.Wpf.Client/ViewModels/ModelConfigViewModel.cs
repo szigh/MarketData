@@ -169,24 +169,20 @@ public class ModelConfigViewModel : ViewModelBase
     {
         _logger.LogInformation("Updating ActiveConfigViewModel for instrument {Instrument} with active model {ActiveModel}", _instrument, _activeModel);
 
-        if (_configs.ActiveModel != _activeModel)
-        {
-            // If there is no pending local model change, this indicates a real server/client desync.
-            if (!_activeModelChanged)
-            {
-                _logger.LogWarning(
-                    "Active model in configs ({ConfigsActiveModel}) does not match expected active model ({ActiveModel}). " +
-                    "This may indicate that the configs are out of sync with the selected active model.",
-                    _configs.ActiveModel, _activeModel);
+        ActiveConfigViewModel = _viewModelFactory(_activeModel, _configs);
+        OnPropertyChanged(nameof(ActiveModel));
+        OnPropertyChanged(nameof(ActiveConfigViewModel));
 
-                _dialogService.ShowWarning(
-                    $"Active model in configs ({_configs.ActiveModel}) does not match expected active model ({_activeModel}). " +
-                    "This may indicate that the configs are out of sync with the selected active model.");
-            }
+        //if (_configs.ActiveModel != _activeModel)
+        //{
+        //    _logger.LogWarning(
+        //        "Active model in configs ({ConfigsActiveModel}) does not match expected active model ({ActiveModel}). " +
+        //        "This may indicate that the configs are out of sync with the selected active model.",
+        //        _configs.ActiveModel, _activeModel);
 
-            // Ensure the configs used to build the child ViewModel reflect the currently selected active model.
-            _configs.ActiveModel = _activeModel;
-        }
-        ActiveConfigViewModel = _viewModelFactory(_configs);
+        //    _dialogService.ShowWarning(
+        //        $"Active model in configs ({_configs.ActiveModel}) does not match expected active model ({_activeModel}). " +
+        //        "This may indicate that the configs are out of sync with the selected active model.");
+        //}
     }
 }

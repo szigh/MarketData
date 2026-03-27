@@ -48,7 +48,7 @@ internal static class Bootstrapper
     private static void RegisterViewModelFactories(this IServiceCollection services)
     {
         services.AddTransient<CreateModelConfigParamsViewModel>(sp =>
-            config => sp.CreateModelConfigParamsViewModel(config));
+            (targetConfig, config) => sp.CreateModelConfigParamsViewModel(targetConfig, config));
 
         services.AddTransient<CreateModelConfigViewModel>(sp =>
             (instrument, config, models) => sp.CreateModelConfigViewModel(instrument, config, models));

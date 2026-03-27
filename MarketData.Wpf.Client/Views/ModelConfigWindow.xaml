@@ -78,7 +78,7 @@
                 <Separator Background="#777777" Margin="0,10"/>
 
                 <!-- Model-specific configuration - DataTemplate automatically selected -->
-                <ContentControl Content="{Binding ActiveConfigViewModel}"/>
+                <ContentControl Content="{Binding ActiveConfigViewModel, Mode=OneWay}"/>
 
                 <Button Content="Publish Changes"
                         Style="{StaticResource SuccessButton}"

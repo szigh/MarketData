@@ -14,7 +14,7 @@ namespace MarketData.Client.Wpf.Bootstrapper;
 
 public delegate InstrumentViewModel CreateInstrumentViewModel(string instrumentName);
 public delegate ModelConfigViewModel CreateModelConfigViewModel(string instrumentName, ConfigurationsResponse config, IEnumerable<string> availableModels);
-public delegate ModelConfigParamsViewModelBase? CreateModelConfigParamsViewModel(ConfigurationsResponse config);
+public delegate ModelConfigParamsViewModelBase? CreateModelConfigParamsViewModel(string targetConfig, ConfigurationsResponse config);
 public delegate InstrumentTabViewModel CreateInstrumentTabViewModel(InstrumentViewModel instrumentViewModel);
 public delegate AddInstrumentWizardViewModel CreateAddInstrumentWizardViewModel();
 
@@ -59,9 +59,12 @@ internal static class ViewModelConstructors
     }
 
     internal static ModelConfigParamsViewModelBase? CreateModelConfigParamsViewModel(this IServiceProvider sp,
-        ConfigurationsResponse config)
+        string targetConfig, ConfigurationsResponse config)
     {
-        var modelType = config.ActiveModel;
+        // Deliberately using targetConfig here, as the caller will specify which config they want to edit, 
+        // which may be different from the active model in the case where they are switching models and want
+        // to edit the new model's parameters before publishing changes
+        var modelType = targetConfig;
         var instrumentName = config.InstrumentName;
 
         Logger.Information("Creating model config view model for instrument {InstrumentName} " +
