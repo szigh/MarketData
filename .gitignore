@@ -370,3 +370,5 @@ FodyWeavers.xsd
 # markdowns, notes, except README
 *.md
 !README.md
+!LOGGING.md
+!TESTING.md

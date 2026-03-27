@@ -59,6 +59,9 @@ try
         {
             var context = scope.ServiceProvider.GetRequiredService<MarketDataContext>();
             context.Database.Migrate();
+
+            if (args.Contains("--seed-data"))
+                DatabaseSeeder.Seed(context);
         }
 
         app.MapOpenApi();

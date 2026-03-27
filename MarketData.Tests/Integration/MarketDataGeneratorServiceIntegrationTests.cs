@@ -71,19 +71,19 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
             Value = 100m,
             Timestamp = DateTime.UtcNow
         });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
         var initialPriceCount = await _context.Prices
             .Where(p => p.Instrument == "TEST")
-            .CountAsync();
+            .CountAsync(TestContext.Current.CancellationToken);
 
-        await _host.StartAsync();
-        await Task.Delay(TimeSpan.FromMilliseconds(1000));
+        await _host.StartAsync(TestContext.Current.CancellationToken);
+        await Task.Delay(TimeSpan.FromMilliseconds(1000), TestContext.Current.CancellationToken);
         await _host.StopAsync(TimeSpan.FromSeconds(2));
 
         var finalPriceCount = await _context.Prices
             .Where(p => p.Instrument == "TEST")
-            .CountAsync();
+            .CountAsync(TestContext.Current.CancellationToken);
 
         Assert.True(finalPriceCount > initialPriceCount,
             $"Expected more than {initialPriceCount} prices, got {finalPriceCount}");
@@ -114,14 +114,14 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
             new Price { Instrument = "FAST", Value = 100m, Timestamp = DateTime.UtcNow },
             new Price { Instrument = "SLOW", Value = 200m, Timestamp = DateTime.UtcNow }
         );
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        await _host.StartAsync();
-        await Task.Delay(TimeSpan.FromMilliseconds(2000));
+        await _host.StartAsync(TestContext.Current.CancellationToken);
+        await Task.Delay(TimeSpan.FromMilliseconds(2000), TestContext.Current.CancellationToken);
         await _host.StopAsync(TimeSpan.FromSeconds(2));
 
-        var fastCount = await _context.Prices.CountAsync(p => p.Instrument == "FAST");
-        var slowCount = await _context.Prices.CountAsync(p => p.Instrument == "SLOW");
+        var fastCount = await _context.Prices.CountAsync(p => p.Instrument == "FAST", TestContext.Current.CancellationToken);
+        var slowCount = await _context.Prices.CountAsync(p => p.Instrument == "SLOW", TestContext.Current.CancellationToken);
 
         Assert.True(fastCount > slowCount,
             $"Fast instrument ({fastCount} prices) should have more than slow instrument ({slowCount} prices)");
@@ -143,13 +143,13 @@ public class MarketDataGeneratorServiceIntegrationTests : IAsyncDisposable
             Value = 100m,
             Timestamp = DateTime.UtcNow
         });
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        await _host.StartAsync();
-        await Task.Delay(100);
+        await _host.StartAsync(TestContext.Current.CancellationToken);
+        await Task.Delay(100, TestContext.Current.CancellationToken);
         var stopTask = _host.StopAsync(TimeSpan.FromSeconds(3));
 
-        var completed = await Task.WhenAny(stopTask, Task.Delay(5000)) == stopTask;
+        var completed = await Task.WhenAny(stopTask, Task.Delay(5000, TestContext.Current.CancellationToken)) == stopTask;
 
         Assert.True(completed, "Service should stop cleanly within timeout");
     }
