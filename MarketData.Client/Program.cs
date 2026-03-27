@@ -5,6 +5,8 @@ using Serilog;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Logging;
 using MarketData.Client;
+using MarketData.Client.Grpc;
+using System.Text.Json;
 
 internal class Program
 {
@@ -23,18 +25,19 @@ internal class Program
         {
             LogBanner();
             Log.Information("Starting Console Market Data Client");
+            
+            var grpcOptions = Options.Create(configuration.GetSection(GrpcSettings.SectionName)
+                .Get<GrpcSettings>() ?? new GrpcSettings());
 
-            var grpcSettings = configuration.GetSection(GrpcSettings.SectionName)
-                .Get<GrpcSettings>() ?? new GrpcSettings();
+            var modelConfigService = new ModelConfigService(grpcOptions, new LoggerFactory().CreateLogger<ModelConfigService>());
+            var priceService = new PriceService(grpcOptions, new LoggerFactory().CreateLogger<PriceService>());
 
-            var modelConfigClient = new GrpcModelConfigClient(grpcSettings);
-            var priceService = new PriceService(Options.Create(grpcSettings), new LoggerFactory().CreateLogger<PriceService>());
             var priceStreamer = new PriceStreamer(priceService);
 
             // Initialize gRPC connections to avoid race conditions
-            Log.Information("Initializing gRPC connections to {ServerUrl}", grpcSettings.ServerUrl);
-            await modelConfigClient.InitializeAsync();
-            //await priceStreamer.InitializeAsync();
+            Log.Information("Initializing gRPC connections to {ServerUrl}", grpcOptions.Value.ServerUrl);
+            var grpcConnectionInitializer = new GrpcConnectionInitializer(grpcOptions);
+            await grpcConnectionInitializer.InitializeAsync();
             Log.Information("gRPC connections ready");
 
             while (true)
@@ -44,7 +47,8 @@ internal class Program
                 Console.WriteLine($"Press (Ctrl+C) to exit.");
                 Console.WriteLine();
 
-                var availableInstruments = await modelConfigClient.GetConfiguredInstruments();
+                var availableInstruments = (await modelConfigService.GetAllInstrumentsAsync())
+                    .Configurations.Select(c => c.InstrumentName);
                 Console.WriteLine($"Available instruments: {string.Join(", ", availableInstruments)}");
 
                 var sep = new string('=', 30);
@@ -58,15 +62,43 @@ internal class Program
                 var input = Console.ReadLine();
                 if (input == "1")
                 {
-                    await modelConfigClient.AddInstrument();
+                    Console.Write("Enter instrument name: ");
+                    var name = Console.ReadLine();
+                    if(string.IsNullOrWhiteSpace(name))
+                    {
+                        Console.WriteLine("Invalid instrument name");
+                        continue;
+                    }
+                    Console.Write("Enter tick interval (ms): ");
+                    if(!int.TryParse(Console.ReadLine(), out var tickIntervalMs))
+                    {
+                        Console.WriteLine("Invalid tick interval");
+                        continue;
+                    }
+                    Console.Write("Enter initial price: ");
+                    if(!double.TryParse(Console.ReadLine(), out var initialPrice))
+                    {
+                        Console.WriteLine("Invalid initial price");
+                        continue;
+                    }
+                    await modelConfigService.TryAddInstrumentAsync(name, tickIntervalMs, initialPrice);
                 }
                 else if (input == "2")
                 {
-                    await modelConfigClient.RemoveInstrument();
+                    Console.Write("Enter instrument name: ");
+                    var name = Console.ReadLine();
+                    if(string.IsNullOrWhiteSpace(name))
+                    {
+                        Console.WriteLine("Invalid instrument name");
+                        continue;
+                    }
+                    await modelConfigService.TryRemoveInstrumentAsync(name);
                 }
                 else if (input == "3")
                 {
-                    await modelConfigClient.GetConfiguredInstruments(printConfigs: true);
+                    var res = await modelConfigService.GetAllInstrumentsAsync();
+                    var configs = JsonSerializer.Serialize(res.Configurations);
+                    Console.WriteLine(configs);
                 }
                 else if (input == "4")
                 {
