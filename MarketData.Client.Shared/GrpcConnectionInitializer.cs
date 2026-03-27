@@ -1,8 +1,10 @@
 using Grpc.Net.Client;
+using MarketData.Client.Grpc.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
+using Microsoft.Extensions.Options;
 
-namespace MarketData.Client.Shared.Services;
+namespace MarketData.Client.Grpc;
 
 public interface IGrpcConnectionInitializer
 {
@@ -18,6 +20,12 @@ public class GrpcConnectionInitializer : IGrpcConnectionInitializer
     {
         _logger = logger ?? NullLogger.Instance;
         _channel = channel;
+    }
+
+    public GrpcConnectionInitializer(IOptions<GrpcSettings> grpcSettings, ILogger? logger = null)
+    {
+        _logger = logger ?? NullLogger.Instance;
+        _channel = GrpcChannel.ForAddress(grpcSettings.Value.ServerUrl);
     }
 
     public async Task InitializeAsync(int maxRetries = 5, int initialRetryDelayMs = 100, 

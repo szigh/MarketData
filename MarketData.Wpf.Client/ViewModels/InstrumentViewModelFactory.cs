@@ -1,5 +1,5 @@
+using MarketData.Client.Grpc.Services;
 using MarketData.Client.Wpf.Services;
-using MarketData.Grpc;
 using MarketData.Wpf.Client.Services;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -8,20 +8,20 @@ namespace MarketData.Wpf.Client.ViewModels;
 
 public class InstrumentViewModelFactory
 {
-    private readonly MarketDataService.MarketDataServiceClient _grpcClient;
+    private readonly IPriceService _priceService;
     private readonly IModelConfigService _modelConfigService;
     private readonly IDialogService _dialogService;
     private readonly IOptions<CandleChartSettings> _options;
     private readonly ILoggerFactory _loggerFactory;
 
     public InstrumentViewModelFactory(
-        MarketDataService.MarketDataServiceClient grpcClient,
+        IPriceService priceService,
         IModelConfigService modelConfigService,
         IDialogService dialogService,
         IOptions<CandleChartSettings> options,
         ILoggerFactory loggerFactory)
     {
-        _grpcClient = grpcClient;
+        _priceService = priceService;
         _modelConfigService = modelConfigService;
         _dialogService = dialogService;
         _options = options;
@@ -32,7 +32,7 @@ public class InstrumentViewModelFactory
     {
         return new InstrumentViewModel(
             instrumentName,
-            _grpcClient,
+            _priceService,
             _modelConfigService,
             _dialogService,
             _options,

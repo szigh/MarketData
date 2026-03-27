@@ -1,11 +1,10 @@
 ﻿using Grpc.Net.Client;
-using MarketData.Client.Shared.Configuration;
-using MarketData.Client.Wpf.Services;
+using MarketData.Client.Grpc.Configuration;
 using MarketData.Grpc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-namespace MarketData.Wpf.Client.Services;
+namespace MarketData.Client.Grpc.Services;
 
 public class ModelConfigService : IModelConfigService, IDisposable
 {
@@ -20,6 +19,37 @@ public class ModelConfigService : IModelConfigService, IDisposable
         _logger = logger;
         _channel = GrpcChannel.ForAddress(grpcSettings.Value.ServerUrl);
         _client = new ModelConfigurationService.ModelConfigurationServiceClient(_channel);
+    }
+
+    public async Task<GetAllInstrumentsResponse> GetAllInstrumentsAsync(CancellationToken ct = default)
+    {
+        _logger.LogInformation("Requesting instruments from gRPC service.");
+        return await _client.GetAllInstrumentsAsync(new GetAllInstrumentsRequest(), cancellationToken: ct);
+    }
+
+    public async Task<TryAddInstrumentResponse> TryAddInstrumentAsync(string instrumentName, 
+        int tickIntervalMs, double initialPrice, CancellationToken ct = default)
+    {
+        _logger.LogInformation("Requesting to add instrument {Instrument} with tick interval {TickInterval} ms and initial price {InitialPrice} from gRPC service.", 
+            instrumentName, tickIntervalMs, initialPrice);
+        
+        return await _client.TryAddInstrumentAsync(new TryAddInstrumentRequest
+        {
+            InstrumentName = instrumentName,
+            TickIntervalMs = tickIntervalMs,
+            InitialPriceValue = initialPrice,
+            InitialPriceTimestamp = DateTime.UtcNow.Ticks
+        }, cancellationToken: ct);
+    }
+
+    public async Task<TryRemoveInstrumentResponse> TryRemoveInstrumentAsync(string instrumentName, 
+        CancellationToken ct = default)
+    {
+        _logger.LogInformation("Requesting to remove instrument {Instrument} from gRPC service.", instrumentName);
+        return await _client.TryRemoveInstrumentAsync(new TryRemoveInstrumentRequest
+        {
+            InstrumentName = instrumentName
+        }, cancellationToken: ct);
     }
 
     public async Task<SupportedModelsResponse> GetSupportedModelsAsync(CancellationToken ct = default)

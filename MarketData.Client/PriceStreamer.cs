@@ -1,42 +1,30 @@
-﻿using MarketData.Client.Shared.Configuration;
-using MarketData.Grpc;
+﻿using MarketData.Client.Grpc.Services;
 
 namespace MarketData.Client;
 
-internal class PriceStreamer : GrpcClientBase
+public class PriceStreamer
 {
-    private readonly MarketDataService.MarketDataServiceClient _client;
+    private readonly IPriceService _priceService;
 
-    public PriceStreamer(GrpcSettings settings) : base(settings)
+    public PriceStreamer(IPriceService priceService)
     {
-        _client = new MarketDataService.MarketDataServiceClient(_channel);
-    }
-
-    public async Task InitializeAsync(CancellationToken ct = default)
-    {
-        await WaitForConnectionAsync(ct);
+        _priceService = priceService;
     }
 
     public async Task Start()
     {
-        Console.Write("Enter instruments to subscribe (comma-separated, e.g., FTSE,AAPL): ");
+        Console.Write("Enter instrument to stream: ");
         var input = Console.ReadLine();
 
         if (string.IsNullOrWhiteSpace(input))
         {
-            Console.WriteLine("No instruments specified. Exiting.");
+            Console.WriteLine("No instrument specified. Exiting.");
             return;
         }
 
-        var instruments = input.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var instrument = input.Trim();
 
-        var request = new SubscribeRequest();
-        foreach (var instrument in instruments)
-        {
-            request.Instruments.Add(instrument);
-        }
-
-        Console.WriteLine($"\nSubscribing to: {string.Join(", ", request.Instruments)}");
+        Console.WriteLine($"\nSubscribing to: {string.Join(", ", instrument)}");
         Console.WriteLine("Waiting for price updates... (Press ESC to exit)\n");
 
         using var cts = new CancellationTokenSource();
@@ -59,7 +47,7 @@ internal class PriceStreamer : GrpcClientBase
 
         try
         {
-            using var call = _client.SubscribeToPrices(request, cancellationToken: cts.Token);
+            using var call = _priceService.SubscribeToPrices(instrument, cts.Token);
 
             while (await call.ResponseStream.MoveNext(cts.Token))
             {
@@ -75,7 +63,6 @@ internal class PriceStreamer : GrpcClientBase
         catch (Exception ex)
         {
             Console.WriteLine($"\nError: {ex.Message}");
-            Console.WriteLine($"Make sure the MarketData API is running on {_grpcSettings.ServerUrl}");
         }
     }
 }

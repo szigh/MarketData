@@ -1,6 +1,6 @@
 using MarketData.Grpc;
 
-namespace MarketData.Client.Wpf.Services;
+namespace MarketData.Client.Grpc.Services;
 
 /// <summary>
 /// Service interface for managing model configurations via gRPC
@@ -54,4 +54,7 @@ public interface IModelConfigService : IDisposable
         string instrumentName,
         IEnumerable<(double probability, double stepValue)> walkSteps,
         CancellationToken ct);
+    Task<GetAllInstrumentsResponse> GetAllInstrumentsAsync(CancellationToken ct = default);
+    Task<TryRemoveInstrumentResponse> TryRemoveInstrumentAsync(string instrumentName, CancellationToken ct = default);
+    Task<TryAddInstrumentResponse> TryAddInstrumentAsync(string instrumentName, int tickIntervalMs, double initialPrice, CancellationToken ct = default);
 }

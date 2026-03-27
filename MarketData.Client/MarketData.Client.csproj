@@ -8,12 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Google.Protobuf" Version="3.34.1" />
-    <PackageReference Include="Grpc.Net.Client" Version="2.76.0" />
-    <PackageReference Include="Grpc.Tools" Version="2.80.0-pre1">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="10.0.5" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.5" />
@@ -28,18 +22,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Protobuf Include="..\MarketData\Protos\marketdata.proto" GrpcServices="Client" />
-	<Protobuf Include="..\MarketData\Protos\modelconfiguration.proto" GrpcServices="Client" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="appsettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\MarketData.Client.Shared\MarketData.Client.Shared.csproj" />
+    <ProjectReference Include="..\MarketData.Client.Shared\MarketData.Client.Grpc.csproj" />
   </ItemGroup>
 
 </Project>

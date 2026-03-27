@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace MarketData.Client.Shared.Configuration;
+namespace MarketData.Client.Grpc.Configuration;
 
 /// <summary>
 /// Configuration settings for gRPC client connections.
