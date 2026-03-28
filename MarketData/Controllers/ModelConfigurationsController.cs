@@ -1,5 +1,9 @@
+using MarketData.Grpc;
+using MarketData.PriceSimulator;
 using MarketData.Services;
 using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
+using static MarketData.DTO.ModelConfigurationsDTO;
 
 namespace MarketData.Controllers;
 
@@ -31,18 +35,53 @@ public class ModelConfigurationsController : ControllerBase
             return NotFound($"Instrument '{instrumentName}' not found");
         }
 
-        return Ok(new
+
+        RandomMultiplicativeConfigDto? randomMultiplicative = null;
+        if (instrument.RandomMultiplicativeConfig != null)
         {
-            instrument.Name,
-            ActiveModel = instrument.ModelType,
-            Configurations = new
-            {
-                RandomMultiplicative = instrument.RandomMultiplicativeConfig,
-                MeanReverting = instrument.MeanRevertingConfig,
-                Flat = instrument.FlatConfig != null ? new { Configured = true } : null,
-                RandomAdditiveWalk = instrument.RandomAdditiveWalkConfig
-            }
-        });
+            randomMultiplicative = new RandomMultiplicativeConfigDto(
+                instrument.RandomMultiplicativeConfig.StandardDeviation,
+                instrument.RandomMultiplicativeConfig.Mean
+            );
+        }
+
+        MeanRevertingConfigDto? meanReverting = null;
+        if (instrument.MeanRevertingConfig != null)
+        {
+            meanReverting = new MeanRevertingConfigDto(
+                instrument.MeanRevertingConfig.Mean,
+                instrument.MeanRevertingConfig.Kappa,
+                instrument.MeanRevertingConfig.Sigma,
+                instrument.MeanRevertingConfig.Dt
+            );
+        }
+
+        RandomAdditiveWalkConfigDto? randomAdditiveWalk = null;
+        if (instrument.RandomAdditiveWalkConfig != null)
+        {
+            var walkSteps = JsonSerializer.Deserialize<List<RandomWalkStep>>(
+                instrument.RandomAdditiveWalkConfig.WalkStepsJson
+            ) ?? new List<RandomWalkStep>();
+
+            randomAdditiveWalk = new RandomAdditiveWalkConfigDto(
+                walkSteps.Select(s => new WalkStepDto(
+                    s.Probability,
+                    s.Value
+                )).ToList()
+            );
+        }
+
+        var dto = new InstrumentConfigurationsResponseDto(
+            InstrumentName: instrument.Name,
+            ActiveModel: instrument.ModelType ?? "None",
+            RandomMultiplicative: randomMultiplicative,
+            MeanReverting: meanReverting,
+            FlatConfigured: instrument.FlatConfig != null,
+            RandomAdditiveWalk: randomAdditiveWalk,
+            TickIntervalMs: instrument.TickIntervalMillieconds
+        );
+
+        return Ok(dto);
     }
 
     /// <summary>
@@ -51,18 +90,19 @@ public class ModelConfigurationsController : ControllerBase
     [HttpPut("{instrumentName}/model")]
     public async Task<ActionResult> SwitchModel(
         string instrumentName,
-        [FromBody] SwitchModelRequest request,
+        [FromBody] SwitchModelRequestDto request,
         CancellationToken ct)
     {
         try
         {
             var previousModel = await _modelManager.SwitchModelAsync(instrumentName, request.ModelType, ct);
-            return Ok(new
-            {
-                Message = "Model switched successfully. Changes are applied immediately.",
-                PreviousModel = previousModel,
-                NewModel = request.ModelType
-            });
+            var dto = new SwitchModelResponseDto(
+                Message: "Model switched successfully. Changes are applied immediately.",
+                PreviousModel: previousModel ?? "None",
+                NewModel: request.ModelType
+            );
+
+            return Ok(dto);
         }
         catch (ArgumentException ex)
         {
@@ -80,7 +120,7 @@ public class ModelConfigurationsController : ControllerBase
     [HttpPut("{instrumentName}/config/random-multiplicative")]
     public async Task<ActionResult> UpdateRandomMultiplicativeConfig(
         string instrumentName,
-        [FromBody] UpdateRandomMultiplicativeRequest request,
+        [FromBody] UpdateRandomMultiplicativeRequestDto request,
         CancellationToken ct)
     {
         try
@@ -91,11 +131,12 @@ public class ModelConfigurationsController : ControllerBase
                 request.Mean,
                 ct);
 
-            return Ok(new
-            {
-                Message = "Configuration updated successfully. Changes are applied immediately.",
-                Configuration = config
-            });
+            var dto = new UpdateConfigResponseDto(
+                Message: "RandomMultiplicative configuration updated successfully",
+                Success: true
+            );
+
+            return Ok(dto);
         }
         catch (ArgumentException ex)
         {
@@ -113,7 +154,7 @@ public class ModelConfigurationsController : ControllerBase
     [HttpPut("{instrumentName}/config/mean-reverting")]
     public async Task<ActionResult> UpdateMeanRevertingConfig(
         string instrumentName,
-        [FromBody] UpdateMeanRevertingRequest request,
+        [FromBody] UpdateMeanRevertingRequestDto request,
         CancellationToken ct)
     {
         try
@@ -126,11 +167,72 @@ public class ModelConfigurationsController : ControllerBase
                 request.Dt,
                 ct);
 
-            return Ok(new
+            var dto = new UpdateConfigResponseDto(
+                Message: "MeanReverting configuration updated successfully",
+                Success: true
+            );
+
+            return Ok(dto);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return NotFound(ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Update RandomAdditiveWalk configuration
+    /// </summary>
+    [HttpPut("{instrumentName}/config/random-additive-walk")]
+    public async Task<ActionResult> UpdateRandomAdditiveWalkConfig(
+        string instrumentName,
+        [FromBody] UpdateRandomAdditiveWalkRestRequest request,
+        CancellationToken ct)
+    {
+        try
+        {
+            if (request.WalkSteps == null || request.WalkSteps.Count == 0)
             {
-                Message = "Configuration updated successfully. Changes are applied immediately.",
-                Configuration = config
-            });
+                return BadRequest("Walk steps cannot be empty");
+            }
+
+            // Validate probabilities sum to ~1.0
+            var totalProbability = request.WalkSteps.Sum(s => s.Probability);
+            if (Math.Abs(totalProbability - 1.0) > 0.0001)
+            {
+                return BadRequest($"Walk step probabilities must sum to 1.0 (got {totalProbability})");
+            }
+
+            if (request.WalkSteps.Any(s => s.Probability < 0 || s.Probability > 1))
+            {
+                return BadRequest("Walk step probabilities must all be between 0 and 1");
+            }
+
+            // Convert to JSON (gleich wie im gRPC-Service)
+            var walkStepsForJson = request.WalkSteps.Select(s => new
+            {
+                Probability = s.Probability,
+                Value = s.StepValue
+            }).ToList();
+
+            var walkStepsJson = System.Text.Json.JsonSerializer.Serialize(walkStepsForJson);
+
+            await _modelManager.UpdateRandomAdditiveWalkConfigAsync(
+                instrumentName,
+                walkStepsJson,
+                ct);
+
+            var dto = new UpdateConfigResponseDto(
+                Message: "RandomAdditiveWalk configuration updated successfully",
+                Success: true
+            );
+
+
+            return Ok(dto);
         }
         catch (ArgumentException ex)
         {

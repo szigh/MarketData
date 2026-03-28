@@ -372,3 +372,4 @@ FodyWeavers.xsd
 !README.md
 !LOGGING.md
 !TESTING.md
+/MarketData/MarketData.csproj
