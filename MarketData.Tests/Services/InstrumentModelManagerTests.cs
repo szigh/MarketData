@@ -38,6 +38,11 @@ public class InstrumentModelManagerTests : IDisposable
             new DefaultModelConfigFactory(NullLogger<DefaultModelConfigFactory>.Instance));
     }
 
+    public InstrumentModelManager GetManaager()
+    {
+        return _manager;
+    }
+
     [Fact]
     public async Task GetInstrumentWithConfigurationsAsync_WithExistingInstrument_ReturnsInstrument()
     {

@@ -10,7 +10,6 @@ public class PricesControllerTests : IDisposable
 {
     private readonly MarketDataContext _context;
     private readonly PricesController _controller;
-
     public PricesControllerTests()
     {
         var options = new DbContextOptionsBuilder<MarketDataContext>()
@@ -18,7 +17,7 @@ public class PricesControllerTests : IDisposable
             .Options;
 
         _context = new MarketDataContext(options);
-        _controller = new PricesController(_context);
+        _controller = new PricesController(_context, null);
     }
 
     [Fact]
