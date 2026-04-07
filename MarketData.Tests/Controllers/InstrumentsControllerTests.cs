@@ -1,14 +1,19 @@
 using MarketData.Controllers;
 using MarketData.Data;
 using MarketData.Models;
+using MarketData.Services;
+using MarketData.Tests.Services;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
+using static MarketData.DTO.InstrumentsDTO;
 
 namespace MarketData.Tests.Controllers;
 
 public class InstrumentsControllerTests : IDisposable
 {
+    private readonly InstrumentModelManagerTests _modelManagerTest;
     private readonly MarketDataContext _context;
     private readonly InstrumentsController _controller;
 
@@ -19,16 +24,16 @@ public class InstrumentsControllerTests : IDisposable
             .Options;
 
         _context = new MarketDataContext(options);
-        _controller = new InstrumentsController(_context, 
+        _modelManagerTest = new InstrumentModelManagerTests();
+        _controller = new InstrumentsController(_modelManagerTest.GetManaager(), _context, 
             NullLogger<InstrumentsController>.Instance);
     }
 
     [Fact]
     public async Task CreateInstrument_WithValidData_ReturnsCreatedResult()
     {
-        var request = new CreateInstrumentRequest("FTSE", 10050.50m, 1000);
-
-        var result = await _controller.CreateInstrument(request, CancellationToken.None);
+        var dto = new CreateInstrumentRequestDto("FTSE", 1000, 10050.50m, DateTime.Now,null);
+        var result = await _controller.CreateInstrument(dto, CancellationToken.None);
 
         var createdResult = Assert.IsType<CreatedAtActionResult>(result.Result);
         var instrument = Assert.IsType<Instrument>(createdResult.Value);
@@ -48,9 +53,9 @@ public class InstrumentsControllerTests : IDisposable
         _context.Instruments.Add(existing);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var request = new CreateInstrumentRequest("AAPL", 150.00m, 1000);
+        var dto = new CreateInstrumentRequestDto("AAPL", 1000, 150.00m, DateTime.Now, null);
 
-        var result = await _controller.CreateInstrument(request, CancellationToken.None);
+        var result = await _controller.CreateInstrument(dto, CancellationToken.None);
 
         var conflictResult = Assert.IsType<ConflictObjectResult>(result.Result);
         Assert.Equal("Instrument 'AAPL' already exists", conflictResult.Value);
@@ -114,9 +119,8 @@ public class InstrumentsControllerTests : IDisposable
         _context.Instruments.Add(instrument);
         await _context.SaveChangesAsync(TestContext.Current.CancellationToken);
 
-        var request = new UpdateFrequencyRequest(2500);
-
-        var result = await _controller.UpdateInstrumentFrequency("NVDA", request, CancellationToken.None);
+        var dto = new  UpdateTickIntervalRequestDto(2500);
+        var result = await _controller.UpdateInstrumentFrequency("NVDA", dto, CancellationToken.None);
 
         var okResult = Assert.IsType<OkObjectResult>(result.Result);
         var updatedInstrument = Assert.IsType<Instrument>(okResult.Value);
@@ -130,9 +134,9 @@ public class InstrumentsControllerTests : IDisposable
     [Fact]
     public async Task UpdateInstrumentFrequency_WithNonExistentInstrument_ReturnsNotFound()
     {
-        var request = new UpdateFrequencyRequest(3000);
+        var dto = new UpdateTickIntervalRequestDto(3000);
 
-        var result = await _controller.UpdateInstrumentFrequency("NONEXISTENT", request, CancellationToken.None);
+        var result = await _controller.UpdateInstrumentFrequency("NONEXISTENT", dto, CancellationToken.None);
 
         var notFoundResult = Assert.IsType<NotFoundObjectResult>(result.Result);
         Assert.Equal("Instrument 'NONEXISTENT' not found", notFoundResult.Value);

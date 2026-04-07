@@ -1,0 +1,401 @@
+{
+  "info": {
+    "_postman_id": "06b9d09c-9c62-4cbd-8f7b-40a1667f2232",
+    "name": "Market Data",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "11846194"
+  },
+  "item": [
+    {
+      "name": "Instruments",
+      "item": [
+        {
+          "name": "Get Instrument",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://localhost:7264/api/Instruments/FTSE",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "Instruments",
+                "FTSE"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Instrument",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "https://localhost:7264/api/Instruments/EURUSD",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "Instruments",
+                "EURUSD"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List Instruments",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://localhost:7264/api/Instruments/",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "Instruments",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Instrument",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"instrumentName\": \"EURUSD\",\r\n  \"tickIntervalMs\": 1000,\r\n  \"initialPriceValue\": 100.5,\r\n  \"initialPriceTimestamp\": \"2026-03-28T10:00:00Z\",\r\n  \"modelType\": \"MeanReverting\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://localhost:7264/api/Instruments/",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "Instruments",
+                ""
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Frequency",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"tickIntervalMs\": 1005\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://localhost:7264/api/Instruments/FTSE/frequency",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "Instruments",
+                "FTSE",
+                "frequency"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Models",
+      "item": [
+        {
+          "name": "List Models",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://localhost:7264/api/models",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "models"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ModelConfiguration",
+      "item": [
+        {
+          "name": "random-additive-walk",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"WalkSteps\": [\r\n    { \"probability\": 0.3, \"stepValue\": -1 },\r\n    { \"probability\": 0.4, \"stepValue\": 0 },\r\n    { \"probability\": 0.3, \"stepValue\": 1 }\r\n  ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://localhost:7264/api/ModelConfigurations/FTSE/config/random-additive-walk",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "ModelConfigurations",
+                "FTSE",
+                "config",
+                "random-additive-walk"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "InstrumentConf",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://localhost:7264/api/ModelConfigurations/FTSE",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "ModelConfigurations",
+                "FTSE"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Save Model",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"modelType\": \"MeanReverting\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://localhost:7264/api/ModelConfigurations/FTSE/model",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "ModelConfigurations",
+                "FTSE",
+                "model"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "random-multiplicative",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"standardDeviation\": 0.2,\r\n  \"mean\": 1.01\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://localhost:7264/api/ModelConfigurations/FTSE/config/random-multiplicative",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "ModelConfigurations",
+                "FTSE",
+                "config",
+                "random-multiplicative"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "mean-reverting",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"mean\": 100.0,\r\n  \"kappa\": 0.5,\r\n  \"sigma\": 1.2,\r\n  \"dt\": 1.0\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "https://localhost:7264/api/ModelConfigurations/FTSE/config/mean-reverting",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "ModelConfigurations",
+                "FTSE",
+                "config",
+                "mean-reverting"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Price",
+      "item": [
+        {
+          "name": "ImstrumentPrice",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://localhost:7264/api/Prices/FTSE",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "Prices",
+                "FTSE"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Historical",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "https://localhost:7264/api/Prices/FTSE/history?start=2026-03-01T00:00:00Z&end=2026-03-28T00:00:00Z",
+              "protocol": "https",
+              "host": [
+                "localhost"
+              ],
+              "port": "7264",
+              "path": [
+                "api",
+                "Prices",
+                "FTSE",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "2026-03-01T00:00:00Z"
+                },
+                {
+                  "key": "end",
+                  "value": "2026-03-28T00:00:00Z"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Get OpenApi Docu",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "https://localhost:7264/openapi/v1.json",
+          "protocol": "https",
+          "host": [
+            "localhost"
+          ],
+          "port": "7264",
+          "path": [
+            "openapi",
+            "v1.json"
+          ]
+        }
+      },
+      "response": []
+    }
+  ]
+}
